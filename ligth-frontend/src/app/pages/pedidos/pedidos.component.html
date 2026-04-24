@@ -1,0 +1,158 @@
+<div class="page-wrapper">
+  <mat-toolbar class="app-header">
+    <div class="header-content">
+      <div class="brand"><mat-icon class="brand-icon">lightbulb</mat-icon><span class="brand-name">LIGHT</span></div>
+      <div class="nav-links">
+        <button mat-button (click)="navegarConsulta()"><mat-icon>search</mat-icon> Consulta</button>
+        <button mat-button (click)="navegarClientes()"><mat-icon>people</mat-icon> Clientes</button>
+        <button mat-button (click)="navegarProdutos()"><mat-icon>inventory_2</mat-icon> Produtos</button>
+        <button mat-button disabled><mat-icon>receipt_long</mat-icon> Pedidos</button>
+        <button mat-button (click)="navegarEstoque()"><mat-icon>warehouse</mat-icon> Estoque</button>
+      </div>
+      <button mat-icon-button [matMenuTriggerFor]="userMenu"><mat-icon>account_circle</mat-icon></button>
+      <mat-menu #userMenu="matMenu"><button mat-menu-item (click)="logout()"><mat-icon>logout</mat-icon><span>Sair</span></button></mat-menu>
+    </div>
+  </mat-toolbar>
+  <main class="main-content"><div class="container">
+    <mat-card class="crud-card">
+      <div class="card-header">
+        <div><h2>Pedidos</h2><p>Gerencie pedidos com controle de status e estoque</p></div>
+        <button mat-raised-button color="primary" (click)="novo()" *ngIf="!mostrarForm"><mat-icon>add</mat-icon> Novo</button>
+      </div>
+      @if (mostrarForm) {
+        <div class="form-container">
+          <h3>{{ editandoId ? 'Editar Pedido' : 'Novo Pedido' }}</h3>
+          <mat-form-field appearance="outline">
+            <mat-label>Cliente</mat-label>
+            <input matInput [formControl]="clienteControl" [matAutocomplete]="autoCliente" placeholder="Buscar cliente...">
+            <mat-icon matPrefix>person</mat-icon>
+            <mat-autocomplete #autoCliente="matAutocomplete" [displayWith]="displayFn" (optionSelected)="onClienteSelected($event.option.value)">
+              @for (c of clientesFiltrados; track c.id) { <mat-option [value]="c">{{c.label}}</mat-option> }
+            </mat-autocomplete>
+          </mat-form-field>
+          <div class="add-item-row">
+            <mat-form-field appearance="outline" class="field-produto">
+              <mat-label>Produto</mat-label>
+              <input matInput [formControl]="produtoControl" [matAutocomplete]="autoProduto" placeholder="Buscar produto...">
+              <mat-autocomplete #autoProduto="matAutocomplete" [displayWith]="displayFn" (optionSelected)="onProdutoSelected($event.option.value)">
+                @for (p of produtosFiltrados; track p.id) { <mat-option [value]="p">{{p.label}} <small class="option-preco">R$ {{p.precoTabela}}</small></mat-option> }
+              </mat-autocomplete>
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="field-sm"><mat-label>Qtd</mat-label><input matInput type="number" [formControl]="qtdControl" min="1"></mat-form-field>
+            <mat-form-field appearance="outline" class="field-sm"><mat-label>Vlr Unit.</mat-label><input matInput type="number" [formControl]="vlrControl" step="0.01"></mat-form-field>
+            <button mat-mini-fab color="primary" (click)="adicionarItem()" [disabled]="!produtoSelecionado || itemForm.invalid"><mat-icon>add</mat-icon></button>
+          </div>
+          @if (produtoSelecionado) {
+            <div class="produto-info-panel">
+              @if (estoqueInfo) {
+                <div class="info-row">
+                  <div class="info-item">
+                    <span class="info-label">Estoque Atual:</span>
+                    <span class="info-value" [class.estoque-baixo]="estoqueInfo.estoqueAtual <= 0">{{estoqueInfo.estoqueAtual}}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Comprometido (pedidos abertos):</span>
+                    <span class="info-value comprometido">{{estoqueInfo.comprometido}}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Estoque Futuro:</span>
+                    <span class="info-value" [class.estoque-baixo]="estoqueInfo.estoqueFuturo <= 0" [class.margem-positiva]="estoqueInfo.estoqueFuturo > 0">{{estoqueInfo.estoqueFuturo}}</span>
+                  </div>
+                </div>
+              }
+              @if (precoTabela !== null) {
+                <div class="info-row">
+                  <div class="info-item"><span class="info-label">Preco Tabela:</span><span class="info-value">{{precoTabela | currency:'BRL'}}</span></div>
+                  @if (margemLucro !== null) {
+                    <div class="info-item"><span class="info-label">Margem:</span>
+                      <span class="info-value" [class.margem-positiva]="margemLucro >= 0" [class.margem-negativa]="margemLucro < 0">{{margemLucro | number:'1.1-1'}}%</span>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
+          @if (itensNovoPedido.length > 0) {
+            <div class="table-wrapper">
+              <table mat-table [dataSource]="itensNovoPedido">
+                <ng-container matColumnDef="produto"><th mat-header-cell *matHeaderCellDef>Produto</th><td mat-cell *matCellDef="let r">{{r.produtoLabel}}</td></ng-container>
+                <ng-container matColumnDef="quantidade"><th mat-header-cell *matHeaderCellDef>Qtd</th><td mat-cell *matCellDef="let r">{{r.quantidade}}</td></ng-container>
+                <ng-container matColumnDef="valorUnitario"><th mat-header-cell *matHeaderCellDef>Unit.</th><td mat-cell *matCellDef="let r">{{r.valorUnitario | currency:'BRL'}}</td></ng-container>
+                <ng-container matColumnDef="valorTotal"><th mat-header-cell *matHeaderCellDef>Total</th><td mat-cell *matCellDef="let r">{{r.valorTotal | currency:'BRL'}}</td></ng-container>
+                <ng-container matColumnDef="remover"><th mat-header-cell *matHeaderCellDef></th><td mat-cell *matCellDef="let r; let i = index"><button mat-icon-button color="warn" (click)="removerItem(i)"><mat-icon>delete</mat-icon></button></td></ng-container>
+                <tr mat-header-row *matHeaderRowDef="itensColumns"></tr><tr mat-row *matRowDef="let r; columns: itensColumns;"></tr>
+              </table>
+            </div>
+            <div class="total-row"><strong>Total: {{totalPedido | currency:'BRL'}}</strong></div>
+          }
+          <div class="form-actions">
+            <button mat-raised-button color="primary" (click)="salvarPedido()" [disabled]="!clienteSelecionado || itensNovoPedido.length === 0"><mat-icon>save</mat-icon> Salvar</button>
+            <button mat-stroked-button (click)="cancelar()">Cancelar</button>
+          </div>
+        </div>
+      }
+      <!-- Filtros -->
+      <div class="filtros-container">
+        <mat-form-field appearance="outline" class="filtro-texto">
+          <mat-label>Buscar</mat-label>
+          <input matInput [value]="filtroTexto" (input)="filtroTexto=$any($event.target).value; aplicarFiltros()"
+                 placeholder="Numero ou cliente...">
+          <mat-icon matPrefix>search</mat-icon>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="filtro-status">
+          <mat-label>Status</mat-label>
+          <mat-select [value]="filtroStatus" (selectionChange)="filtroStatus=$event.value; aplicarFiltros()">
+            <mat-option value="">Todos</mat-option>
+            <mat-option value="EM_ABERTO">Em Aberto</mat-option>
+            <mat-option value="CONFIRMADO">Confirmado</mat-option>
+            <mat-option value="FINALIZADO">Finalizado</mat-option>
+            <mat-option value="CANCELADO">Cancelado</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="filtro-data">
+          <mat-label>De</mat-label>
+          <input matInput type="date" [value]="filtroDataDe" (change)="filtroDataDe=$any($event.target).value; aplicarFiltros()">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="filtro-data">
+          <mat-label>Ate</mat-label>
+          <input matInput type="date" [value]="filtroDataAte" (change)="filtroDataAte=$any($event.target).value; aplicarFiltros()">
+        </mat-form-field>
+        @if (filtroTexto || filtroStatus || filtroDataDe || filtroDataAte) {
+          <button mat-stroked-button (click)="limparFiltros()" class="btn-limpar-filtro">
+            <mat-icon>clear</mat-icon> Limpar
+          </button>
+        }
+        <span class="filtro-count">{{pedidos.length}} de {{todosPedidos.length}}</span>
+      </div>
+
+      <div class="table-wrapper">
+        <table mat-table [dataSource]="pedidos">
+          <ng-container matColumnDef="numero"><th mat-header-cell *matHeaderCellDef>Numero</th><td mat-cell *matCellDef="let r">{{r.numero}}</td></ng-container>
+          <ng-container matColumnDef="dataPedido"><th mat-header-cell *matHeaderCellDef>Data</th><td mat-cell *matCellDef="let r">{{r.dataPedido | date:'dd/MM/yyyy'}}</td></ng-container>
+          <ng-container matColumnDef="clienteNome"><th mat-header-cell *matHeaderCellDef>Cliente</th><td mat-cell *matCellDef="let r">{{r.clienteNome}}</td></ng-container>
+          <ng-container matColumnDef="valorTotal"><th mat-header-cell *matHeaderCellDef>Total</th><td mat-cell *matCellDef="let r" class="valor-total">{{r.valorTotal | currency:'BRL'}}</td></ng-container>
+          <ng-container matColumnDef="status"><th mat-header-cell *matHeaderCellDef>Status</th>
+            <td mat-cell *matCellDef="let r"><span [class]="statusClass(r.status)">{{statusLabel(r.status)}}</span></td>
+          </ng-container>
+          <ng-container matColumnDef="acoes"><th mat-header-cell *matHeaderCellDef>Acoes</th>
+            <td mat-cell *matCellDef="let r">
+              @if (r.status === 'EM_ABERTO') {
+                <button mat-icon-button color="primary" (click)="editar(r)" matTooltip="Editar"><mat-icon>edit</mat-icon></button>
+                <button mat-icon-button color="primary" (click)="confirmar(r)" matTooltip="Confirmar"><mat-icon>check_circle</mat-icon></button>
+              }
+              @if (r.status === 'CONFIRMADO') {
+                <button mat-icon-button color="primary" (click)="finalizar(r)" matTooltip="Finalizar"><mat-icon>done_all</mat-icon></button>
+              }
+              @if (r.status === 'EM_ABERTO' || r.status === 'CONFIRMADO') {
+                <button mat-icon-button color="warn" (click)="cancelarPedido(r)" matTooltip="Cancelar"><mat-icon>cancel</mat-icon></button>
+              }
+              <button mat-icon-button color="primary" (click)="gerarPDF(r)"><mat-icon>picture_as_pdf</mat-icon></button>
+              <button mat-icon-button color="warn" (click)="excluir(r)"><mat-icon>delete</mat-icon></button>
+            </td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr><tr mat-row *matRowDef="let r; columns: displayedColumns;"></tr>
+        </table>
+      </div>
+    </mat-card>
+  </div></main>
+</div>

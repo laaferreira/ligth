@@ -1,0 +1,88 @@
+<div class="page-wrapper">
+  <mat-toolbar class="app-header">
+    <div class="header-content">
+      <div class="brand"><mat-icon class="brand-icon">lightbulb</mat-icon><span class="brand-name">LIGHT</span></div>
+      <div class="nav-links">
+        <button mat-button (click)="navegarConsulta()"><mat-icon>search</mat-icon> Consulta</button>
+        <button mat-button (click)="navegarClientes()"><mat-icon>people</mat-icon> Clientes</button>
+        <button mat-button (click)="navegarProdutos()"><mat-icon>inventory_2</mat-icon> Produtos</button>
+        <button mat-button (click)="navegarPedidos()"><mat-icon>receipt_long</mat-icon> Pedidos</button>
+        <button mat-button disabled><mat-icon>warehouse</mat-icon> Estoque</button>
+      </div>
+      <button mat-icon-button [matMenuTriggerFor]="userMenu"><mat-icon>account_circle</mat-icon></button>
+      <mat-menu #userMenu="matMenu"><button mat-menu-item (click)="logout()"><mat-icon>logout</mat-icon><span>Sair</span></button></mat-menu>
+    </div>
+  </mat-toolbar>
+  <main class="main-content"><div class="container">
+    <mat-tab-group>
+      <!-- Movimentacao -->
+      <mat-tab label="Movimentacao">
+        <mat-card class="crud-card tab-card">
+          <h3>Entrada / Saida de Estoque</h3>
+          <div class="mov-form">
+            <mat-form-field appearance="outline" class="field-produto">
+              <mat-label>Produto</mat-label>
+              <input matInput [formControl]="produtoControl" [matAutocomplete]="autoProd" placeholder="Buscar...">
+              <mat-autocomplete #autoProd="matAutocomplete" [displayWith]="displayFn" (optionSelected)="onProdutoSelected($event.option.value)">
+                @for (p of produtosFiltrados; track p.id) { <mat-option [value]="p">{{p.label}}</mat-option> }
+              </mat-autocomplete>
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="field-sm">
+              <mat-label>Qtd</mat-label>
+              <input matInput type="number" [formControl]="qtdMovControl" min="1">
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="field-obs">
+              <mat-label>Observacao</mat-label>
+              <input matInput [formControl]="obsControl">
+            </mat-form-field>
+          </div>
+          <div class="mov-actions">
+            <button mat-raised-button color="primary" (click)="registrar('entrada')" [disabled]="!produtoSelecionado || movForm.invalid">
+              <mat-icon>add_circle</mat-icon> Entrada
+            </button>
+            <button mat-raised-button color="warn" (click)="registrar('saida')" [disabled]="!produtoSelecionado || movForm.invalid">
+              <mat-icon>remove_circle</mat-icon> Saida
+            </button>
+          </div>
+        </mat-card>
+      </mat-tab>
+
+      <!-- Estoque Baixo -->
+      <mat-tab label="Estoque Baixo">
+        <mat-card class="crud-card tab-card">
+          <h3><mat-icon class="alerta-icon">warning</mat-icon> Produtos com Estoque Baixo ({{produtosBaixo.length}})</h3>
+          <div class="table-wrapper">
+            <table mat-table [dataSource]="produtosBaixo">
+              <ng-container matColumnDef="codigo"><th mat-header-cell *matHeaderCellDef>Codigo</th><td mat-cell *matCellDef="let r">{{r.codigo}}</td></ng-container>
+              <ng-container matColumnDef="descricao"><th mat-header-cell *matHeaderCellDef>Descricao</th><td mat-cell *matCellDef="let r">{{r.descricao}}</td></ng-container>
+              <ng-container matColumnDef="quantidadeEstoque"><th mat-header-cell *matHeaderCellDef>Estoque</th><td mat-cell *matCellDef="let r" class="estoque-baixo">{{r.quantidadeEstoque}}</td></ng-container>
+              <ng-container matColumnDef="estoqueMinimo"><th mat-header-cell *matHeaderCellDef>Minimo</th><td mat-cell *matCellDef="let r">{{r.estoqueMinimo}}</td></ng-container>
+              <tr mat-header-row *matHeaderRowDef="colsBaixo"></tr><tr mat-row *matRowDef="let r; columns: colsBaixo;"></tr>
+            </table>
+          </div>
+        </mat-card>
+      </mat-tab>
+
+      <!-- Historico -->
+      <mat-tab label="Historico">
+        <mat-card class="crud-card tab-card">
+          <h3>Historico de Movimentacoes</h3>
+          <div class="table-wrapper">
+            <table mat-table [dataSource]="movimentacoes">
+              <ng-container matColumnDef="data"><th mat-header-cell *matHeaderCellDef>Data</th><td mat-cell *matCellDef="let r">{{r.dataMovimentacao | date:'dd/MM/yyyy HH:mm'}}</td></ng-container>
+              <ng-container matColumnDef="produto"><th mat-header-cell *matHeaderCellDef>Produto</th><td mat-cell *matCellDef="let r">{{r.produtoDescricao}}</td></ng-container>
+              <ng-container matColumnDef="tipo"><th mat-header-cell *matHeaderCellDef>Tipo</th>
+                <td mat-cell *matCellDef="let r"><span [class]="r.tipo === 'ENTRADA' ? 'badge-entrada' : 'badge-saida'">{{r.tipo}}</span></td>
+              </ng-container>
+              <ng-container matColumnDef="quantidade"><th mat-header-cell *matHeaderCellDef>Qtd</th><td mat-cell *matCellDef="let r">{{r.quantidade}}</td></ng-container>
+              <ng-container matColumnDef="anterior"><th mat-header-cell *matHeaderCellDef>Anterior</th><td mat-cell *matCellDef="let r">{{r.estoqueAnterior}}</td></ng-container>
+              <ng-container matColumnDef="atual"><th mat-header-cell *matHeaderCellDef>Atual</th><td mat-cell *matCellDef="let r">{{r.estoqueAtual}}</td></ng-container>
+              <ng-container matColumnDef="obs"><th mat-header-cell *matHeaderCellDef>Obs</th><td mat-cell *matCellDef="let r">{{r.observacao}}</td></ng-container>
+              <tr mat-header-row *matHeaderRowDef="colsMov"></tr><tr mat-row *matRowDef="let r; columns: colsMov;"></tr>
+            </table>
+          </div>
+        </mat-card>
+      </mat-tab>
+    </mat-tab-group>
+  </div></main>
+</div>

@@ -1,0 +1,104 @@
+<div class="page-wrapper">
+  <mat-toolbar class="app-header">
+    <div class="header-content">
+      <div class="brand"><mat-icon class="brand-icon">lightbulb</mat-icon><span class="brand-name">LIGHT</span></div>
+      <div class="nav-links">
+        <button mat-button disabled><mat-icon>dashboard</mat-icon> Dashboard</button>
+        <button mat-button (click)="navegarConsulta()"><mat-icon>search</mat-icon> Consulta</button>
+        <button mat-button (click)="navegarClientes()"><mat-icon>people</mat-icon> Clientes</button>
+        <button mat-button (click)="navegarProdutos()"><mat-icon>inventory_2</mat-icon> Produtos</button>
+        <button mat-button (click)="navegarPedidos()"><mat-icon>receipt_long</mat-icon> Pedidos</button>
+        <button mat-button (click)="navegarEstoque()"><mat-icon>warehouse</mat-icon> Estoque</button>
+      </div>
+      <button mat-icon-button [matMenuTriggerFor]="userMenu"><mat-icon>account_circle</mat-icon></button>
+      <mat-menu #userMenu="matMenu"><button mat-menu-item (click)="logout()"><mat-icon>logout</mat-icon><span>Sair</span></button></mat-menu>
+    </div>
+  </mat-toolbar>
+
+  <main class="main-content">
+    @if (data) {
+      <!-- KPI Cards -->
+      <div class="kpi-grid">
+        <mat-card class="kpi-card">
+          <mat-icon class="kpi-icon" style="color:#1565c0">people</mat-icon>
+          <div class="kpi-value">{{data.totalClientes}}</div>
+          <div class="kpi-label">Clientes</div>
+        </mat-card>
+        <mat-card class="kpi-card">
+          <mat-icon class="kpi-icon" style="color:#ff8f00">inventory_2</mat-icon>
+          <div class="kpi-value">{{data.totalProdutos}}</div>
+          <div class="kpi-label">Produtos</div>
+        </mat-card>
+        <mat-card class="kpi-card">
+          <mat-icon class="kpi-icon" style="color:#6a1b9a">receipt_long</mat-icon>
+          <div class="kpi-value">{{data.totalPedidos}}</div>
+          <div class="kpi-label">Pedidos</div>
+        </mat-card>
+        <mat-card class="kpi-card">
+          <mat-icon class="kpi-icon" style="color:#e65100">pending</mat-icon>
+          <div class="kpi-value">{{data.pedidosAbertos}}</div>
+          <div class="kpi-label">Em Aberto</div>
+        </mat-card>
+        <mat-card class="kpi-card">
+          <mat-icon class="kpi-icon" style="color:#2e7d32">attach_money</mat-icon>
+          <div class="kpi-value">{{data.faturamentoTotal | currency:'BRL'}}</div>
+          <div class="kpi-label">Faturamento</div>
+        </mat-card>
+        <mat-card class="kpi-card" [class.alerta]="data.produtosEstoqueBaixo > 0">
+          <mat-icon class="kpi-icon" style="color:#c62828">warning</mat-icon>
+          <div class="kpi-value">{{data.produtosEstoqueBaixo}}</div>
+          <div class="kpi-label">Estoque Baixo</div>
+        </mat-card>
+      </div>
+
+      <!-- Charts Row 1 -->
+      <div class="charts-grid">
+        <mat-card class="chart-card wide">
+          <h3><mat-icon>trending_up</mat-icon> Faturamento e Lucro (6 meses)</h3>
+          @if (faturamentoChart) {
+            <canvas baseChart [type]="faturamentoChart.type" [data]="faturamentoChart.data" [options]="faturamentoChart.options"></canvas>
+          }
+        </mat-card>
+        <mat-card class="chart-card">
+          <h3><mat-icon>pie_chart</mat-icon> Pedidos por Status</h3>
+          @if (statusChart) {
+            <canvas baseChart [type]="statusChart.type" [data]="statusChart.data" [options]="statusChart.options"></canvas>
+          }
+        </mat-card>
+      </div>
+
+      <!-- Charts Row 2 -->
+      <div class="charts-grid equal">
+        <mat-card class="chart-card">
+          <h3><mat-icon>star</mat-icon> Produtos Mais Vendidos</h3>
+          @if (produtosChart) {
+            <canvas baseChart [type]="produtosChart.type" [data]="produtosChart.data" [options]="produtosChart.options"></canvas>
+          }
+        </mat-card>
+        <mat-card class="chart-card">
+          <h3><mat-icon>emoji_events</mat-icon> Clientes que Mais Compraram</h3>
+          @if (clientesChart) {
+            <canvas baseChart [type]="clientesChart.type" [data]="clientesChart.data" [options]="clientesChart.options"></canvas>
+          }
+        </mat-card>
+      </div>
+
+      <!-- Estoque Critico -->
+      @if (data.estoqueCritico.length > 0) {
+        <mat-card class="chart-card">
+          <h3><mat-icon style="color:#c62828">warning</mat-icon> Produtos com Estoque Critico</h3>
+          <div class="table-wrapper">
+            <table mat-table [dataSource]="data.estoqueCritico">
+              <ng-container matColumnDef="codigo"><th mat-header-cell *matHeaderCellDef>Codigo</th><td mat-cell *matCellDef="let r">{{r.codigo}}</td></ng-container>
+              <ng-container matColumnDef="descricao"><th mat-header-cell *matHeaderCellDef>Descricao</th><td mat-cell *matCellDef="let r">{{r.descricao}}</td></ng-container>
+              <ng-container matColumnDef="estoque"><th mat-header-cell *matHeaderCellDef>Estoque</th><td mat-cell *matCellDef="let r" class="estoque-baixo">{{r.estoque}}</td></ng-container>
+              <ng-container matColumnDef="minimo"><th mat-header-cell *matHeaderCellDef>Minimo</th><td mat-cell *matCellDef="let r">{{r.minimo}}</td></ng-container>
+              <tr mat-header-row *matHeaderRowDef="estoqueCols"></tr>
+              <tr mat-row *matRowDef="let r; columns: estoqueCols;"></tr>
+            </table>
+          </div>
+        </mat-card>
+      }
+    }
+  </main>
+</div>

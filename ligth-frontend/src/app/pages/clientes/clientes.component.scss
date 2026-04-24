@@ -1,0 +1,59 @@
+@use '../../pages/consulta/consulta.component' as base;
+
+.nav-links {
+  display: flex;
+  gap: 4px;
+  button { color: rgba(255,255,255,0.85); font-size: 13px; }
+  button[disabled] { color: #ffc107 !important; opacity: 1 !important; }
+}
+
+.crud-card {
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  h2 { font-size: 20px; font-weight: 600; margin: 0; }
+  p { font-size: 14px; color: #5a5a7a; margin: 4px 0 0; }
+}
+
+.form-container {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  h3 { margin: 0 0 16px; font-size: 16px; font-weight: 600; }
+  mat-form-field { width: 100%; }
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 16px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  table { width: 100%; }
+  th { background: #f5f5f5; font-weight: 600; font-size: 13px; }
+  td { font-size: 14px; }
+}
+
+@media (max-width: 768px) {
+  .nav-links { display: none; }
+  .form-row { grid-template-columns: 1fr; }
+  .crud-card { padding: 16px; }
+}
