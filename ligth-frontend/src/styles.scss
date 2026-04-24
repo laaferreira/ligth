@@ -1,32 +1,54 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
   font-family: 'Inter', sans-serif;
-  background: #f0f2f5;
+  background: #f5f0fa;
   color: #1a1a2e;
   min-height: 100vh;
 }
 
 :root {
-  --primary: #1565c0;
-  --primary-light: #1976d2;
-  --primary-dark: #0d47a1;
-  --accent: #ffc107;
+  --primary: #5b2d8e;
+  --primary-light: #7b4bab;
+  --primary-dark: #3d1a6e;
+  --accent: #c9a84c;
+  --accent-light: #e0c76e;
   --bg-card: #ffffff;
-  --bg-page: #f0f2f5;
+  --bg-page: #f5f0fa;
   --text-primary: #1a1a2e;
-  --text-secondary: #5a5a7a;
-  --border: #e0e0e0;
+  --text-secondary: #6b5b7b;
+  --border: #e0d4ec;
   --success: #2e7d32;
   --error: #c62828;
-  --shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  --radius: 12px;
+  --warning: #e65100;
+  --shadow: 0 2px 16px rgba(91, 45, 142, 0.10);
+  --radius: 14px;
 }
 
-.mat-mdc-form-field {
-  width: 100%;
+.mat-mdc-form-field { width: 100%; }
+
+/* Override Angular Material primary color */
+.mat-mdc-raised-button.mat-primary,
+.mat-mdc-mini-fab.mat-primary {
+  --mdc-filled-button-container-color: #5b2d8e !important;
+  --mdc-fab-container-color: #5b2d8e !important;
+}
+
+.mat-mdc-raised-button.mat-primary:hover {
+  --mdc-filled-button-container-color: #7b4bab !important;
+}
+
+/* Tabs */
+.mat-mdc-tab-group {
+  --mdc-tab-indicator-active-indicator-color: #5b2d8e;
+  --mat-tab-header-active-focus-label-text-color: #5b2d8e;
+  --mat-tab-header-active-hover-label-text-color: #5b2d8e;
+}
+
+/* Slide toggle */
+.mat-mdc-slide-toggle.mat-primary {
+  --mdc-switch-selected-track-color: #5b2d8e;
+  --mdc-switch-selected-handle-color: #5b2d8e;
 }

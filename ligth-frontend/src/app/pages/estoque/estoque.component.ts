@@ -45,6 +45,7 @@ export class EstoqueComponent implements OnInit {
   movForm: FormGroup;
 
   get qtdMovControl(): FormControl { return this.movForm.get('quantidade') as FormControl; }
+  get precoCompraControl(): FormControl { return this.movForm.get('precoCompra') as FormControl; }
   get obsControl(): FormControl { return this.movForm.get('observacao') as FormControl; }
 
   constructor(
@@ -57,6 +58,7 @@ export class EstoqueComponent implements OnInit {
   ) {
     this.movForm = this.fb.group({
       quantidade: [1, [Validators.required, Validators.min(1)]],
+      precoCompra: [null],
       observacao: ['']
     });
   }
@@ -79,9 +81,9 @@ export class EstoqueComponent implements OnInit {
 
   registrar(tipo: 'entrada' | 'saida'): void {
     if (!this.produtoSelecionado || this.movForm.invalid) return;
-    const { quantidade, observacao } = this.movForm.value;
+    const { quantidade, precoCompra, observacao } = this.movForm.value;
     const obs$ = tipo === 'entrada'
-      ? this.estoqueService.entrada(this.produtoSelecionado.id, quantidade, observacao)
+      ? this.estoqueService.entrada(this.produtoSelecionado.id, quantidade, precoCompra, observacao)
       : this.estoqueService.saida(this.produtoSelecionado.id, quantidade, observacao);
     obs$.subscribe({
       next: () => { this.snackBar.open(`${tipo === 'entrada' ? 'Entrada' : 'Saida'} registrada!`, 'OK', { duration: 3000 }); this.carregar(); this.limpar(); },

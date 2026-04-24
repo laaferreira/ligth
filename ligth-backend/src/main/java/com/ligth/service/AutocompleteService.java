@@ -35,7 +35,7 @@ public class AutocompleteService {
     @Transactional(readOnly = true)
     public List<com.ligth.dto.ProdutoAutocompleteDTO> buscarProdutosComPreco(String termo) {
         return produtoRepository.buscarPorDescricao(termo).stream()
-                .map(p -> new com.ligth.dto.ProdutoAutocompleteDTO(p.getId(), p.getDescricao(), p.getPrecoTabela()))
+                .map(p -> new com.ligth.dto.ProdutoAutocompleteDTO(p.getId(), p.getDescricao(), p.getPrecoCusto()))
                 .limit(10)
                 .toList();
     }

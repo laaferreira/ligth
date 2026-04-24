@@ -1,4 +1,4 @@
-# LIGHT - Sistema de Consulta de Pedidos
+# LIGTH - Sistema de Consulta de Pedidos
 
 Sistema para consulta rapida de historico de precos de lampadas vendidas por cliente.
 

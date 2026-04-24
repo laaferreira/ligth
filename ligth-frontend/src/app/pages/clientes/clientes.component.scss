@@ -1,16 +1,46 @@
-@use '../../pages/consulta/consulta.component' as base;
+.page-wrapper { min-height: 100vh; background: #f5f0fa; }
+
+.app-header {
+  background: linear-gradient(135deg, #3d1a6e, #5b2d8e);
+  color: white;
+  padding: 0 16px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  .brand-icon { color: #c9a84c; font-size: 28px; width: 28px; height: 28px; }
+  .brand-name { font-size: 20px; font-weight: 700; letter-spacing: 3px; }
+}
 
 .nav-links {
   display: flex;
   gap: 4px;
-  button { color: rgba(255,255,255,0.85); font-size: 13px; }
-  button[disabled] { color: #ffc107 !important; opacity: 1 !important; }
+  button { color: rgba(255,255,255,0.8); font-size: 13px; }
+  button[disabled] { color: #c9a84c !important; opacity: 1 !important; }
 }
+
+.main-content { padding: 24px 16px; }
+.container { max-width: 1000px; margin: 0 auto; }
 
 .crud-card {
   border-radius: 16px;
   padding: 24px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 16px rgba(91, 45, 142, 0.08);
+  border-top: 3px solid #5b2d8e;
 }
 
 .card-header {
@@ -18,16 +48,17 @@
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 20px;
-  h2 { font-size: 20px; font-weight: 600; margin: 0; }
-  p { font-size: 14px; color: #5a5a7a; margin: 4px 0 0; }
+  h2 { font-size: 20px; font-weight: 600; margin: 0; color: #3d1a6e; }
+  p { font-size: 14px; color: #6b5b7b; margin: 4px 0 0; }
 }
 
 .form-container {
-  background: #f8f9fa;
-  border-radius: 12px;
+  background: linear-gradient(135deg, #f5f0fa, #ede4f7);
+  border-radius: 14px;
   padding: 20px;
   margin-bottom: 20px;
-  h3 { margin: 0 0 16px; font-size: 16px; font-weight: 600; }
+  border-left: 4px solid #c9a84c;
+  h3 { margin: 0 0 16px; font-size: 16px; font-weight: 600; color: #3d1a6e; }
   mat-form-field { width: 100%; }
 }
 
@@ -45,10 +76,10 @@
 
 .table-wrapper {
   overflow-x: auto;
-  border-radius: 8px;
-  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  border: 1px solid #e0d4ec;
   table { width: 100%; }
-  th { background: #f5f5f5; font-weight: 600; font-size: 13px; }
+  th { background: #f5f0fa; font-weight: 600; font-size: 13px; color: #3d1a6e; }
   td { font-size: 14px; }
 }
 

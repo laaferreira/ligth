@@ -1,7 +1,7 @@
 <div class="page-wrapper">
   <mat-toolbar class="app-header">
     <div class="header-content">
-      <div class="brand"><mat-icon class="brand-icon">lightbulb</mat-icon><span class="brand-name">LIGHT</span></div>
+      <div class="brand"><mat-icon class="brand-icon">lightbulb</mat-icon><span class="brand-name">LIGTH</span></div>
       <div class="nav-links">
         <button mat-button (click)="navegarConsulta()"><mat-icon>search</mat-icon> Consulta</button>
         <button mat-button (click)="navegarClientes()"><mat-icon>people</mat-icon> Clientes</button>
@@ -30,6 +30,10 @@
             <mat-form-field appearance="outline" class="field-sm">
               <mat-label>Qtd</mat-label>
               <input matInput type="number" [formControl]="qtdMovControl" min="1">
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="field-sm">
+              <mat-label>Preco Compra</mat-label>
+              <input matInput type="number" [formControl]="precoCompraControl" step="0.01" placeholder="R$">
             </mat-form-field>
             <mat-form-field appearance="outline" class="field-obs">
               <mat-label>Observacao</mat-label>

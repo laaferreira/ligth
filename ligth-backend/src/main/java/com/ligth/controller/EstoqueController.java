@@ -1,7 +1,5 @@
 package com.ligth.controller;
 
-import com.ligth.domain.entity.MovimentacaoEstoque;
-import com.ligth.domain.entity.Produto;
 import com.ligth.domain.repository.PedidoRepository;
 import com.ligth.domain.repository.ProdutoRepository;
 import com.ligth.dto.EstoqueProdutoDTO;
@@ -23,7 +21,7 @@ import java.util.List;
 @RequestMapping("/api/estoque")
 @RequiredArgsConstructor
 @SecurityRequirement(name = "bearerAuth")
-@Tag(name = "Estoque", description = "Controle de estoque")
+@Tag(name = "Estoque", description = "Controle de estoque com custo medio")
 public class EstoqueController {
 
     private final EstoqueService estoqueService;
@@ -42,9 +40,9 @@ public class EstoqueController {
     }
 
     @PostMapping("/entrada")
-    @Operation(summary = "Entrada de estoque")
+    @Operation(summary = "Entrada de estoque com preco de compra (atualiza custo medio)")
     public ResponseEntity<String> entrada(@Valid @RequestBody MovimentacaoDTO dto) {
-        estoqueService.entrada(dto.produtoId(), dto.quantidade(), dto.observacao());
+        estoqueService.entrada(dto.produtoId(), dto.quantidade(), dto.precoCompra(), dto.observacao());
         return ResponseEntity.ok("Entrada registrada");
     }
 
@@ -60,8 +58,8 @@ public class EstoqueController {
     public List<ProdutoDTO> estoqueBaixo() {
         return estoqueService.produtosEstoqueBaixo().stream()
                 .map(p -> new ProdutoDTO(p.getId(), p.getCodigo(), p.getDescricao(),
-                        p.getCategoria(), p.getPrecoCusto(), p.getPrecoTabela(),
-                        p.getQuantidadeEstoque(), p.getEstoqueMinimo(), p.getAtivo()))
+                        p.getCategoria(), p.getPrecoCusto(), p.getQuantidadeEstoque(),
+                        p.getEstoqueMinimo(), p.getAtivo()))
                 .toList();
     }
 

@@ -56,8 +56,8 @@ export class DashboardComponent implements OnInit {
       data: {
         labels: d.faturamentoPorMes.map(m => m.mes),
         datasets: [
-          { label: 'Faturamento', data: d.faturamentoPorMes.map(m => m.faturamento), backgroundColor: '#1565c0' },
-          { label: 'Lucro', data: d.faturamentoPorMes.map(m => m.lucro), backgroundColor: '#2e7d32' }
+          { label: 'Faturamento', data: d.faturamentoPorMes.map(m => m.faturamento), backgroundColor: '#5b2d8e' },
+          { label: 'Lucro', data: d.faturamentoPorMes.map(m => m.lucro), backgroundColor: '#c9a84c' }
         ]
       },
       options: { responsive: true, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true } } }
@@ -68,7 +68,7 @@ export class DashboardComponent implements OnInit {
       type: 'bar',
       data: {
         labels: d.produtosMaisVendidos.map(p => p.label.substring(0, 25)),
-        datasets: [{ label: 'Qtd Vendida', data: d.produtosMaisVendidos.map(p => p.quantidade), backgroundColor: '#ff8f00' }]
+        datasets: [{ label: 'Qtd Vendida', data: d.produtosMaisVendidos.map(p => p.quantidade), backgroundColor: '#7b4bab' }]
       },
       options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } } }
     };
@@ -78,14 +78,14 @@ export class DashboardComponent implements OnInit {
       type: 'bar',
       data: {
         labels: d.clientesMaisCompraram.map(c => c.label.substring(0, 20)),
-        datasets: [{ label: 'Valor (R$)', data: d.clientesMaisCompraram.map(c => c.valor), backgroundColor: '#6a1b9a' }]
+        datasets: [{ label: 'Valor (R$)', data: d.clientesMaisCompraram.map(c => c.valor), backgroundColor: '#c9a84c' }]
       },
       options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } } }
     };
 
     // Pedidos por status
     const statusColors: Record<string, string> = {
-      EM_ABERTO: '#ff8f00', CONFIRMADO: '#1565c0', FINALIZADO: '#2e7d32', CANCELADO: '#c62828'
+      EM_ABERTO: '#e65100', CONFIRMADO: '#5b2d8e', FINALIZADO: '#2e7d32', CANCELADO: '#c62828'
     };
     this.statusChart = {
       type: 'doughnut',

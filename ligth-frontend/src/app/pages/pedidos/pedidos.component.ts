@@ -146,12 +146,12 @@ export class PedidosComponent implements OnInit {
     this.estoqueService.estoqueProduto(item.id).subscribe(info => this.estoqueInfo = info);
   }
 
-  get precoTabela(): number | null { return this.produtoSelecionado?.precoTabela ?? null; }
+  get precoCusto(): number | null { return this.produtoSelecionado?.precoCusto ?? null; }
   get margemLucro(): number | null {
     const vlr = this.itemForm.value.valorUnitario;
-    const tab = this.precoTabela;
-    if (!vlr || !tab || tab === 0) return null;
-    return ((vlr - tab) / tab) * 100;
+    const custo = this.precoCusto;
+    if (!vlr || !custo || custo === 0) return null;
+    return ((vlr - custo) / custo) * 100;
   }
 
   adicionarItem(): void {
@@ -261,9 +261,9 @@ export class PedidosComponent implements OnInit {
       const pw = doc.internal.pageSize.getWidth();
       doc.setFillColor(106, 27, 154); doc.rect(14, 10, 30, 30, 'F');
       doc.setTextColor(255, 255, 255); doc.setFontSize(8);
-      doc.text('LIGHT', 22, 25, { align: 'center' }); doc.text('COMERCIAL', 22, 30, { align: 'center' });
+      doc.text('LIGTH', 22, 25, { align: 'center' }); doc.text('COMERCIAL', 22, 30, { align: 'center' });
       doc.setTextColor(0, 0, 0); doc.setFontSize(22); doc.setFont('helvetica', 'bold');
-      doc.text('LIGHT COMERCIAL', pw / 2, 25, { align: 'center' });
+      doc.text('LIGTH COMERCIAL', pw / 2, 25, { align: 'center' });
       doc.setFontSize(12); doc.setFont('helvetica', 'normal');
       doc.text(p.clienteNome || '', pw / 2, 45, { align: 'center' });
       doc.setFontSize(10); doc.setTextColor(100, 100, 100);

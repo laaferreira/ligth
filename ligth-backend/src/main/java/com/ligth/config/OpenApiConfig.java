@@ -16,9 +16,9 @@ public class OpenApiConfig {
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("LIGHT API")
+                        .title("LIGTH API")
                         .version("1.0.0")
-                        .description("API do sistema LIGHT - Consulta de historico de pedidos de lampadas")
-                        .contact(new Contact().name("LIGHT").email("contato@light.com.br")));
+                        .description("API do sistema LIGTH - Consulta de historico de pedidos de lampadas")
+                        .contact(new Contact().name("LIGTH").email("contato@ligth.com.br")));
     }
 }

@@ -1,7 +1,7 @@
 <div class="page-wrapper">
   <mat-toolbar class="app-header">
     <div class="header-content">
-      <div class="brand"><mat-icon class="brand-icon">lightbulb</mat-icon><span class="brand-name">LIGHT</span></div>
+      <div class="brand"><mat-icon class="brand-icon">lightbulb</mat-icon><span class="brand-name">LIGTH</span></div>
       <div class="nav-links">
         <button mat-button (click)="navegarConsulta()"><mat-icon>search</mat-icon> Consulta</button>
         <button mat-button (click)="navegarClientes()"><mat-icon>people</mat-icon> Clientes</button>
@@ -35,7 +35,7 @@
               <mat-label>Produto</mat-label>
               <input matInput [formControl]="produtoControl" [matAutocomplete]="autoProduto" placeholder="Buscar produto...">
               <mat-autocomplete #autoProduto="matAutocomplete" [displayWith]="displayFn" (optionSelected)="onProdutoSelected($event.option.value)">
-                @for (p of produtosFiltrados; track p.id) { <mat-option [value]="p">{{p.label}} <small class="option-preco">R$ {{p.precoTabela}}</small></mat-option> }
+                @for (p of produtosFiltrados; track p.id) { <mat-option [value]="p">{{p.label}} <small class="option-preco">R$ {{p.precoCusto}}</small></mat-option> }
               </mat-autocomplete>
             </mat-form-field>
             <mat-form-field appearance="outline" class="field-sm"><mat-label>Qtd</mat-label><input matInput type="number" [formControl]="qtdControl" min="1"></mat-form-field>
@@ -60,9 +60,9 @@
                   </div>
                 </div>
               }
-              @if (precoTabela !== null) {
+              @if (precoCusto !== null) {
                 <div class="info-row">
-                  <div class="info-item"><span class="info-label">Preco Tabela:</span><span class="info-value">{{precoTabela | currency:'BRL'}}</span></div>
+                  <div class="info-item"><span class="info-label">Custo Medio:</span><span class="info-value">{{precoCusto | currency:'BRL'}}</span></div>
                   @if (margemLucro !== null) {
                     <div class="info-item"><span class="info-label">Margem:</span>
                       <span class="info-value" [class.margem-positiva]="margemLucro >= 0" [class.margem-negativa]="margemLucro < 0">{{margemLucro | number:'1.1-1'}}%</span>

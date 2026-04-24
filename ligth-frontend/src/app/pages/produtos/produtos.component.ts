@@ -32,7 +32,7 @@ export class ProdutosComponent implements OnInit {
   todosProdutos: Produto[] = [];
   produtos: Produto[] = [];
   filtro = '';
-  displayedColumns = ['codigo', 'descricao', 'categoria', 'precoCusto', 'precoTabela', 'quantidadeEstoque', 'ativo', 'acoes'];
+  displayedColumns = ['codigo', 'descricao', 'categoria', 'precoCusto', 'quantidadeEstoque', 'ativo', 'acoes'];
   form: FormGroup;
   editandoId: number | null = null;
   mostrarForm = false;
@@ -48,8 +48,6 @@ export class ProdutosComponent implements OnInit {
       codigo: ['', [Validators.required, Validators.maxLength(100)]],
       descricao: ['', [Validators.required, Validators.maxLength(300)]],
       categoria: ['', Validators.maxLength(100)],
-      precoCusto: [null],
-      precoTabela: [null],
       quantidadeEstoque: [0],
       estoqueMinimo: [5],
       ativo: [true]

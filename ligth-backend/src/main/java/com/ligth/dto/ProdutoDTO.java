@@ -10,7 +10,6 @@ public record ProdutoDTO(
         @NotBlank(message = "Descricao e obrigatoria") @Size(max = 300) String descricao,
         @Size(max = 100) String categoria,
         BigDecimal precoCusto,
-        BigDecimal precoTabela,
         Integer quantidadeEstoque,
         Integer estoqueMinimo,
         Boolean ativo

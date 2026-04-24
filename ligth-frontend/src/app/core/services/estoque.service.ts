@@ -10,8 +10,8 @@ export class EstoqueService {
   private readonly url = `${environment.apiUrl}/estoque`;
   constructor(private http: HttpClient) {}
 
-  entrada(produtoId: number, quantidade: number, observacao: string): Observable<string> {
-    return this.http.post(`${this.url}/entrada`, { produtoId, quantidade, observacao }, { responseType: 'text' });
+  entrada(produtoId: number, quantidade: number, precoCompra: number | null, observacao: string): Observable<string> {
+    return this.http.post(`${this.url}/entrada`, { produtoId, quantidade, precoCompra, observacao }, { responseType: 'text' });
   }
 
   saida(produtoId: number, quantidade: number, observacao: string): Observable<string> {

@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
 
@@ -40,7 +41,8 @@ public class ProdutoController {
     @Operation(summary = "Criar produto")
     public ResponseEntity<ProdutoDTO> criar(@Valid @RequestBody ProdutoDTO dto) {
         Produto p = Produto.builder().codigo(dto.codigo()).descricao(dto.descricao())
-                .categoria(dto.categoria()).precoCusto(dto.precoCusto()).precoTabela(dto.precoTabela())
+                .categoria(dto.categoria())
+                .precoCusto(dto.precoCusto() != null ? dto.precoCusto() : BigDecimal.ZERO)
                 .quantidadeEstoque(dto.quantidadeEstoque() != null ? dto.quantidadeEstoque() : 0)
                 .estoqueMinimo(dto.estoqueMinimo() != null ? dto.estoqueMinimo() : 5)
                 .ativo(dto.ativo() != null ? dto.ativo() : true).build();
@@ -53,8 +55,7 @@ public class ProdutoController {
     public ResponseEntity<ProdutoDTO> atualizar(@PathVariable Long id, @Valid @RequestBody ProdutoDTO dto) {
         return produtoRepository.findById(id).map(p -> {
             p.setCodigo(dto.codigo()); p.setDescricao(dto.descricao());
-            p.setCategoria(dto.categoria()); p.setPrecoCusto(dto.precoCusto());
-            p.setPrecoTabela(dto.precoTabela());
+            p.setCategoria(dto.categoria());
             if (dto.estoqueMinimo() != null) p.setEstoqueMinimo(dto.estoqueMinimo());
             if (dto.ativo() != null) p.setAtivo(dto.ativo());
             return ResponseEntity.ok(toDTO(produtoRepository.save(p)));
@@ -71,7 +72,6 @@ public class ProdutoController {
 
     private ProdutoDTO toDTO(Produto p) {
         return new ProdutoDTO(p.getId(), p.getCodigo(), p.getDescricao(), p.getCategoria(),
-                p.getPrecoCusto(), p.getPrecoTabela(), p.getQuantidadeEstoque(),
-                p.getEstoqueMinimo(), p.getAtivo());
+                p.getPrecoCusto(), p.getQuantidadeEstoque(), p.getEstoqueMinimo(), p.getAtivo());
     }
 }

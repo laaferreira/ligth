@@ -23,11 +23,9 @@ public class Produto {
     @Column(length = 100)
     private String categoria;
 
+    @Builder.Default
     @Column(precision = 10, scale = 2)
-    private BigDecimal precoCusto;
-
-    @Column(precision = 10, scale = 2)
-    private BigDecimal precoTabela;
+    private BigDecimal precoCusto = BigDecimal.ZERO;
 
     @Builder.Default
     @Column(nullable = false)

@@ -1,22 +1,11 @@
 @use '../clientes/clientes.component' as clientes;
 
-.filtro-container {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 4px;
-}
-
+.filtro-container { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
 .filtro-field { flex: 1; }
-
-.filtro-count {
-  font-size: 13px;
-  color: #5a5a7a;
-  white-space: nowrap;
-}
+.filtro-count { font-size: 13px; color: #6b5b7b; white-space: nowrap; }
 
 .estoque-baixo { color: #c62828; font-weight: 600; }
-.alerta-icon { font-size: 16px; width: 16px; height: 16px; color: #ff8f00; vertical-align: middle; margin-left: 4px; }
+.alerta-icon { font-size: 16px; width: 16px; height: 16px; color: #e65100; vertical-align: middle; margin-left: 4px; }
 .badge-ativo { background: #e8f5e9; color: #2e7d32; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; }
 .badge-inativo { background: #fce4ec; color: #c62828; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; }
 mat-slide-toggle { margin-bottom: 16px; }

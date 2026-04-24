@@ -99,7 +99,7 @@ public class PedidoService {
             // Estornar estoque
             for (ItemPedido item : pedido.getItens()) {
                 estoqueService.entrada(item.getProduto().getId(), item.getQuantidade(),
-                        "Estorno por cancelamento do pedido " + pedido.getNumero());
+                        null, "Estorno por cancelamento do pedido " + pedido.getNumero());
             }
         }
         pedido.setStatus(StatusPedido.CANCELADO);

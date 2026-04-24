@@ -1,6 +1,6 @@
 -- Usuario padrao (senha sera atualizada pelo DataSeeder com BCrypt)
 INSERT INTO usuarios (username, password, nome_completo) VALUES
-('admin', 'PLACEHOLDER', 'Administrador LIGHT');
+('admin', 'PLACEHOLDER', 'Administrador LIGTH');
 
 -- Clientes (8)
 INSERT INTO clientes (nome, cpf_cnpj, telefone, email, endereco, data_cadastro) VALUES
@@ -14,22 +14,22 @@ INSERT INTO clientes (nome, cpf_cnpj, telefone, email, endereco, data_cadastro) 
 ('Ponto da Luz Eletrica', '89.012.345/0001-67', '(71) 8901-2345', 'vendas@pontodaluz.com.br', 'Av Sete de Setembro 400 - BA', '2024-08-25');
 
 -- Produtos (15) com estoque
-INSERT INTO produtos (codigo, descricao, categoria, preco_custo, preco_tabela, quantidade_estoque, estoque_minimo, ativo) VALUES
-('LED-BUL-9W', 'Lampada LED Bulbo 9W Branco Frio', 'LED', 4.50, 8.90, 500, 50, true),
-('LED-BUL-12W', 'Lampada LED Bulbo 12W Branco Frio', 'LED', 6.30, 12.50, 300, 30, true),
-('LED-BUL-15W', 'Lampada LED Bulbo 15W Branco Quente', 'LED', 8.00, 15.90, 200, 20, true),
-('LED-TUB-18W', 'Lampada LED Tubular T8 18W 120cm', 'LED Tubular', 11.00, 22.00, 150, 15, true),
-('LED-TUB-9W', 'Lampada LED Tubular T8 9W 60cm', 'LED Tubular', 7.30, 14.50, 180, 20, true),
-('LED-DIC-5W', 'Lampada LED Dicroica GU10 5W', 'LED Dicroica', 6.00, 11.90, 250, 25, true),
-('LED-PAR-7W', 'Lampada LED PAR20 7W', 'LED PAR', 10.00, 19.90, 120, 10, true),
-('LED-PAR-11W', 'Lampada LED PAR30 11W', 'LED PAR', 15.00, 29.90, 80, 10, true),
-('LED-FIL-4W', 'Lampada LED Filamento Vintage 4W', 'LED Filamento', 9.30, 18.50, 100, 10, true),
-('LED-PAN-18W', 'Painel LED Embutir Quadrado 18W', 'Painel LED', 16.00, 32.00, 60, 5, true),
-('LED-PAN-24W', 'Painel LED Embutir Redondo 24W', 'Painel LED', 21.00, 42.00, 40, 5, true),
-('FLU-COM-15W', 'Lampada Fluorescente Compacta 15W', 'Fluorescente', 4.80, 9.50, 400, 40, true),
-('HAL-PAL-70W', 'Lampada Halogena Palito 70W', 'Halogena', 4.00, 7.90, 350, 30, true),
-('LED-FIT-5M', 'Fita LED 5 metros 14.4W/m RGB', 'Fita LED', 33.00, 65.00, 30, 3, true),
-('LED-SPOT-3W', 'Spot LED Embutir 3W Redondo', 'Spot LED', 7.50, 15.00, 200, 20, true);
+INSERT INTO produtos (codigo, descricao, categoria, preco_custo, quantidade_estoque, estoque_minimo, ativo) VALUES
+('LED-BUL-9W', 'Lampada LED Bulbo 9W Branco Frio', 'LED', 4.50, 500, 50, true),
+('LED-BUL-12W', 'Lampada LED Bulbo 12W Branco Frio', 'LED', 6.30, 300, 30, true),
+('LED-BUL-15W', 'Lampada LED Bulbo 15W Branco Quente', 'LED', 8.00, 200, 20, true),
+('LED-TUB-18W', 'Lampada LED Tubular T8 18W 120cm', 'LED Tubular', 11.00, 150, 15, true),
+('LED-TUB-9W', 'Lampada LED Tubular T8 9W 60cm', 'LED Tubular', 7.30, 180, 20, true),
+('LED-DIC-5W', 'Lampada LED Dicroica GU10 5W', 'LED Dicroica', 6.00, 250, 25, true),
+('LED-PAR-7W', 'Lampada LED PAR20 7W', 'LED PAR', 10.00, 120, 10, true),
+('LED-PAR-11W', 'Lampada LED PAR30 11W', 'LED PAR', 15.00, 80, 10, true),
+('LED-FIL-4W', 'Lampada LED Filamento Vintage 4W', 'LED Filamento', 9.30, 100, 10, true),
+('LED-PAN-18W', 'Painel LED Embutir Quadrado 18W', 'Painel LED', 16.00, 60, 5, true),
+('LED-PAN-24W', 'Painel LED Embutir Redondo 24W', 'Painel LED', 21.00, 40, 5, true),
+('FLU-COM-15W', 'Lampada Fluorescente Compacta 15W', 'Fluorescente', 4.80, 400, 40, true),
+('HAL-PAL-70W', 'Lampada Halogena Palito 70W', 'Halogena', 4.00, 350, 30, true),
+('LED-FIT-5M', 'Fita LED 5 metros 14.4W/m RGB', 'Fita LED', 33.00, 30, 3, true),
+('LED-SPOT-3W', 'Spot LED Embutir 3W Redondo', 'Spot LED', 7.50, 200, 20, true);
 
 -- =============================================
 -- PEDIDOS DE SIMULACAO (50 pedidos, ultimos 6 meses)
