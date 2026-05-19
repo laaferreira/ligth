@@ -1,42 +1,39 @@
 import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { catchError, switchMap, throwError } from 'rxjs';
+import { catchError, from, switchMap, throwError } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  if (req.url.includes('/auth/')) {
+  // Skip auth header for Supabase auth endpoints
+  if (req.url.includes('auth/v1/') || req.url.includes('realtime')) {
     return next(req);
   }
 
-  const token = authService.getAccessToken();
-  if (token) {
-    req = req.clone({
-      setHeaders: { Authorization: `Bearer ${token}` }
-    });
+  // Add Authorization header if logged in
+  if (authService.isLoggedIn) {
+    return from(authService.getAccessToken()).pipe(
+      switchMap(token => {
+        if (token) {
+          const cloned = req.clone({
+            setHeaders: { Authorization: `Bearer ${token}` }
+          });
+          return next(cloned);
+        }
+        return next(req);
+      }),
+      catchError((error: HttpErrorResponse) => {
+        if (error.status === 401) {
+          authService.logout();
+          router.navigate(['/login']);
+        }
+        return throwError(() => error);
+      })
+    );
   }
 
-  return next(req).pipe(
-    catchError((error: HttpErrorResponse) => {
-      if (error.status === 401 && !req.url.includes('/auth/refresh')) {
-        return authService.refreshToken().pipe(
-          switchMap(response => {
-            const newReq = req.clone({
-              setHeaders: { Authorization: `Bearer ${response.accessToken}` }
-            });
-            return next(newReq);
-          }),
-          catchError(() => {
-            authService.logout();
-            router.navigate(['/login']);
-            return throwError(() => error);
-          })
-        );
-      }
-      return throwError(() => error);
-    })
-  );
+  return next(req);
 };

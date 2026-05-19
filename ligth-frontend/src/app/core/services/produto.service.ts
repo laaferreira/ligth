@@ -1,17 +1,99 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { environment } from '@env/environment';
+import { Observable, from } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { SupabaseService } from './supabase.service';
 import { Produto } from '../models/produto.model';
 
 @Injectable({ providedIn: 'root' })
 export class ProdutoService {
-  private readonly url = `${environment.apiUrl}/produtos`;
-  constructor(private http: HttpClient) {}
+  private readonly table = 'produtos';
 
-  listar(): Observable<Produto[]> { return this.http.get<Produto[]>(this.url); }
-  buscarPorId(id: number): Observable<Produto> { return this.http.get<Produto>(`${this.url}/${id}`); }
-  criar(p: Produto): Observable<Produto> { return this.http.post<Produto>(this.url, p); }
-  atualizar(id: number, p: Produto): Observable<Produto> { return this.http.put<Produto>(`${this.url}/${id}`, p); }
-  excluir(id: number): Observable<void> { return this.http.delete<void>(`${this.url}/${id}`); }
+  constructor(private supabaseService: SupabaseService) {}
+
+  listar(): Observable<Produto[]> {
+    return from(
+      this.supabaseService.getClient()
+        .from(this.table)
+        .select('*')
+        .order('id', { ascending: true })
+    ).pipe(
+      map(response => {
+        if (response.error) throw response.error;
+        return (response.data || []) as Produto[];
+      })
+    );
+  }
+
+  buscarPorId(id: number): Observable<Produto> {
+    return from(
+      this.supabaseService.getClient()
+        .from(this.table)
+        .select('*')
+        .eq('id', id)
+        .single()
+    ).pipe(
+      map(response => {
+        if (response.error) throw response.error;
+        return response.data as Produto;
+      })
+    );
+  }
+
+  criar(produto: Produto): Observable<Produto> {
+    return from(
+      this.supabaseService.getClient()
+        .from(this.table)
+        .insert([produto])
+        .select()
+        .single()
+    ).pipe(
+      map(response => {
+        if (response.error) throw response.error;
+        return response.data as Produto;
+      })
+    );
+  }
+
+  atualizar(id: number, produto: Partial<Produto>): Observable<Produto> {
+    return from(
+      this.supabaseService.getClient()
+        .from(this.table)
+        .update(produto)
+        .eq('id', id)
+        .select()
+        .single()
+    ).pipe(
+      map(response => {
+        if (response.error) throw response.error;
+        return response.data as Produto;
+      })
+    );
+  }
+
+  excluir(id: number): Observable<void> {
+    return from(
+      this.supabaseService.getClient()
+        .from(this.table)
+        .delete()
+        .eq('id', id)
+    ).pipe(
+      map(response => {
+        if (response.error) throw response.error;
+      })
+    );
+  }
+
+  buscar(filtros: Record<string, any>): Observable<Produto[]> {
+    return from(
+      this.supabaseService.getClient()
+        .from(this.table)
+        .select('*')
+        .match(filtros)
+    ).pipe(
+      map(response => {
+        if (response.error) throw response.error;
+        return (response.data || []) as Produto[];
+      })
+    );
+  }
 }

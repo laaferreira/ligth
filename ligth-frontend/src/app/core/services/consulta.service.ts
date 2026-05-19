@@ -1,35 +1,86 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { environment } from '@env/environment';
+import { Observable, from } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { SupabaseService } from './supabase.service';
 import { AutocompleteItem, ProdutoAutocompleteItem, HistoricoPedido } from '../models/consulta.model';
 
 @Injectable({ providedIn: 'root' })
 export class ConsultaService {
-  private readonly apiUrl = environment.apiUrl;
+  private readonly clientesTable = 'clientes';
+  private readonly produtosTable = 'produtos';
+  private readonly pedidosTable = 'pedidos';
 
-  constructor(private http: HttpClient) {}
+  constructor(private supabaseService: SupabaseService) {}
 
   buscarClientes(termo: string): Observable<AutocompleteItem[]> {
-    const params = new HttpParams().set('termo', termo);
-    return this.http.get<AutocompleteItem[]>(`${this.apiUrl}/autocomplete/clientes`, { params });
+    return from(
+      this.supabaseService.getClient()
+        .from(this.clientesTable)
+        .select('id, nome')
+        .ilike('nome', `%${termo}%`)
+        .limit(10)
+    ).pipe(
+      map(response => {
+        if (response.error) throw response.error;
+        return (response.data || []).map(item => ({
+          id: item.id,
+          label: item.nome
+        })) as AutocompleteItem[];
+      })
+    );
   }
 
   buscarProdutos(termo: string): Observable<AutocompleteItem[]> {
-    const params = new HttpParams().set('termo', termo);
-    return this.http.get<AutocompleteItem[]>(`${this.apiUrl}/autocomplete/produtos`, { params });
+    return from(
+      this.supabaseService.getClient()
+        .from(this.produtosTable)
+        .select('id, nome')
+        .ilike('nome', `%${termo}%`)
+        .limit(10)
+    ).pipe(
+      map(response => {
+        if (response.error) throw response.error;
+        return (response.data || []).map(item => ({
+          id: item.id,
+          label: item.nome
+        })) as AutocompleteItem[];
+      })
+    );
   }
 
   buscarProdutosComPreco(termo: string): Observable<ProdutoAutocompleteItem[]> {
-    const params = new HttpParams().set('termo', termo);
-    return this.http.get<ProdutoAutocompleteItem[]>(`${this.apiUrl}/autocomplete/produtos-preco`, { params });
+    return from(
+      this.supabaseService.getClient()
+        .from(this.produtosTable)
+        .select('id, nome, preco_venda, preco_custo')
+        .ilike('nome', `%${termo}%`)
+        .limit(10)
+    ).pipe(
+      map(response => {
+        if (response.error) throw response.error;
+        return (response.data || []).map(item => ({
+          id: item.id,
+          label: item.nome,
+          valor: item.preco_venda,
+          precoCusto: item.preco_custo || 0
+        } as ProdutoAutocompleteItem));
+      })
+    );
   }
 
   buscarHistorico(clienteId: number, produtoIds: number[]): Observable<HistoricoPedido[]> {
-    let params = new HttpParams().set('clienteId', clienteId.toString());
-    produtoIds.forEach(id => {
-      params = params.append('produtoIds', id.toString());
-    });
-    return this.http.get<HistoricoPedido[]>(`${this.apiUrl}/consulta/historico`, { params });
+    return from(
+      this.supabaseService.getClient()
+        .from(this.pedidosTable)
+        .select('*')
+        .eq('cliente_id', clienteId)
+        .in('id', produtoIds.length > 0 ? produtoIds : [0])
+        .order('data', { ascending: false })
+    ).pipe(
+      map(response => {
+        if (response.error) throw response.error;
+        return (response.data || []) as HistoricoPedido[];
+      })
+    );
   }
 }

@@ -7,7 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTableModule } from '@angular/material/table';
-import { BaseChartDirective } from 'ng2-charts';
+import { NgChartsModule } from 'ng2-charts';
 import { ChartConfiguration } from 'chart.js';
 import { Chart, registerables } from 'chart.js';
 import { DashboardService, Dashboard } from '../../core/services/dashboard.service';
@@ -20,7 +20,7 @@ Chart.register(...registerables);
   standalone: true,
   imports: [
     CommonModule, MatToolbarModule, MatCardModule, MatIconModule,
-    MatButtonModule, MatMenuModule, MatTableModule, BaseChartDirective
+    MatButtonModule, MatMenuModule, MatTableModule, NgChartsModule
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'

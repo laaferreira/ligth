@@ -1,11 +1,15 @@
-export interface LoginRequest {
-  username: string;
-  password: string;
+export interface User {
+  id: string;
+  email: string;
+  user_metadata: {
+    full_name?: string;
+    [key: string]: any;
+  };
+  created_at: string;
 }
 
-export interface TokenResponse {
-  accessToken: string;
-  refreshToken: string;
-  tokenType: string;
-  expiresIn: number;
+export interface AuthSession {
+  user: User | null;
+  access_token: string | null;
+  refresh_token: string | null;
 }
