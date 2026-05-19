@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>LIGTH - Sistema de Consulta de Pedidos</title>
+  <base href="/ligth/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+  </style>
+  <script>
+    // SPA redirect for GitHub Pages
+    if (window.location.pathname !== '/ligth/') {
+      sessionStorage.setItem('redirect', window.location.pathname.substring('/ligth'.length));
+    }
+  </script>
+</head>
+<body>
+  <app-root></app-root>
+</body>
+</html>
