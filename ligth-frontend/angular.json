@@ -47,9 +47,7 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
-            "production": { "buildTarget": "ligth-frontend:build:production",
-                             "optimization": {"scripts": true,"styles": true,"fonts": false}
-             },
+            "production": { "buildTarget": "ligth-frontend:build:production" },
             "development": { "buildTarget": "ligth-frontend:build:development" }
           },
           "defaultConfiguration": "development"
