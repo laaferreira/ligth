@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
+import { gerenciaUsuariosGuard } from './core/guards/gerencia-usuarios.guard';
 
 export const routes: Routes = [
   {
@@ -35,6 +36,11 @@ export const routes: Routes = [
     path: 'estoque',
     loadComponent: () => import('./pages/estoque/estoque.component').then(m => m.EstoqueComponent),
     canActivate: [authGuard]
+  },
+  {
+    path: 'gerencia-usuarios',
+    loadComponent: () => import('./pages/gerencia-usuarios/gerencia-usuarios.component').then(m => m.GerenciaUsuariosComponent),
+    canActivate: [authGuard, gerenciaUsuariosGuard]
   },
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
   { path: '**', redirectTo: 'dashboard' }

@@ -142,10 +142,10 @@ No Supabase Console, em Authentication:
 
 ## Checklist
 
-- [ ] RLS habilitado em todas as tabelas
-- [ ] Políticas de SELECT criadas
-- [ ] Políticas de INSERT criadas
-- [ ] Políticas de UPDATE criadas
-- [ ] Políticas de DELETE criadas
+- [X] RLS habilitado em todas as tabelas
+- [X] Políticas de SELECT criadas
+- [X] Políticas de INSERT criadas
+- [X] Políticas de UPDATE criadas
+- [X] Políticas de DELETE criadas
 - [ ] Testado acesso com múltiplos usuários
 - [ ] Confirmado que usuários só veem seus dados
