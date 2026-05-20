@@ -25,6 +25,18 @@ export class SupabaseService {
     return this.supabase.auth;
   }
 
+  async invokeFunction<TRequest extends object, TResponse>(name: string, body: TRequest): Promise<TResponse> {
+    const { data, error } = await this.supabase.functions.invoke(name, {
+      body
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    return data as TResponse;
+  }
+
   // Método genérico para select
   async select<T>(table: string, columns: string = '*', filters?: Record<string, any>) {
     let query = this.supabase.from(table).select(columns);

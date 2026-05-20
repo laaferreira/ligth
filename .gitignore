@@ -2,3 +2,7 @@ node_modules/
 dist/
 .angular/
 npm-install.log
+supabase/.temp/
+supabase/.branches/
+supabase/.env
+supabase/.env.*

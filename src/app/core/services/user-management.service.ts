@@ -1,23 +1,14 @@
 import { Injectable } from '@angular/core';
 import { Observable, from } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { createClient } from '@supabase/supabase-js';
 import { SupabaseService } from './supabase.service';
-import { AppUser, CreateUserRequest, UpdateUserRequest, UserRole } from '../models/user.model';
+import { AppUser, CreateUserFunctionResponse, CreateUserRequest, UpdateUserRequest, UserRole } from '../models/user.model';
 import { environment } from '@env/environment';
 
 @Injectable({ providedIn: 'root' })
 export class UserManagementService {
   private readonly table = 'app_users';
-  private readonly isolatedAuthClient = createClient(environment.supabase.url, environment.supabase.key, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-      detectSessionInUrl: false,
-      storageKey: 'sb-ligth-admin-create-user',
-      lock: async (_name: string, _acquireTimeout: number, fn: () => Promise<any>) => fn()
-    }
-  });
+  private readonly createUserFunctionName = environment.supabase.createUserFunctionName;
 
   constructor(private supabaseService: SupabaseService) {}
 
@@ -57,45 +48,33 @@ export class UserManagementService {
       throw new Error('Informe um e-mail válido sem espaços extras');
     }
 
-    // Reutiliza um cliente isolado para não sobrescrever a sessão atual nem criar múltiplas instâncias concorrentes.
-    const { data: authData, error: authError } = await this.isolatedAuthClient.auth.signUp({
-      email: emailNormalizado,
-      password: dados.password
-    });
+    try {
+      const response = await this.supabaseService.invokeFunction<CreateUserRequest, CreateUserFunctionResponse>(
+        this.createUserFunctionName,
+        {
+          email: emailNormalizado,
+          nome: dados.nome.trim(),
+          role: dados.role,
+          password: dados.password
+        }
+      );
 
-    if (authError) {
-      console.error('[criarUsuario] Erro Supabase Auth:', authError);
-
-      if (authError.status === 429 || authError.message?.toLowerCase().includes('rate limit')) {
-        throw new Error('Limite de criação de usuários atingido no Supabase. Aguarde alguns minutos antes de tentar novamente.');
+      if (!response?.user) {
+        throw new Error('A Edge Function não retornou o usuário criado.');
       }
 
-      throw new Error(`Erro ao criar usuário: ${authError.message}`);
+      return response.user;
+    } catch (error: any) {
+      console.error('[criarUsuario] Erro na Edge Function:', error);
+
+      const message = error?.message || '';
+
+      if (message.toLowerCase().includes('functionshttperror') || message.toLowerCase().includes('non-2xx')) {
+        throw new Error('A Edge Function de criação de usuários retornou erro. Verifique se ela foi publicada e se usa a service_role key.');
+      }
+
+      throw new Error(message || 'Erro ao criar usuário pela Edge Function.');
     }
-
-    if (!authData.user) {
-      throw new Error('Usuário não retornado pelo Supabase. Verifique se confirmação de e-mail está desabilitada nas configurações de Auth.');
-    }
-
-    // Inserir registro em app_users
-    const novoUsuario: Partial<AppUser> = {
-      id: authData.user.id,
-      email: emailNormalizado,
-      nome: dados.nome,
-      role: dados.role,
-      created_by: usuarioAtual.id,
-      is_active: true
-    };
-
-    const { data, error } = await this.supabaseService
-      .getClient()
-      .from(this.table)
-      .insert([novoUsuario as any])
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data as AppUser;
   }
 
   /**

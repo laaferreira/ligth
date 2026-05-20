@@ -1,0 +1,4 @@
+project_id = "ligth"
+
+[functions.admin-create-user]
+verify_jwt = true

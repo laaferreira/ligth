@@ -17,6 +17,10 @@ export interface CreateUserRequest {
   password: string;
 }
 
+export interface CreateUserFunctionResponse {
+  user: AppUser;
+}
+
 export interface UpdateUserRequest {
   nome?: string;
   role?: UserRole;
