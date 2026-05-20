@@ -6,7 +6,7 @@
     "start": "ng serve",
     "build": "ng build",
     "build:prod": "ng build --configuration production",
-    "deploy": "npm run build:prod && npx gh-pages -d dist/browser",
+    "deploy": "npm run build:prod && npx gh-pages -d dist",
     "test": "ng test --watch=false --browsers=ChromeHeadless"
   },
   "private": true,

@@ -11,7 +11,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/browser",
+            "outputPath": "dist",
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": ["zone.js"],
@@ -47,8 +47,8 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
-            "production": { "buildTarget": "ligth-frontend:build:production" },
-            "development": { "buildTarget": "ligth-frontend:build:development" }
+            "production": { "buildTarget": "ligth:build:production" },
+            "development": { "buildTarget": "ligth:build:development" }
           },
           "defaultConfiguration": "development"
         }
