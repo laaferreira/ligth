@@ -1,23 +1,4 @@
 <div class="page-wrapper">
-  <mat-toolbar class="app-header">
-    <div class="header-content">
-      <div class="brand"><mat-icon class="brand-icon">lightbulb</mat-icon><span class="brand-name">LIGTH</span></div>
-      <div class="nav-links">
-        <button mat-button disabled><mat-icon>dashboard</mat-icon> Dashboard</button>
-        <button mat-button (click)="navegarConsulta()"><mat-icon>search</mat-icon> Consulta</button>
-        <button mat-button (click)="navegarClientes()"><mat-icon>people</mat-icon> Clientes</button>
-        <button mat-button (click)="navegarProdutos()"><mat-icon>inventory_2</mat-icon> Produtos</button>
-        <button mat-button (click)="navegarPedidos()"><mat-icon>receipt_long</mat-icon> Pedidos</button>
-        <button mat-button (click)="navegarEstoque()"><mat-icon>warehouse</mat-icon> Estoque</button>
-        @if (podeGerenciarUsuarios()) {
-          <button mat-button (click)="navegarGerenciaUsuarios()"><mat-icon>manage_accounts</mat-icon> Usuários</button>
-        }
-      </div>
-      <button mat-icon-button [matMenuTriggerFor]="userMenu"><mat-icon>account_circle</mat-icon></button>
-      <mat-menu #userMenu="matMenu"><button mat-menu-item (click)="logout()"><mat-icon>logout</mat-icon><span>Sair</span></button></mat-menu>
-    </div>
-  </mat-toolbar>
-
   <main class="main-content">
     @if (data) {
       <!-- KPI Cards -->
