@@ -1,12 +1,12 @@
 {
-  "name": "ligth-frontend",
+  "name": "ligth",
   "version": "1.0.0",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
     "build:prod": "ng build --configuration production",
-    "deploy": "npm run build:prod && npx gh-pages -d dist/ligth-frontend/browser",
+    "deploy": "npm run build:prod && npx gh-pages -d dist/browser",
     "test": "ng test --watch=false --browsers=ChromeHeadless"
   },
   "private": true,

@@ -1,13 +1,4 @@
-# IDEs
-.vscode/
-.idea/
-*.iml
-*.swp
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Logs
-*.log
+node_modules/
+dist/
+.angular/
 npm-install.log

@@ -26,20 +26,18 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          cache-dependency-path: 'ligth-frontend/package-lock.json'
+          cache-dependency-path: 'package-lock.json'
 
       - name: Install dependencies
-        working-directory: ./ligth-frontend
         run: npm ci
 
       - name: Build
-        working-directory: ./ligth-frontend
         run: npm run build:prod
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './ligth-frontend/dist/ligth-frontend/browser'
+          path: './dist/browser'
 
   deploy:
     needs: build
