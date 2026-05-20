@@ -12,6 +12,7 @@ import { ChartConfiguration } from 'chart.js';
 import { Chart, registerables } from 'chart.js';
 import { DashboardService, Dashboard } from '../../core/services/dashboard.service';
 import { AuthService } from '../../core/services/auth.service';
+import { UserManagementService } from '../../core/services/user-management.service';
 
 Chart.register(...registerables);
 
@@ -27,6 +28,7 @@ Chart.register(...registerables);
 })
 export class DashboardComponent implements OnInit {
   data: Dashboard | null = null;
+  userRole: string | null = null;
 
   // Charts
   faturamentoChart: ChartConfiguration<'bar'> | null = null;
@@ -39,6 +41,7 @@ export class DashboardComponent implements OnInit {
   constructor(
     private dashboardService: DashboardService,
     private authService: AuthService,
+    private userManagementService: UserManagementService,
     private router: Router
   ) {}
 
@@ -47,6 +50,9 @@ export class DashboardComponent implements OnInit {
       this.data = d;
       this.buildCharts(d);
     });
+    this.userManagementService.obterUsuarioAtualComRole().then(u => {
+      this.userRole = u?.role || null;
+    }).catch(() => {});
   }
 
   buildCharts(d: Dashboard): void {
@@ -110,5 +116,7 @@ export class DashboardComponent implements OnInit {
   navegarProdutos(): void { this.router.navigate(['/produtos']); }
   navegarPedidos(): void { this.router.navigate(['/pedidos']); }
   navegarEstoque(): void { this.router.navigate(['/estoque']); }
+  navegarGerenciaUsuarios(): void { this.router.navigate(['/gerencia-usuarios']); }
+  podeGerenciarUsuarios(): boolean { return this.userRole === 'administrador' || this.userRole === 'gerente'; }
   logout(): void { this.authService.logout(); this.router.navigate(['/login']); }
 }

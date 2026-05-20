@@ -10,7 +10,9 @@ export const gerenciaUsuariosGuard: CanActivateFn = async (route, state) => {
     const usuarioAtual = await userManagementService.obterUsuarioAtualComRole();
 
     if (!usuarioAtual) {
-      router.navigate(['/login']);
+      // Usuário autenticado mas sem registro em app_users
+      console.warn('[gerenciaUsuariosGuard] Usuário não encontrado em app_users. Verifique se foi inserido na tabela.');
+      router.navigate(['/dashboard']);
       return false;
     }
 
@@ -22,6 +24,7 @@ export const gerenciaUsuariosGuard: CanActivateFn = async (route, state) => {
 
     return true;
   } catch (error) {
+    console.error('[gerenciaUsuariosGuard] Erro ao verificar permissão:', error);
     router.navigate(['/login']);
     return false;
   }
