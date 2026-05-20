@@ -9,7 +9,12 @@ export class SupabaseService {
   private supabase: SupabaseClient;
 
   constructor() {
-    this.supabase = createClient(environment.supabase.url, environment.supabase.key);
+    this.supabase = createClient(environment.supabase.url, environment.supabase.key, {
+      auth: {
+        // Desabilita Web Locks API para evitar falhas em múltiplas abas / browsers sem suporte
+        lock: async (_name: string, _acquireTimeout: number, fn: () => Promise<any>) => fn()
+      }
+    });
   }
 
   getClient(): SupabaseClient {
