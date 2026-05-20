@@ -1,8 +1,10 @@
 import { Injectable } from '@angular/core';
 import { Observable, from } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { createClient } from '@supabase/supabase-js';
 import { SupabaseService } from './supabase.service';
 import { AppUser, CreateUserRequest, UpdateUserRequest, UserRole } from '../models/user.model';
+import { environment } from '@env/environment';
 
 @Injectable({ providedIn: 'root' })
 export class UserManagementService {
@@ -32,16 +34,29 @@ export class UserManagementService {
       throw new Error('Apenas Administradores podem criar Administradores');
     }
 
-    // Criar usuário no Auth do Supabase
-    const { data: authData, error: authError } = await this.supabaseService
-      .getAuth()
-      .signUp({
-        email: dados.email,
-        password: dados.password
-      });
+    // Criar usuário no Auth usando cliente isolado (sem persistir sessão)
+    // Isso evita sobrescrever a sessão do admin atual
+    const tempClient = createClient(environment.supabase.url, environment.supabase.key, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+        lock: async (_name: string, _acquireTimeout: number, fn: () => Promise<any>) => fn()
+      }
+    });
 
-    if (authError || !authData.user) {
-      throw authError || new Error('Erro ao criar usuário no Auth');
+    const { data: authData, error: authError } = await tempClient.auth.signUp({
+      email: dados.email,
+      password: dados.password
+    });
+
+    if (authError) {
+      console.error('[criarUsuario] Erro Supabase Auth:', authError);
+      throw new Error(`Erro ao criar usuário: ${authError.message}`);
+    }
+
+    if (!authData.user) {
+      throw new Error('Usuário não retornado pelo Supabase. Verifique se confirmação de e-mail está desabilitada nas configurações de Auth.');
     }
 
     // Inserir registro em app_users
