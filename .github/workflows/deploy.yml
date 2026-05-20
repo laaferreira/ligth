@@ -35,12 +35,12 @@ jobs:
         run: npm run build:prod
 
       - name: Copy index.html to 404.html for SPA routing
-        run: cp ./dist/index.html ./dist/404.html
+        run: cp ./dist/browser/index.html ./dist/browser/404.html
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './dist'
+          path: './dist/browser'
 
   deploy:
     needs: build
