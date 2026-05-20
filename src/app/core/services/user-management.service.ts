@@ -12,6 +12,14 @@ export class UserManagementService {
 
   constructor(private supabaseService: SupabaseService) {}
 
+  private normalizarEmail(email: string): string {
+    return email.trim().toLowerCase();
+  }
+
+  private emailValido(email: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+
   /**
    * Criar novo usuário (requer permissão)
    * - Administrador pode criar qualquer perfil
@@ -25,6 +33,8 @@ export class UserManagementService {
     dados: CreateUserRequest,
     usuarioAtual: AppUser
   ): Promise<AppUser> {
+    const emailNormalizado = this.normalizarEmail(dados.email);
+
     // Validar permissão
     if (usuarioAtual.role === 'vendedor') {
       throw new Error('Vendedores não podem criar usuários');
@@ -32,6 +42,10 @@ export class UserManagementService {
 
     if (usuarioAtual.role === 'gerente' && dados.role === 'administrador') {
       throw new Error('Apenas Administradores podem criar Administradores');
+    }
+
+    if (!this.emailValido(emailNormalizado)) {
+      throw new Error('Informe um e-mail válido sem espaços extras');
     }
 
     // Criar usuário no Auth usando cliente isolado (sem persistir sessão)
@@ -46,7 +60,7 @@ export class UserManagementService {
     });
 
     const { data: authData, error: authError } = await tempClient.auth.signUp({
-      email: dados.email,
+      email: emailNormalizado,
       password: dados.password
     });
 
@@ -62,7 +76,7 @@ export class UserManagementService {
     // Inserir registro em app_users
     const novoUsuario: Partial<AppUser> = {
       id: authData.user.id,
-      email: dados.email,
+      email: emailNormalizado,
       nome: dados.nome,
       role: dados.role,
       created_by: usuarioAtual.id,

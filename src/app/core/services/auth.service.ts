@@ -50,10 +50,16 @@ export class AuthService {
     return this.currentUser$.asObservable();
   }
 
+  private normalizarEmail(email: string): string {
+    return email.trim().toLowerCase();
+  }
+
   login(credentials: LoginRequest): Observable<any> {
+    const email = this.normalizarEmail(credentials.email);
+
     return from(
       this.supabaseService.getAuth().signInWithPassword({
-        email: credentials.email,
+        email,
         password: credentials.password
       })
     ).pipe(
@@ -73,9 +79,11 @@ export class AuthService {
   }
 
   signup(data: SignupRequest): Observable<any> {
+    const email = this.normalizarEmail(data.email);
+
     return from(
       this.supabaseService.getAuth().signUp({
-        email: data.email,
+        email,
         password: data.password,
         options: {
           data: {
