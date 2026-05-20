@@ -9,6 +9,15 @@ import { environment } from '@env/environment';
 @Injectable({ providedIn: 'root' })
 export class UserManagementService {
   private readonly table = 'app_users';
+  private readonly isolatedAuthClient = createClient(environment.supabase.url, environment.supabase.key, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+      storageKey: 'sb-ligth-admin-create-user',
+      lock: async (_name: string, _acquireTimeout: number, fn: () => Promise<any>) => fn()
+    }
+  });
 
   constructor(private supabaseService: SupabaseService) {}
 
@@ -48,24 +57,19 @@ export class UserManagementService {
       throw new Error('Informe um e-mail válido sem espaços extras');
     }
 
-    // Criar usuário no Auth usando cliente isolado (sem persistir sessão)
-    // Isso evita sobrescrever a sessão do admin atual
-    const tempClient = createClient(environment.supabase.url, environment.supabase.key, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-        detectSessionInUrl: false,
-        lock: async (_name: string, _acquireTimeout: number, fn: () => Promise<any>) => fn()
-      }
-    });
-
-    const { data: authData, error: authError } = await tempClient.auth.signUp({
+    // Reutiliza um cliente isolado para não sobrescrever a sessão atual nem criar múltiplas instâncias concorrentes.
+    const { data: authData, error: authError } = await this.isolatedAuthClient.auth.signUp({
       email: emailNormalizado,
       password: dados.password
     });
 
     if (authError) {
       console.error('[criarUsuario] Erro Supabase Auth:', authError);
+
+      if (authError.status === 429 || authError.message?.toLowerCase().includes('rate limit')) {
+        throw new Error('Limite de criação de usuários atingido no Supabase. Aguarde alguns minutos antes de tentar novamente.');
+      }
+
       throw new Error(`Erro ao criar usuário: ${authError.message}`);
     }
 

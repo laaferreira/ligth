@@ -77,8 +77,8 @@ import { AppUser, UserRole } from '../../core/models/user.model';
 
     <mat-dialog-actions align="end">
       <button mat-button (click)="onCancel()">Cancelar</button>
-      <button mat-raised-button color="primary" (click)="onSave()" [disabled]="!form.valid">
-        {{ data.modo === 'criar' ? 'Criar' : 'Salvar' }}
+      <button mat-raised-button color="primary" (click)="onSave()" [disabled]="!form.valid || saving">
+        {{ saving ? 'Salvando...' : (data.modo === 'criar' ? 'Criar' : 'Salvar') }}
       </button>
     </mat-dialog-actions>
   `,
@@ -104,6 +104,7 @@ import { AppUser, UserRole } from '../../core/models/user.model';
 })
 export class CriarEditarUsuarioDialogComponent {
   form: FormGroup;
+  saving = false;
 
   constructor(
     private fb: FormBuilder,
@@ -159,13 +160,17 @@ export class CriarEditarUsuarioDialogComponent {
     if (!this.data.usuarioAtual) return;
 
     const formValue = this.form.getRawValue();
+    this.saving = true;
+
     this.userManagementService.criarUsuario(formValue, this.data.usuarioAtual).subscribe({
       next: () => {
+        this.saving = false;
         this.snackBar.open('Usuário criado com sucesso!', 'Fechar', { duration: 3000 });
         this.dialogRef.close(true);
       },
       error: (error) => {
-        this.snackBar.open(`Erro: ${error.message}`, 'Fechar', { duration: 3000 });
+        this.saving = false;
+        this.snackBar.open(`Erro: ${error.message}`, 'Fechar', { duration: 5000 });
         console.error(error);
       }
     });
@@ -180,17 +185,21 @@ export class CriarEditarUsuarioDialogComponent {
       role: formValue.role
     };
 
+    this.saving = true;
+
     this.userManagementService.atualizarUsuario(
       this.data.usuario.id,
       atualizacoes,
       this.data.usuarioAtual
     ).subscribe({
       next: () => {
+        this.saving = false;
         this.snackBar.open('Usuário atualizado com sucesso!', 'Fechar', { duration: 3000 });
         this.dialogRef.close(true);
       },
       error: (error) => {
-        this.snackBar.open(`Erro: ${error.message}`, 'Fechar', { duration: 3000 });
+        this.saving = false;
+        this.snackBar.open(`Erro: ${error.message}`, 'Fechar', { duration: 5000 });
         console.error(error);
       }
     });
