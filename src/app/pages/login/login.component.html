@@ -8,9 +8,9 @@
 
     <form [formGroup]="form" (ngSubmit)="onSubmit()">
       <mat-form-field appearance="outline">
-        <mat-label>Usuário</mat-label>
-        <input matInput formControlName="username" placeholder="Digite seu usuário" autocomplete="username">
-        <mat-icon matPrefix>person</mat-icon>
+        <mat-label>E-mail</mat-label>
+        <input matInput formControlName="email" type="email" placeholder="Digite seu e-mail" autocomplete="email">
+        <mat-icon matPrefix>email</mat-icon>
       </mat-form-field>
 
       <mat-form-field appearance="outline">
@@ -43,7 +43,7 @@
     </form>
 
     <div class="login-footer">
-      <small>Usuário: <strong>admin</strong> | Senha: <strong>admin123</strong></small>
+      <small>Use o e-mail e senha cadastrados no Supabase</small>
     </div>
   </mat-card>
 </div>
