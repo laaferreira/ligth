@@ -1,0 +1,10 @@
+ALTER TABLE IF EXISTS fornecedores
+  DROP COLUMN IF EXISTS tipo_cadastro,
+  DROP COLUMN IF EXISTS inscricao_estadual,
+  DROP COLUMN IF EXISTS logradouro,
+  DROP COLUMN IF EXISTS numero,
+  DROP COLUMN IF EXISTS complemento,
+  DROP COLUMN IF EXISTS bairro,
+  DROP COLUMN IF EXISTS cidade,
+  DROP COLUMN IF EXISTS uf,
+  DROP COLUMN IF EXISTS cep;

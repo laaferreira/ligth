@@ -1,0 +1,85 @@
+.page-wrapper { min-height: 100vh; background: #f5f0fa; }
+
+.main-content { padding: 24px 16px; }
+.container { max-width: 1000px; margin: 0 auto; }
+
+.crud-card {
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 16px rgba(91, 45, 142, 0.08);
+  border-top: 3px solid #5b2d8e;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+
+  h2 { font-size: 20px; font-weight: 600; margin: 0; color: #3d1a6e; }
+  p { font-size: 14px; color: #6b5b7b; margin: 4px 0 0; }
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.header-actions button {
+  min-height: 44px;
+}
+
+.responsavel-import-field {
+  min-width: 260px;
+}
+
+.import-summary {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f5f0fa;
+  color: #3d1a6e;
+  border: 1px solid #e0d4ec;
+  font-size: 14px;
+}
+
+.mobile-cards { display: none; gap: 12px; }
+.mobile-card { border-radius: 16px; margin-bottom: 12px; }
+.mobile-card-header { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; margin-bottom: 14px; }
+.mobile-card-title { font-weight: 700; color: #3d1a6e; }
+.mobile-card-subtitle { margin-top: 4px; color: #6b5b7b; font-size: 13px; }
+.mobile-card-details { display: grid; gap: 10px; margin-bottom: 14px; }
+.detail { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+.detail-label { color: #6b5b7b; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+.mobile-card-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+
+.table-wrapper {
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid #e0d4ec;
+  table { width: 100%; }
+  th { background: #f5f0fa; font-weight: 600; font-size: 13px; color: #3d1a6e; }
+  td { font-size: 14px; }
+}
+
+@media (max-width: 768px) {
+  .crud-card { padding: 16px; }
+  .card-header { gap: 12px; flex-direction: column; }
+  .header-actions { width: 100%; justify-content: stretch; }
+  .header-actions button { width: 100%; }
+  .card-header {
+    position: sticky;
+    top: 64px;
+    z-index: 5;
+    background: #fff;
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+  }
+  .desktop-table { display: none; }
+  .mobile-cards { display: block; }
+  .mobile-card-actions { flex-direction: column; }
+  .mobile-card-actions button { width: 100%; }
+  .responsavel-import-field { min-width: 100%; }
+}

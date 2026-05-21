@@ -23,6 +23,11 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
   {
+    path: 'fornecedores',
+    loadComponent: () => import('./pages/fornecedores/fornecedores.component').then(m => m.FornecedoresComponent),
+    canActivate: [authGuard]
+  },
+  {
     path: 'produtos',
     loadComponent: () => import('./pages/produtos/produtos.component').then(m => m.ProdutosComponent),
     canActivate: [authGuard]

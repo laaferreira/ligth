@@ -44,6 +44,9 @@ import { UserManagementService } from './core/services/user-management.service';
             <button mat-button (click)="navegar('/clientes')" [disabled]="estaAtiva('/clientes')">
               <mat-icon>people</mat-icon> Clientes
             </button>
+            <button mat-button (click)="navegar('/fornecedores')" [disabled]="estaAtiva('/fornecedores')">
+              <mat-icon>local_shipping</mat-icon> Fornecedores
+            </button>
             <button mat-button (click)="navegar('/produtos')" [disabled]="estaAtiva('/produtos')">
               <mat-icon>inventory_2</mat-icon> Produtos
             </button>
@@ -76,6 +79,10 @@ import { UserManagementService } from './core/services/user-management.service';
             <button mat-menu-item (click)="navegar('/clientes')">
               <mat-icon>people</mat-icon>
               <span>Clientes</span>
+            </button>
+            <button mat-menu-item (click)="navegar('/fornecedores')">
+              <mat-icon>local_shipping</mat-icon>
+              <span>Fornecedores</span>
             </button>
             <button mat-menu-item (click)="navegar('/produtos')">
               <mat-icon>inventory_2</mat-icon>
