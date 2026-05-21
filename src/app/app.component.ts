@@ -150,13 +150,14 @@ import { UserManagementService } from './core/services/user-management.service';
       width: 100%;
       display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: 16px;
     }
     .header-top-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      width: 100%;
+      flex: 0 0 auto;
       gap: 12px;
     }
     .brand {
@@ -175,7 +176,7 @@ import { UserManagementService } from './core/services/user-management.service';
       display: flex;
       align-items: center;
       gap: 4px;
-      flex: 1;
+      flex: 1 1 auto;
       flex-wrap: wrap;
     }
     .nav-links button[mat-button] {
@@ -202,6 +203,9 @@ import { UserManagementService } from './core/services/user-management.service';
         align-items: stretch;
         gap: 8px;
         padding: 8px 0;
+      }
+      .header-top-row {
+        width: 100%;
       }
       .nav-links {
         display: none;
