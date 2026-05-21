@@ -7,6 +7,7 @@ export interface ProdutoAutocompleteItem {
   id: number;
   label: string;
   precoCusto: number;
+  quantidadeEstoque: number;
 }
 
 export interface HistoricoPedido {

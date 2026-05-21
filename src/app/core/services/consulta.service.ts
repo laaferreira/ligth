@@ -52,7 +52,7 @@ export class ConsultaService {
     return from(
       this.supabaseService.getClient()
         .from(this.produtosTable)
-        .select('id, nome, preco_venda, preco_custo')
+        .select('id, nome, descricao, preco_venda, precoVenda, preco_custo, precoCusto, quantidadeEstoque, quantidade')
         .ilike('nome', `%${termo}%`)
         .limit(10)
     ).pipe(
@@ -60,9 +60,10 @@ export class ConsultaService {
         if (response.error) throw response.error;
         return (response.data || []).map(item => ({
           id: item.id,
-          label: item.nome,
+          label: item.nome || item.descricao,
           valor: item.preco_venda,
-          precoCusto: item.preco_custo || 0
+          precoCusto: item.precoCusto ?? item.preco_custo ?? 0,
+          quantidadeEstoque: Number(item.quantidadeEstoque ?? item.quantidade ?? 0)
         } as ProdutoAutocompleteItem));
       })
     );

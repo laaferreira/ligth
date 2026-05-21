@@ -89,22 +89,25 @@ type PedidoDialogData = {
 
         @if (produtoSelecionado) {
           <div class="produto-info-panel">
-            @if (estoqueInfo) {
-              <div class="info-row">
-                <div class="info-item">
-                  <span class="info-label">Estoque Atual:</span>
-                  <span class="info-value" [class.estoque-baixo]="estoqueInfo.estoqueAtual <= 0">{{estoqueInfo.estoqueAtual}}</span>
-                </div>
-                <div class="info-item">
-                  <span class="info-label">Comprometido:</span>
-                  <span class="info-value comprometido">{{estoqueInfo.comprometido}}</span>
-                </div>
-                <div class="info-item">
-                  <span class="info-label">Estoque Futuro:</span>
-                  <span class="info-value" [class.estoque-baixo]="estoqueInfo.estoqueFuturo <= 0" [class.margem-positiva]="estoqueInfo.estoqueFuturo > 0">{{estoqueInfo.estoqueFuturo}}</span>
-                </div>
+            <div class="info-row">
+              <div class="info-item">
+                <span class="info-label">Estoque Atual:</span>
+                <span class="info-value" [class.estoque-baixo]="estoqueAtualInfo <= 0">{{estoqueAtualInfo}}</span>
               </div>
-            }
+              <div class="info-item">
+                <span class="info-label">Comprometido:</span>
+                <span class="info-value comprometido">{{comprometidoInfo}}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Estoque Futuro:</span>
+                <span class="info-value" [class.estoque-baixo]="estoqueFuturoInfo <= 0" [class.margem-positiva]="estoqueFuturoInfo > 0">{{estoqueFuturoInfo}}</span>
+              </div>
+            </div>
+            <div class="info-row">
+              <div class="info-item"><span class="info-label">Valor Total:</span><span class="info-value">{{valorTotalItem | currency:'BRL'}}</span></div>
+              <div class="info-item"><span class="info-label">Valor Total Custo:</span><span class="info-value">{{valorTotalCustoItem | currency:'BRL'}}</span></div>
+              <div class="info-item"><span class="info-label">Valor Total Lucro:</span><span class="info-value" [class.margem-positiva]="valorTotalLucroItem >= 0" [class.margem-negativa]="valorTotalLucroItem < 0">{{valorTotalLucroItem | currency:'BRL'}}</span></div>
+            </div>
             @if (precoCusto !== null) {
               <div class="info-row">
                 <div class="info-item"><span class="info-label">Custo Medio:</span><span class="info-value">{{precoCusto | currency:'BRL'}}</span></div>
@@ -285,8 +288,13 @@ export class PedidoDialogComponent implements OnInit {
 
   onProdutoSelected(item: ProdutoAutocompleteItem): void {
     this.produtoSelecionado = item;
-    this.estoqueInfo = null;
-    this.estoqueService.estoqueProduto(item.id).subscribe(info => this.estoqueInfo = info);
+    this.estoqueInfo = { estoqueAtual: item.quantidadeEstoque ?? 0, comprometido: 0, estoqueFuturo: item.quantidadeEstoque ?? 0 };
+    this.estoqueService.estoqueProduto(item.id).subscribe({
+      next: info => this.estoqueInfo = info,
+      error: () => {
+        this.estoqueInfo = { estoqueAtual: item.quantidadeEstoque ?? 0, comprometido: 0, estoqueFuturo: item.quantidadeEstoque ?? 0 };
+      }
+    });
 
     const margemAtual = this.toNumber(this.margemControl.value);
     const valorUnitarioAtual = this.toNumber(this.vlrControl.value);
@@ -313,8 +321,36 @@ export class PedidoDialogComponent implements OnInit {
 
   get precoCusto(): number | null { return this.produtoSelecionado?.precoCusto ?? null; }
 
+  get estoqueAtualInfo(): number {
+    return this.estoqueInfo?.estoqueAtual ?? 0;
+  }
+
+  get comprometidoInfo(): number {
+    return this.estoqueInfo?.comprometido ?? 0;
+  }
+
+  get estoqueFuturoInfo(): number {
+    return this.estoqueInfo?.estoqueFuturo ?? 0;
+  }
+
   get margemLucro(): number | null {
     return this.calcularMargemPorValorUnitario(this.toNumber(this.vlrControl.value));
+  }
+
+  get valorTotalItem(): number {
+    const quantidade = this.toNumber(this.qtdControl.value) ?? 0;
+    const valorUnitario = this.toNumber(this.vlrControl.value) ?? 0;
+    return this.roundToTwo(quantidade * valorUnitario);
+  }
+
+  get valorTotalCustoItem(): number {
+    const quantidade = this.toNumber(this.qtdControl.value) ?? 0;
+    const custo = this.precoCusto ?? 0;
+    return this.roundToTwo(quantidade * custo);
+  }
+
+  get valorTotalLucroItem(): number {
+    return this.roundToTwo(this.valorTotalItem - this.valorTotalCustoItem);
   }
 
   adicionarItem(): void {

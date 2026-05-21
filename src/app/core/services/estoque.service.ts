@@ -100,35 +100,34 @@ export class EstoqueService {
   private async obterEstoqueProduto(produtoId: number): Promise<{ produtoId: number; estoqueAtual: number; comprometido: number; estoqueFuturo: number }> {
     const client = this.supabaseService.getClient();
 
-    const [{ data: produto, error: produtoError }, { data: pedidos, error: pedidosError }] = await Promise.all([
-      client
-        .from(this.produtosTable)
-        .select('id, quantidadeEstoque, quantidade')
-        .eq('id', produtoId)
-        .single(),
-      client
-        .from('pedidos')
-        .select('status, itens')
-        .in('status', ['EM_ABERTO', 'CONFIRMADO', 'pendente', 'confirmado'])
-    ]);
+    const { data: produto, error: produtoError } = await client
+      .from(this.produtosTable)
+      .select('id, quantidadeEstoque, quantidade')
+      .eq('id', produtoId)
+      .single();
 
     if (produtoError) {
       throw produtoError;
     }
 
-    if (pedidosError) {
-      throw pedidosError;
-    }
-
     const estoqueAtual = this.obterQuantidadeAtual(produto);
-    const comprometido = (pedidos || []).reduce((totalPedido, pedido) => {
-      const itens = Array.isArray(pedido.itens) ? pedido.itens : [];
-      const quantidadeComprometida = itens.reduce((totalItem: number, item: any) => {
-        return item?.produtoId === produtoId ? totalItem + Number(item.quantidade || 0) : totalItem;
-      }, 0);
+    let comprometido = 0;
 
-      return totalPedido + quantidadeComprometida;
-    }, 0);
+    const { data: pedidos } = await client
+      .from('pedidos')
+      .select('status, itens')
+      .in('status', ['EM_ABERTO', 'CONFIRMADO', 'pendente', 'confirmado']);
+
+    if (pedidos) {
+      comprometido = pedidos.reduce((totalPedido, pedido) => {
+        const itens = Array.isArray(pedido.itens) ? pedido.itens : [];
+        const quantidadeComprometida = itens.reduce((totalItem: number, item: any) => {
+          return item?.produtoId === produtoId ? totalItem + Number(item.quantidade || 0) : totalItem;
+        }, 0);
+
+        return totalPedido + quantidadeComprometida;
+      }, 0);
+    }
 
     return {
       produtoId,
