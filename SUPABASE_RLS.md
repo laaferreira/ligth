@@ -18,26 +18,87 @@ ALTER TABLE movimentacoes_estoque ENABLE ROW LEVEL SECURITY;
 
 ### Tabela: clientes
 ```sql
--- Usuários podem ver seus próprios clientes
+-- Usuários podem ver clientes que criaram, clientes pelos quais são responsáveis
+-- e clientes acessados por administradores/gerentes.
 CREATE POLICY "Clientes SELECT" ON clientes
   FOR SELECT
-  USING (auth.uid() = user_id);
+  USING (
+    auth.uid() = user_id
+    OR auth.uid() = responsavel_id
+    OR EXISTS (
+      SELECT 1
+      FROM app_users
+      WHERE app_users.id = auth.uid()
+        AND app_users.role IN ('administrador', 'gerente')
+        AND app_users.is_active = true
+    )
+  );
 
--- Usuários podem inserir clientes
+-- O usuário autenticado é sempre o executor da transação (user_id).
+-- O responsável de negócio (responsavel_id) pode ser qualquer usuário do sistema.
 CREATE POLICY "Clientes INSERT" ON clientes
   FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+  WITH CHECK (
+    auth.uid() = user_id
+    AND (
+      responsavel_id IS NULL
+      OR EXISTS (
+        SELECT 1
+        FROM app_users
+        WHERE app_users.id = responsavel_id
+      )
+    )
+  );
 
--- Usuários podem atualizar seus clientes
+-- Quem criou, quem é responsável, e administradores/gerentes podem editar.
 CREATE POLICY "Clientes UPDATE" ON clientes
   FOR UPDATE
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+  USING (
+    auth.uid() = user_id
+    OR auth.uid() = responsavel_id
+    OR EXISTS (
+      SELECT 1
+      FROM app_users
+      WHERE app_users.id = auth.uid()
+        AND app_users.role IN ('administrador', 'gerente')
+        AND app_users.is_active = true
+    )
+  )
+  WITH CHECK (
+    (
+      auth.uid() = user_id
+      OR auth.uid() = responsavel_id
+      OR EXISTS (
+        SELECT 1
+        FROM app_users
+        WHERE app_users.id = auth.uid()
+          AND app_users.role IN ('administrador', 'gerente')
+          AND app_users.is_active = true
+      )
+    )
+    AND (
+      responsavel_id IS NULL
+      OR EXISTS (
+        SELECT 1
+        FROM app_users
+        WHERE app_users.id = responsavel_id
+      )
+    )
+  );
 
--- Usuários podem deletar seus clientes
+-- A exclusão fica restrita ao criador da transação ou a administradores/gerentes.
 CREATE POLICY "Clientes DELETE" ON clientes
   FOR DELETE
-  USING (auth.uid() = user_id);
+  USING (
+    auth.uid() = user_id
+    OR EXISTS (
+      SELECT 1
+      FROM app_users
+      WHERE app_users.id = auth.uid()
+        AND app_users.role IN ('administrador', 'gerente')
+        AND app_users.is_active = true
+    )
+  );
 ```
 
 ### Tabela: produtos

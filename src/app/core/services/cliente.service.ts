@@ -7,6 +7,7 @@ import { Cliente } from '../models/cliente.model';
 type ClienteDbRow = {
   id?: number;
   nome: string;
+  user_id?: string | null;
   cpf_cnpj?: string | null;
   telefone?: string | null;
   contato?: string | null;
@@ -61,32 +62,11 @@ export class ClienteService {
   }
 
   criar(cliente: Cliente): Observable<Cliente> {
-    return from(
-      this.supabaseService.getClient()
-        .from(this.table)
-        .insert([this.toDb(cliente)])
-        .select()
-        .single()
-    ).pipe(
-      map(response => {
-        if (response.error) throw response.error;
-        return this.fromDb(response.data as ClienteDbRow);
-      })
-    );
+    return from(this.criarComUsuario(cliente));
   }
 
   importar(clientes: Cliente[]): Observable<Cliente[]> {
-    return from(
-      this.supabaseService.getClient()
-        .from(this.table)
-        .insert(clientes.map(cliente => this.toDb(cliente)))
-        .select()
-    ).pipe(
-      map(response => {
-        if (response.error) throw response.error;
-        return ((response.data || []) as ClienteDbRow[]).map(row => this.fromDb(row));
-      })
-    );
+    return from(this.importarComUsuario(clientes));
   }
 
   atualizar(id: number, cliente: Partial<Cliente>): Observable<Cliente> {
@@ -174,5 +154,37 @@ export class ClienteService {
       responsavel_id: cliente.responsavelId,
       data_cadastro: cliente.dataCadastro
     };
+  }
+
+  private async criarComUsuario(cliente: Cliente): Promise<Cliente> {
+    const userId = await this.getCurrentUserId();
+    const { data, error } = await this.supabaseService.getClient()
+      .from(this.table)
+      .insert([{ ...this.toDb(cliente), user_id: userId }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return this.fromDb(data as ClienteDbRow);
+  }
+
+  private async importarComUsuario(clientes: Cliente[]): Promise<Cliente[]> {
+    const userId = await this.getCurrentUserId();
+    const { data, error } = await this.supabaseService.getClient()
+      .from(this.table)
+      .insert(clientes.map(cliente => ({ ...this.toDb(cliente), user_id: userId })))
+      .select();
+
+    if (error) throw error;
+    return ((data || []) as ClienteDbRow[]).map(row => this.fromDb(row));
+  }
+
+  private async getCurrentUserId(): Promise<string> {
+    const { data, error } = await this.supabaseService.getAuth().getUser();
+    if (error || !data.user) {
+      throw error || new Error('Usuário autenticado não encontrado.');
+    }
+
+    return data.user.id;
   }
 }

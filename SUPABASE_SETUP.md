@@ -11,12 +11,24 @@ Acesse [Supabase Console](https://supabase.com), vá para **SQL Editor** e execu
 CREATE TABLE clientes (
   id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   nome TEXT NOT NULL,
+  cpf_cnpj TEXT,
   email TEXT,
   telefone TEXT,
+  contato TEXT,
   endereco TEXT,
+  logradouro TEXT,
+  numero TEXT,
+  complemento TEXT,
+  bairro TEXT,
+  cidade TEXT,
+  uf TEXT,
+  cep TEXT,
+  observacao TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  data_cadastro TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  responsavel_id UUID REFERENCES app_users(id) ON DELETE SET NULL
 );
 
 -- 2. Criar tabela de Produtos
@@ -73,6 +85,8 @@ CREATE TABLE movimentacoes_estoque (
 
 -- 6. Criar índices para melhor performance
 CREATE INDEX idx_clientes_user_id ON clientes(user_id);
+CREATE INDEX idx_clientes_responsavel_id ON clientes(responsavel_id);
+CREATE INDEX idx_clientes_cpf_cnpj ON clientes(cpf_cnpj);
 CREATE INDEX idx_produtos_user_id ON produtos(user_id);
 CREATE INDEX idx_pedidos_user_id ON pedidos(user_id);
 CREATE INDEX idx_pedidos_cliente_id ON pedidos(cliente_id);

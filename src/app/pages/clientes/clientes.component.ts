@@ -186,7 +186,12 @@ export class ClientesComponent implements OnInit {
   logout(): void { this.authService.logout(); this.router.navigate(['/login']); }
 
   nomeResponsavel(cliente: Cliente): string {
-    return this.responsaveis.find(user => user.id === cliente.responsavelId)?.nome || '-';
+    const responsavel = this.responsaveis.find(user => user.id === cliente.responsavelId);
+    if (!responsavel) {
+      return '-';
+    }
+
+    return responsavel.is_active ? responsavel.nome : `${responsavel.nome} (inativo)`;
   }
 
   private mapearLinhaImportacao(row: Record<string, unknown>): Cliente | null {
@@ -248,7 +253,7 @@ export class ClientesComponent implements OnInit {
   }
 
   private carregarResponsaveis(): void {
-    this.userManagementService.listarUsuarios({ is_active: true }).subscribe({
+    this.userManagementService.listarUsuarios().subscribe({
       next: usuarios => {
         this.responsaveis = usuarios;
         this.userManagementService.obterUsuarioAtualComRole().then(usuarioAtual => {

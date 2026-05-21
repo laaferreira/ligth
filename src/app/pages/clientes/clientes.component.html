@@ -8,7 +8,7 @@
             <mat-label>Responsável padrão da importação</mat-label>
             <mat-select [(value)]="responsavelPadraoId">
               @for (responsavel of responsaveis; track responsavel.id) {
-                <mat-option [value]="responsavel.id">{{ responsavel.nome }}</mat-option>
+                <mat-option [value]="responsavel.id">{{ responsavel.nome }}{{ responsavel.is_active ? '' : ' (inativo)' }}</mat-option>
               }
             </mat-select>
           </mat-form-field>
@@ -52,7 +52,7 @@
               <mat-form-field appearance="outline"><mat-label>Responsável *</mat-label>
                 <mat-select formControlName="responsavelId">
                   @for (responsavel of responsaveis; track responsavel.id) {
-                    <mat-option [value]="responsavel.id">{{ responsavel.nome }}</mat-option>
+                    <mat-option [value]="responsavel.id">{{ responsavel.nome }}{{ responsavel.is_active ? '' : ' (inativo)' }}</mat-option>
                   }
                 </mat-select>
               </mat-form-field>
