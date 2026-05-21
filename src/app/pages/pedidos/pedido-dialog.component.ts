@@ -78,6 +78,10 @@ type PedidoDialogData = {
             <mat-label>Vlr Unit.</mat-label>
             <input matInput type="number" inputmode="decimal" [formControl]="vlrControl" step="0.01">
           </mat-form-field>
+          <mat-form-field appearance="outline" class="field-sm">
+            <mat-label>Margem %</mat-label>
+            <input matInput type="number" inputmode="decimal" [formControl]="margemControl" step="0.01">
+          </mat-form-field>
           <button mat-mini-fab color="primary" type="button" class="btn-add-item" (click)="adicionarItem()" [disabled]="!produtoSelecionado || itemForm.invalid">
             <mat-icon>add</mat-icon>
           </button>
@@ -120,6 +124,7 @@ type PedidoDialogData = {
               <ng-container matColumnDef="produto"><th mat-header-cell *matHeaderCellDef>Produto</th><td mat-cell *matCellDef="let r">{{r.produtoLabel}}</td></ng-container>
               <ng-container matColumnDef="quantidade"><th mat-header-cell *matHeaderCellDef>Qtd</th><td mat-cell *matCellDef="let r">{{r.quantidade}}</td></ng-container>
               <ng-container matColumnDef="valorUnitario"><th mat-header-cell *matHeaderCellDef>Unit.</th><td mat-cell *matCellDef="let r">{{r.valorUnitario | currency:'BRL'}}</td></ng-container>
+              <ng-container matColumnDef="margemLucro"><th mat-header-cell *matHeaderCellDef>Margem</th><td mat-cell *matCellDef="let r">{{r.margemLucro === null ? '-' : ((r.margemLucro | number:'1.1-1') + '%')}}</td></ng-container>
               <ng-container matColumnDef="valorTotal"><th mat-header-cell *matHeaderCellDef>Total</th><td mat-cell *matCellDef="let r">{{r.valorTotal | currency:'BRL'}}</td></ng-container>
               <ng-container matColumnDef="remover"><th mat-header-cell *matHeaderCellDef></th><td mat-cell *matCellDef="let r; let i = index"><button mat-icon-button color="warn" (click)="removerItem(i)"><mat-icon>delete</mat-icon></button></td></ng-container>
               <tr mat-header-row *matHeaderRowDef="itensColumns"></tr>
@@ -190,10 +195,12 @@ export class PedidoDialogComponent implements OnInit {
   itemForm: FormGroup;
   get qtdControl(): FormControl { return this.itemForm.get('quantidade') as FormControl; }
   get vlrControl(): FormControl { return this.itemForm.get('valorUnitario') as FormControl; }
+  get margemControl(): FormControl { return this.itemForm.get('margemLucro') as FormControl; }
 
-  itensNovoPedido: { produtoId: number; produtoLabel: string; quantidade: number; valorUnitario: number; valorTotal: number }[] = [];
-  itensColumns = ['produto', 'quantidade', 'valorUnitario', 'valorTotal', 'remover'];
+  itensNovoPedido: { produtoId: number; produtoLabel: string; quantidade: number; valorUnitario: number; margemLucro: number | null; valorTotal: number }[] = [];
+  itensColumns = ['produto', 'quantidade', 'valorUnitario', 'margemLucro', 'valorTotal', 'remover'];
   salvando = false;
+  private atualizandoCamposPreco = false;
 
   constructor(
     private pedidoService: PedidoService,
@@ -206,11 +213,42 @@ export class PedidoDialogComponent implements OnInit {
   ) {
     this.itemForm = this.fb.group({
       quantidade: [1, [Validators.required, Validators.min(1)]],
-      valorUnitario: [null, [Validators.required, Validators.min(0.01)]]
+      valorUnitario: [null, [Validators.required, Validators.min(0.01)]],
+      margemLucro: [null]
     });
   }
 
   ngOnInit(): void {
+    this.vlrControl.valueChanges.subscribe(valor => {
+      if (this.atualizandoCamposPreco) {
+        return;
+      }
+
+      const margemCalculada = this.calcularMargemPorValorUnitario(this.toNumber(valor));
+      if (margemCalculada === null) {
+        return;
+      }
+
+      this.atualizandoCamposPreco = true;
+      this.margemControl.setValue(margemCalculada, { emitEvent: false });
+      this.atualizandoCamposPreco = false;
+    });
+
+    this.margemControl.valueChanges.subscribe(valor => {
+      if (this.atualizandoCamposPreco) {
+        return;
+      }
+
+      const valorUnitarioCalculado = this.calcularValorUnitarioPorMargem(this.toNumber(valor));
+      if (valorUnitarioCalculado === null) {
+        return;
+      }
+
+      this.atualizandoCamposPreco = true;
+      this.vlrControl.setValue(valorUnitarioCalculado, { emitEvent: false });
+      this.atualizandoCamposPreco = false;
+    });
+
     this.clienteControl.valueChanges.pipe(
       debounceTime(300),
       filter(v => typeof v === 'string' && v.length >= 2),
@@ -232,6 +270,7 @@ export class PedidoDialogComponent implements OnInit {
           produtoLabel: `${i.produtoCodigo} - ${i.produtoDescricao}`,
           quantidade: i.quantidade,
           valorUnitario: i.valorUnitario,
+          margemLucro: null,
           valorTotal: i.valorTotal || i.quantidade * i.valorUnitario
         }));
       });
@@ -248,15 +287,34 @@ export class PedidoDialogComponent implements OnInit {
     this.produtoSelecionado = item;
     this.estoqueInfo = null;
     this.estoqueService.estoqueProduto(item.id).subscribe(info => this.estoqueInfo = info);
+
+    const margemAtual = this.toNumber(this.margemControl.value);
+    const valorUnitarioAtual = this.toNumber(this.vlrControl.value);
+
+    if (margemAtual !== null) {
+      const valorUnitarioCalculado = this.calcularValorUnitarioPorMargem(margemAtual);
+      if (valorUnitarioCalculado !== null) {
+        this.atualizandoCamposPreco = true;
+        this.vlrControl.setValue(valorUnitarioCalculado, { emitEvent: false });
+        this.atualizandoCamposPreco = false;
+      }
+      return;
+    }
+
+    if (valorUnitarioAtual !== null) {
+      const margemCalculada = this.calcularMargemPorValorUnitario(valorUnitarioAtual);
+      if (margemCalculada !== null) {
+        this.atualizandoCamposPreco = true;
+        this.margemControl.setValue(margemCalculada, { emitEvent: false });
+        this.atualizandoCamposPreco = false;
+      }
+    }
   }
 
   get precoCusto(): number | null { return this.produtoSelecionado?.precoCusto ?? null; }
 
   get margemLucro(): number | null {
-    const vlr = this.itemForm.value.valorUnitario;
-    const custo = this.precoCusto;
-    if (!vlr || !custo || custo === 0) return null;
-    return ((vlr - custo) / custo) * 100;
+    return this.calcularMargemPorValorUnitario(this.toNumber(this.vlrControl.value));
   }
 
   adicionarItem(): void {
@@ -268,12 +326,13 @@ export class PedidoDialogComponent implements OnInit {
       produtoLabel: this.produtoSelecionado.label,
       quantidade: qty,
       valorUnitario: unit,
+      margemLucro: this.margemLucro,
       valorTotal: qty * unit
     }];
     this.produtoSelecionado = null;
     this.estoqueInfo = null;
     this.produtoControl.setValue('', { emitEvent: false });
-    this.itemForm.patchValue({ quantidade: 1, valorUnitario: null });
+    this.itemForm.patchValue({ quantidade: 1, valorUnitario: null, margemLucro: null });
   }
 
   removerItem(i: number): void {
@@ -311,5 +370,36 @@ export class PedidoDialogComponent implements OnInit {
 
   fechar(): void {
     this.dialogRef.close();
+  }
+
+  private calcularMargemPorValorUnitario(valorUnitario: number | null): number | null {
+    const custo = this.precoCusto;
+    if (valorUnitario === null || custo === null || custo === 0) {
+      return null;
+    }
+
+    return this.roundToTwo(((valorUnitario - custo) / custo) * 100);
+  }
+
+  private calcularValorUnitarioPorMargem(margemLucro: number | null): number | null {
+    const custo = this.precoCusto;
+    if (margemLucro === null || custo === null) {
+      return null;
+    }
+
+    return this.roundToTwo(custo * (1 + margemLucro / 100));
+  }
+
+  private toNumber(value: unknown): number | null {
+    if (value === null || value === undefined || value === '') {
+      return null;
+    }
+
+    const numero = Number(value);
+    return Number.isFinite(numero) ? numero : null;
+  }
+
+  private roundToTwo(value: number): number {
+    return Math.round(value * 100) / 100;
   }
 }

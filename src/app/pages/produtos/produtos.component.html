@@ -2,14 +2,24 @@
   <main class="main-content"><div class="container">
     <mat-card class="crud-card">
       <div class="card-header">
-        <div><h2>Produtos</h2><p>Gerencie produtos e estoque</p></div>
-        <button mat-raised-button color="primary" (click)="novo()"><mat-icon>add</mat-icon> Novo</button>
+        <div><h2>Produtos</h2><p>Gerencie produtos, fornecedores e estoque</p></div>
+        <div class="header-actions">
+          <input #fileInput type="file" accept=".xlsx,.xls" hidden (change)="importarArquivo($event)">
+          <button mat-stroked-button type="button" (click)="fileInput.click()" [disabled]="importando">
+            <mat-icon>upload_file</mat-icon>
+            {{ importando ? 'Importando...' : 'Importar XLSX' }}
+          </button>
+          <button mat-raised-button color="primary" (click)="novo()"><mat-icon>add</mat-icon> Novo</button>
+        </div>
       </div>
+      @if (resumoImportacao) {
+        <div class="import-summary">{{ resumoImportacao }}</div>
+      }
       <div class="filtro-container">
         <mat-form-field appearance="outline" class="filtro-field">
           <mat-label>Filtrar produtos</mat-label>
           <input matInput [value]="filtro" (input)="onFiltroChange($any($event.target).value)"
-                 placeholder="Buscar por codigo, descricao ou categoria...">
+                 placeholder="Buscar por codigo, descricao, categoria ou fornecedor...">
           <mat-icon matPrefix>filter_list</mat-icon>
           @if (filtro) {
             <button mat-icon-button matSuffix (click)="limparFiltro()" aria-label="Limpar filtro">
@@ -20,38 +30,41 @@
         <span class="filtro-count">{{produtos.length}} de {{todosProdutos.length}} produto(s)</span>
       </div>
       <div class="table-wrapper desktop-table">
-        <table mat-table [dataSource]="produtos">
-          <ng-container matColumnDef="codigo"><th mat-header-cell *matHeaderCellDef>Codigo</th><td mat-cell *matCellDef="let r">{{r.codigo}}</td></ng-container>
+        <table mat-table [dataSource]="produtosPaginados">
           <ng-container matColumnDef="descricao"><th mat-header-cell *matHeaderCellDef>Descricao</th><td mat-cell *matCellDef="let r">{{r.descricao}}</td></ng-container>
-          <ng-container matColumnDef="categoria"><th mat-header-cell *matHeaderCellDef>Categoria</th><td mat-cell *matCellDef="let r">{{r.categoria}}</td></ng-container>
+          <ng-container matColumnDef="fornecedor"><th mat-header-cell *matHeaderCellDef>Fornecedor</th><td mat-cell *matCellDef="let r">{{nomeFornecedor(r)}}</td></ng-container>
           <ng-container matColumnDef="precoCusto"><th mat-header-cell *matHeaderCellDef>Custo Medio</th><td mat-cell *matCellDef="let r">{{r.precoCusto | currency:'BRL'}}</td></ng-container>
+          <ng-container matColumnDef="precoVenda"><th mat-header-cell *matHeaderCellDef>Valor Venda</th><td mat-cell *matCellDef="let r">{{r.precoVenda | currency:'BRL'}}</td></ng-container>
           <ng-container matColumnDef="quantidadeEstoque"><th mat-header-cell *matHeaderCellDef>Estoque</th>
             <td mat-cell *matCellDef="let r" [class.estoque-baixo]="estoqueBaixo(r)">
               {{r.quantidadeEstoque}}
               @if (estoqueBaixo(r)) { <mat-icon class="alerta-icon">warning</mat-icon> }
             </td>
           </ng-container>
-          <ng-container matColumnDef="ativo"><th mat-header-cell *matHeaderCellDef>Status</th>
-            <td mat-cell *matCellDef="let r"><span [class]="r.ativo ? 'badge-ativo' : 'badge-inativo'">{{r.ativo ? 'Ativo' : 'Inativo'}}</span></td>
-          </ng-container>
-          <ng-container matColumnDef="acoes"><th mat-header-cell *matHeaderCellDef></th><td mat-cell *matCellDef="let r">
+          <ng-container matColumnDef="acoes"><th mat-header-cell *matHeaderCellDef class="acoes-col"></th><td mat-cell *matCellDef="let r" class="acoes-col">
             <button mat-icon-button color="primary" (click)="editar(r)"><mat-icon>edit</mat-icon></button>
-            <button mat-icon-button color="warn" (click)="excluir(r)"><mat-icon>delete</mat-icon></button>
           </td></ng-container>
           <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
           <tr mat-row *matRowDef="let r; columns: displayedColumns;"></tr>
         </table>
       </div>
+      <mat-paginator
+        [length]="produtos.length"
+        [pageIndex]="paginaAtual"
+        [pageSize]="itensPorPagina"
+        [pageSizeOptions]="opcoesItensPorPagina"
+        [showFirstLastButtons]="true"
+        (page)="aoMudarPagina($event)">
+      </mat-paginator>
       <div class="mobile-cards">
-        @for (r of produtos; track r.id ?? r.codigo) {
+        @for (r of produtosPaginados; track trackProduto(r)) {
           <mat-card class="mobile-card">
             <div class="mobile-card-header">
               <div>
                 <div class="mobile-card-title">{{r.descricao}}</div>
-                <div class="mobile-card-subtitle">{{r.codigo}} · {{r.categoria || 'Sem categoria'}}</div>
+                <div class="mobile-card-subtitle">{{nomeFornecedor(r)}}</div>
               </div>
               <div class="mobile-card-header-side">
-                <span [class]="r.ativo ? 'badge-ativo' : 'badge-inativo'">{{r.ativo ? 'Ativo' : 'Inativo'}}</span>
                 <button mat-icon-button [matMenuTriggerFor]="produtoMenu" aria-label="Mais ações do produto">
                   <mat-icon>more_vert</mat-icon>
                 </button>
@@ -60,14 +73,11 @@
                     <mat-icon>edit</mat-icon>
                     <span>Editar</span>
                   </button>
-                  <button mat-menu-item (click)="excluir(r)">
-                    <mat-icon>delete</mat-icon>
-                    <span>Excluir</span>
-                  </button>
                 </mat-menu>
               </div>
             </div>
             <div class="mobile-card-details">
+              <div class="detail"><span class="detail-label">Valor venda</span><span>{{r.precoVenda | currency:'BRL'}}</span></div>
               <div class="detail"><span class="detail-label">Custo médio</span><span>{{r.precoCusto | currency:'BRL'}}</span></div>
               <div class="detail"><span class="detail-label">Estoque</span><span [class.estoque-baixo]="estoqueBaixo(r)">{{r.quantidadeEstoque}}</span></div>
             </div>

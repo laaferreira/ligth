@@ -11,6 +11,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { PedidoService } from '../../core/services/pedido.service';
@@ -27,7 +28,7 @@ import { PedidoDialogComponent } from './pedido-dialog.component';
     CommonModule, ReactiveFormsModule,
     MatToolbarModule, MatCardModule, MatDialogModule, MatFormFieldModule, MatInputModule,
     MatButtonModule, MatIconModule,
-    MatTableModule, MatMenuModule, MatSnackBarModule, MatSelectModule
+    MatTableModule, MatMenuModule, MatSnackBarModule, MatSelectModule, MatPaginatorModule
   ],
   templateUrl: './pedidos.component.html',
   styleUrl: './pedidos.component.scss'
@@ -42,6 +43,9 @@ export class PedidosComponent implements OnInit {
   filtroStatus = '';
   filtroDataDe = '';
   filtroDataAte = '';
+  paginaAtual = 0;
+  itensPorPagina = 10;
+  readonly opcoesItensPorPagina = [10, 25, 50];
 
   constructor(
     private pedidoService: PedidoService,
@@ -90,6 +94,7 @@ export class PedidosComponent implements OnInit {
     }
 
     this.pedidos = resultado;
+    this.paginaAtual = 0;
   }
 
   limparFiltros(): void {
@@ -146,6 +151,16 @@ export class PedidosComponent implements OnInit {
   statusClass(s?: string): string {
     const map: Record<string, string> = { EM_ABERTO: 'badge-aberto', CONFIRMADO: 'badge-confirmado', CANCELADO: 'badge-cancelado', FINALIZADO: 'badge-finalizado' };
     return s ? (map[s] || '') : '';
+  }
+
+  get pedidosPaginados(): Pedido[] {
+    const inicio = this.paginaAtual * this.itensPorPagina;
+    return this.pedidos.slice(inicio, inicio + this.itensPorPagina);
+  }
+
+  aoMudarPagina(event: PageEvent): void {
+    this.paginaAtual = event.pageIndex;
+    this.itensPorPagina = event.pageSize;
   }
 
   gerarPDF(pedido: Pedido): void {

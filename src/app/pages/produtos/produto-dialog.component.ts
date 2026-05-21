@@ -4,16 +4,19 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ProdutoService } from '../../core/services/produto.service';
 import { Produto } from '../../core/models/produto.model';
+import { Fornecedor } from '../../core/models/fornecedor.model';
 
 type ProdutoDialogData = {
   modo: 'criar' | 'editar';
   produto?: Produto;
+  fornecedores: Fornecedor[];
 };
 
 @Component({
@@ -25,6 +28,7 @@ type ProdutoDialogData = {
     MatDialogModule,
     MatFormFieldModule,
     MatInputModule,
+    MatSelectModule,
     MatButtonModule,
     MatIconModule,
     MatSlideToggleModule,
@@ -43,10 +47,19 @@ type ProdutoDialogData = {
 
     <mat-dialog-content class="dialog-content">
       <form [formGroup]="form" class="form">
-        <div class="form-row two-columns">
+        <div class="form-row three-columns">
           <mat-form-field appearance="outline">
             <mat-label>Código *</mat-label>
             <input matInput formControlName="codigo" autocomplete="off">
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Fornecedor</mat-label>
+            <mat-select formControlName="fornecedorId">
+              <mat-option [value]="null">Sem fornecedor</mat-option>
+              @for (fornecedor of data.fornecedores; track trackFornecedor(fornecedor)) {
+                <mat-option [value]="fornecedor.id">{{ fornecedor.nome }}</mat-option>
+              }
+            </mat-select>
           </mat-form-field>
           <mat-form-field appearance="outline">
             <mat-label>Categoria</mat-label>
@@ -61,12 +74,27 @@ type ProdutoDialogData = {
 
         <div class="form-row two-columns">
           <mat-form-field appearance="outline">
+            <mat-label>Preço custo</mat-label>
+            <input matInput type="number" inputmode="decimal" formControlName="precoCusto">
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Preço venda</mat-label>
+            <input matInput type="number" inputmode="decimal" formControlName="precoVenda">
+          </mat-form-field>
+        </div>
+
+        <div class="form-row two-columns">
+          <mat-form-field appearance="outline">
             <mat-label>Qtd Estoque</mat-label>
             <input matInput type="number" inputmode="numeric" formControlName="quantidadeEstoque">
           </mat-form-field>
           <mat-form-field appearance="outline">
+            <mat-label>Estoque Máximo</mat-label>
+            <input matInput type="number" inputmode="decimal" formControlName="estoqueMaximo">
+          </mat-form-field>
+          <mat-form-field appearance="outline">
             <mat-label>Estoque Mínimo</mat-label>
-            <input matInput type="number" inputmode="numeric" formControlName="estoqueMinimo">
+            <input matInput type="number" inputmode="decimal" formControlName="estoqueMinimo">
           </mat-form-field>
         </div>
 
@@ -123,6 +151,10 @@ type ProdutoDialogData = {
       grid-template-columns: 1fr 1fr;
     }
 
+    .three-columns {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
     .full-width,
     mat-form-field {
       width: 100%;
@@ -160,6 +192,10 @@ type ProdutoDialogData = {
         grid-template-columns: 1fr;
       }
 
+      .three-columns {
+        grid-template-columns: 1fr;
+      }
+
       .dialog-actions {
         flex-direction: column;
       }
@@ -184,11 +220,19 @@ export class ProdutoDialogComponent {
     this.form = this.fb.group({
       codigo: [data.produto?.codigo || '', [Validators.required, Validators.maxLength(100)]],
       descricao: [data.produto?.descricao || '', [Validators.required, Validators.maxLength(300)]],
+      fornecedorId: [data.produto?.fornecedorId ?? null],
       categoria: [data.produto?.categoria || '', Validators.maxLength(100)],
+      precoCusto: [data.produto?.precoCusto ?? 0],
+      precoVenda: [data.produto?.precoVenda ?? 0],
       quantidadeEstoque: [data.produto?.quantidadeEstoque ?? 0],
+      estoqueMaximo: [data.produto?.estoqueMaximo ?? 0],
       estoqueMinimo: [data.produto?.estoqueMinimo ?? 5],
       ativo: [data.produto?.ativo ?? true]
     });
+  }
+
+  trackFornecedor(fornecedor: Fornecedor): string {
+    return String(fornecedor.id ?? fornecedor.nome);
   }
 
   fechar(): void {
@@ -201,7 +245,18 @@ export class ProdutoDialogComponent {
     }
 
     this.salvando = true;
-    const dados = this.form.getRawValue() as Produto;
+    const valor = this.form.getRawValue();
+    const fornecedor = this.data.fornecedores.find(item => item.id === valor.fornecedorId);
+    const dados: Produto = {
+      ...valor,
+      fornecedorId: valor.fornecedorId,
+      fornecedorNome: valor.fornecedorId ? (fornecedor?.nome || this.data.produto?.fornecedorNome || '') : '',
+      precoCusto: Number(valor.precoCusto || 0),
+      precoVenda: Number(valor.precoVenda || 0),
+      quantidadeEstoque: Number(valor.quantidadeEstoque || 0),
+      estoqueMaximo: Number(valor.estoqueMaximo || 0),
+      estoqueMinimo: Number(valor.estoqueMinimo || 0)
+    };
     const requisicao = this.data.modo === 'editar' && this.data.produto?.id
       ? this.produtoService.atualizar(this.data.produto.id, dados)
       : this.produtoService.criar(dados);

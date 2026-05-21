@@ -41,15 +41,16 @@ export class EstoqueService {
     // Atualizar quantidade em produtos
     const { data: produto } = await this.supabaseService.getClient()
       .from(this.produtosTable)
-      .select('quantidade')
+      .select('quantidadeEstoque, quantidade')
       .eq('id', produtoId)
       .single();
 
     if (produto) {
-      const novaQuantidade = produto.quantidade + (tipo === 'saida' ? -quantidade : quantidade);
+      const quantidadeAtual = this.obterQuantidadeAtual(produto);
+      const novaQuantidade = quantidadeAtual + (tipo === 'saida' ? -quantidade : quantidade);
       await this.supabaseService.getClient()
         .from(this.produtosTable)
-        .update({ quantidade: novaQuantidade })
+        .update({ quantidadeEstoque: novaQuantidade, quantidade: novaQuantidade })
         .eq('id', produtoId);
     }
 
@@ -61,7 +62,7 @@ export class EstoqueService {
       this.supabaseService.getClient()
         .from(this.produtosTable)
         .select('*')
-        .lt('quantidade', 10)
+        .lt('quantidadeEstoque', 10)
     ).pipe(
       map(response => {
         if (response.error) throw response.error;
@@ -71,23 +72,7 @@ export class EstoqueService {
   }
 
   estoqueProduto(produtoId: number): Observable<any> {
-    return from(
-      this.supabaseService.getClient()
-        .from(this.produtosTable)
-        .select('id, quantidade')
-        .eq('id', produtoId)
-        .single()
-    ).pipe(
-      map(response => {
-        if (response.error) throw response.error;
-        return {
-          produtoId: response.data.id,
-          estoqueAtual: response.data.quantidade,
-          comprometido: 0,
-          estoqueFuturo: response.data.quantidade
-        };
-      })
-    );
+    return from(this.obterEstoqueProduto(produtoId));
   }
 
   historico(produtoId?: number): Observable<Movimentacao[]> {
@@ -106,5 +91,50 @@ export class EstoqueService {
         return (response.data || []) as Movimentacao[];
       })
     );
+  }
+
+  private obterQuantidadeAtual(produto: { quantidadeEstoque?: number | null; quantidade?: number | null }): number {
+    return Number(produto.quantidadeEstoque ?? produto.quantidade ?? 0);
+  }
+
+  private async obterEstoqueProduto(produtoId: number): Promise<{ produtoId: number; estoqueAtual: number; comprometido: number; estoqueFuturo: number }> {
+    const client = this.supabaseService.getClient();
+
+    const [{ data: produto, error: produtoError }, { data: pedidos, error: pedidosError }] = await Promise.all([
+      client
+        .from(this.produtosTable)
+        .select('id, quantidadeEstoque, quantidade')
+        .eq('id', produtoId)
+        .single(),
+      client
+        .from('pedidos')
+        .select('status, itens')
+        .in('status', ['EM_ABERTO', 'CONFIRMADO', 'pendente', 'confirmado'])
+    ]);
+
+    if (produtoError) {
+      throw produtoError;
+    }
+
+    if (pedidosError) {
+      throw pedidosError;
+    }
+
+    const estoqueAtual = this.obterQuantidadeAtual(produto);
+    const comprometido = (pedidos || []).reduce((totalPedido, pedido) => {
+      const itens = Array.isArray(pedido.itens) ? pedido.itens : [];
+      const quantidadeComprometida = itens.reduce((totalItem: number, item: any) => {
+        return item?.produtoId === produtoId ? totalItem + Number(item.quantidade || 0) : totalItem;
+      }, 0);
+
+      return totalPedido + quantidadeComprometida;
+    }, 0);
+
+    return {
+      produtoId,
+      estoqueAtual,
+      comprometido,
+      estoqueFuturo: estoqueAtual - comprometido
+    };
   }
 }

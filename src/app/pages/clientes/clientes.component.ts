@@ -15,6 +15,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSelectModule } from '@angular/material/select';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ClienteService } from '../../core/services/cliente.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -29,7 +30,7 @@ import { ClienteDialogComponent } from './cliente-dialog.component';
   imports: [
     CommonModule, FormsModule, ReactiveFormsModule,
     MatToolbarModule, MatCardModule, MatDialogModule, MatFormFieldModule, MatInputModule,
-    MatButtonModule, MatIconModule, MatTableModule, MatMenuModule, MatSnackBarModule, MatSelectModule
+    MatButtonModule, MatIconModule, MatTableModule, MatMenuModule, MatSnackBarModule, MatSelectModule, MatPaginatorModule
   ],
   templateUrl: './clientes.component.html',
   styleUrl: './clientes.component.scss'
@@ -42,6 +43,9 @@ export class ClientesComponent implements OnInit {
   resumoImportacao = '';
   responsaveis: AppUser[] = [];
   responsavelPadraoId: string | null = null;
+  paginaAtual = 0;
+  itensPorPagina = 10;
+  readonly opcoesItensPorPagina = [10, 25, 50];
 
   constructor(
     private clienteService: ClienteService,
@@ -56,7 +60,12 @@ export class ClientesComponent implements OnInit {
     this.carregar();
     this.carregarResponsaveis();
   }
-  carregar(): void { this.clienteService.listar().subscribe(d => this.clientes = d); }
+  carregar(): void {
+    this.clienteService.listar().subscribe(d => {
+      this.clientes = d;
+      this.paginaAtual = 0;
+    });
+  }
 
   novo(): void {
     this.abrirDialogoCliente('criar');
@@ -153,6 +162,16 @@ export class ClientesComponent implements OnInit {
     return cliente.id != null
       ? String(cliente.id)
       : `${cliente.nome}-${cliente.cpfCnpj || cliente.dataCadastro || 'sem-id'}`;
+  }
+
+  get clientesPaginados(): Cliente[] {
+    const inicio = this.paginaAtual * this.itensPorPagina;
+    return this.clientes.slice(inicio, inicio + this.itensPorPagina);
+  }
+
+  aoMudarPagina(event: PageEvent): void {
+    this.paginaAtual = event.pageIndex;
+    this.itensPorPagina = event.pageSize;
   }
 
   private mapearLinhaImportacao(row: Record<string, unknown>): Cliente | null {

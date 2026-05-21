@@ -1,5 +1,16 @@
 @use '../clientes/clientes.component' as clientes;
 
+.header-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+.header-actions button { min-height: 44px; }
+.import-summary {
+	margin-bottom: 16px;
+	padding: 12px 14px;
+	border-radius: 12px;
+	background: #f5f0fa;
+	color: #3d1a6e;
+	border: 1px solid #e0d4ec;
+	font-size: 14px;
+}
 .filtro-container { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
 .filtro-field { flex: 1; }
 .filtro-count { font-size: 13px; color: #6b5b7b; white-space: nowrap; }
@@ -14,7 +25,34 @@
 .detail { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
 .detail-label { color: #6b5b7b; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
 .mobile-card-actions { display: flex; gap: 12px; flex-wrap: wrap; }
-.card-header button { min-height: 44px; }
+
+.table-wrapper {
+	overflow-x: auto;
+}
+
+.table-wrapper table {
+	min-width: 1120px;
+}
+
+mat-paginator {
+	margin-top: 12px;
+	border-top: 1px solid #ece3f4;
+	background: transparent;
+}
+
+.acoes-col {
+	position: sticky;
+	right: 0;
+	background: #fff;
+	z-index: 2;
+	text-align: right;
+	box-shadow: -8px 0 12px rgba(61, 26, 110, 0.06);
+}
+
+.mat-mdc-header-cell.acoes-col {
+	background: #f5f0fa;
+	z-index: 3;
+}
 
 .estoque-baixo { color: #c62828; font-weight: 600; }
 .alerta-icon { font-size: 16px; width: 16px; height: 16px; color: #e65100; vertical-align: middle; margin-left: 4px; }
@@ -26,6 +64,8 @@ mat-slide-toggle { margin-bottom: 16px; }
 	.filtro-container { flex-direction: column; align-items: stretch; }
 	.filtro-field { width: 100%; }
 	.filtro-count { white-space: normal; }
+	.header-actions { width: 100%; }
+	.header-actions button { width: 100%; }
 	.card-header {
 		position: sticky;
 		top: 64px;
