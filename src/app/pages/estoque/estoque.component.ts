@@ -10,6 +10,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTabsModule } from '@angular/material/tabs';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { EstoqueService } from '../../core/services/estoque.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -23,7 +24,7 @@ import { EstoqueMovimentoDialogComponent } from './estoque-movimento-dialog.comp
   imports: [
     CommonModule, ReactiveFormsModule,
     MatToolbarModule, MatCardModule, MatDialogModule, MatButtonModule, MatIconModule,
-    MatTableModule, MatMenuModule, MatTabsModule, MatSnackBarModule
+    MatTableModule, MatMenuModule, MatTabsModule, MatSnackBarModule, MatPaginatorModule
   ],
   templateUrl: './estoque.component.html',
   styleUrl: './estoque.component.scss'
@@ -33,6 +34,11 @@ export class EstoqueComponent implements OnInit {
   movimentacoes: Movimentacao[] = [];
   colsBaixo = ['codigo', 'descricao', 'quantidadeEstoque', 'estoqueMinimo'];
   colsMov = ['data', 'produto', 'tipo', 'quantidade', 'anterior', 'atual', 'obs'];
+  paginaBaixoAtual = 0;
+  itensPorPaginaBaixo = 10;
+  paginaHistoricoAtual = 0;
+  itensPorPaginaHistorico = 10;
+  readonly opcoesItensPorPagina = [10, 25, 50];
 
   constructor(
     private estoqueService: EstoqueService,
@@ -47,8 +53,28 @@ export class EstoqueComponent implements OnInit {
   }
 
   carregar(): void {
-    this.estoqueService.estoqueBaixo().subscribe(d => this.produtosBaixo = d);
-    this.estoqueService.historico().subscribe(d => this.movimentacoes = d);
+    this.estoqueService.estoqueBaixo().subscribe({
+      next: d => {
+        this.produtosBaixo = d;
+        this.paginaBaixoAtual = 0;
+      },
+      error: () => {
+        this.produtosBaixo = [];
+        this.paginaBaixoAtual = 0;
+        this.snackBar.open('Não foi possível carregar os produtos com estoque baixo.', 'OK', { duration: 4000 });
+      }
+    });
+    this.estoqueService.historico().subscribe({
+      next: d => {
+        this.movimentacoes = d;
+        this.paginaHistoricoAtual = 0;
+      },
+      error: () => {
+        this.movimentacoes = [];
+        this.paginaHistoricoAtual = 0;
+        this.snackBar.open('Não foi possível carregar o histórico de estoque.', 'OK', { duration: 4000 });
+      }
+    });
   }
 
   abrirMovimentacao(): void {
@@ -66,6 +92,26 @@ export class EstoqueComponent implements OnInit {
         this.carregar();
       }
     });
+  }
+
+  get produtosBaixoPaginados(): Produto[] {
+    const inicio = this.paginaBaixoAtual * this.itensPorPaginaBaixo;
+    return this.produtosBaixo.slice(inicio, inicio + this.itensPorPaginaBaixo);
+  }
+
+  get movimentacoesPaginadas(): Movimentacao[] {
+    const inicio = this.paginaHistoricoAtual * this.itensPorPaginaHistorico;
+    return this.movimentacoes.slice(inicio, inicio + this.itensPorPaginaHistorico);
+  }
+
+  aoMudarPaginaBaixo(event: PageEvent): void {
+    this.paginaBaixoAtual = event.pageIndex;
+    this.itensPorPaginaBaixo = event.pageSize;
+  }
+
+  aoMudarPaginaHistorico(event: PageEvent): void {
+    this.paginaHistoricoAtual = event.pageIndex;
+    this.itensPorPaginaHistorico = event.pageSize;
   }
 
   navegarConsulta(): void { this.router.navigate(['/consulta']); }

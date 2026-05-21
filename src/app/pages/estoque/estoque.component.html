@@ -22,7 +22,7 @@
         <mat-card class="crud-card tab-card">
           <h3><mat-icon class="alerta-icon">warning</mat-icon> Produtos com Estoque Baixo ({{produtosBaixo.length}})</h3>
           <div class="table-wrapper desktop-table">
-            <table mat-table [dataSource]="produtosBaixo">
+            <table mat-table [dataSource]="produtosBaixoPaginados">
               <ng-container matColumnDef="codigo"><th mat-header-cell *matHeaderCellDef>Codigo</th><td mat-cell *matCellDef="let r">{{r.codigo}}</td></ng-container>
               <ng-container matColumnDef="descricao"><th mat-header-cell *matHeaderCellDef>Descricao</th><td mat-cell *matCellDef="let r">{{r.descricao}}</td></ng-container>
               <ng-container matColumnDef="quantidadeEstoque"><th mat-header-cell *matHeaderCellDef>Estoque</th><td mat-cell *matCellDef="let r" class="estoque-baixo">{{r.quantidadeEstoque}}</td></ng-container>
@@ -30,8 +30,16 @@
               <tr mat-header-row *matHeaderRowDef="colsBaixo"></tr><tr mat-row *matRowDef="let r; columns: colsBaixo;"></tr>
             </table>
           </div>
+          <mat-paginator
+            [length]="produtosBaixo.length"
+            [pageIndex]="paginaBaixoAtual"
+            [pageSize]="itensPorPaginaBaixo"
+            [pageSizeOptions]="opcoesItensPorPagina"
+            [showFirstLastButtons]="true"
+            (page)="aoMudarPaginaBaixo($event)">
+          </mat-paginator>
           <div class="mobile-cards">
-            @for (r of produtosBaixo; track r.id ?? r.codigo) {
+            @for (r of produtosBaixoPaginados; track r.id) {
               <mat-card class="mobile-card">
                 <div class="mobile-card-header">
                   <div>
@@ -55,7 +63,7 @@
         <mat-card class="crud-card tab-card">
           <h3>Historico de Movimentacoes</h3>
           <div class="table-wrapper desktop-table">
-            <table mat-table [dataSource]="movimentacoes">
+            <table mat-table [dataSource]="movimentacoesPaginadas">
               <ng-container matColumnDef="data"><th mat-header-cell *matHeaderCellDef>Data</th><td mat-cell *matCellDef="let r">{{r.dataMovimentacao | date:'dd/MM/yyyy HH:mm'}}</td></ng-container>
               <ng-container matColumnDef="produto"><th mat-header-cell *matHeaderCellDef>Produto</th><td mat-cell *matCellDef="let r">{{r.produtoDescricao}}</td></ng-container>
               <ng-container matColumnDef="tipo"><th mat-header-cell *matHeaderCellDef>Tipo</th>
@@ -68,8 +76,16 @@
               <tr mat-header-row *matHeaderRowDef="colsMov"></tr><tr mat-row *matRowDef="let r; columns: colsMov;"></tr>
             </table>
           </div>
+          <mat-paginator
+            [length]="movimentacoes.length"
+            [pageIndex]="paginaHistoricoAtual"
+            [pageSize]="itensPorPaginaHistorico"
+            [pageSizeOptions]="opcoesItensPorPagina"
+            [showFirstLastButtons]="true"
+            (page)="aoMudarPaginaHistorico($event)">
+          </mat-paginator>
           <div class="mobile-cards">
-            @for (r of movimentacoes; track r.id ?? r.dataMovimentacao + r.produtoDescricao) {
+            @for (r of movimentacoesPaginadas; track r.id) {
               <mat-card class="mobile-card">
                 <div class="mobile-card-header">
                   <div>

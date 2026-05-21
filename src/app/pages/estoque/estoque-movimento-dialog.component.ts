@@ -11,7 +11,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { EstoqueService } from '../../core/services/estoque.service';
 import { ConsultaService } from '../../core/services/consulta.service';
-import { AutocompleteItem } from '../../core/models/consulta.model';
+import { AutocompleteItem, ProdutoAutocompleteItem } from '../../core/models/consulta.model';
 
 @Component({
   selector: 'app-estoque-movimento-dialog',
@@ -33,47 +33,52 @@ import { AutocompleteItem } from '../../core/models/consulta.model';
         <h2 class="dialog-title">Movimentação de Estoque</h2>
         <p class="dialog-subtitle">Registre entradas e saídas em um popup otimizado para celular.</p>
       </div>
-      <button mat-icon-button type="button" (click)="fechar()" [disabled]="salvando" aria-label="Fechar popup">
-        <mat-icon>close</mat-icon>
+      <button class="close-button" type="button" (click)="fechar()" [disabled]="salvando" aria-label="Fechar popup">
+        ×
       </button>
     </div>
 
     <mat-dialog-content class="dialog-content">
       <form [formGroup]="movForm" class="dialog-form">
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Produto</mat-label>
-          <input matInput [formControl]="produtoControl" [matAutocomplete]="autoProd" placeholder="Buscar produto...">
+        <div class="field-group full-width">
+          <label class="field-label">Produto</label>
+          <input class="field-input" [formControl]="produtoControl" [matAutocomplete]="autoProd" placeholder="Buscar produto...">
           <mat-autocomplete #autoProd="matAutocomplete" [displayWith]="displayFn" (optionSelected)="onProdutoSelected($event.option.value)">
-            @for (p of produtosFiltrados; track p.id) {
-              <mat-option [value]="p">{{p.label}}</mat-option>
-            }
+            <mat-option *ngFor="let p of produtosFiltrados; trackBy: trackProduto" [value]="p">{{p.label}}</mat-option>
           </mat-autocomplete>
-        </mat-form-field>
-
-        <div class="form-row two-columns">
-          <mat-form-field appearance="outline">
-            <mat-label>Qtd</mat-label>
-            <input matInput type="number" inputmode="numeric" [formControl]="qtdMovControl" min="1">
-          </mat-form-field>
-          <mat-form-field appearance="outline">
-            <mat-label>Preço Compra</mat-label>
-            <input matInput type="number" inputmode="decimal" [formControl]="precoCompraControl" step="0.01" placeholder="R$">
-          </mat-form-field>
         </div>
 
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Observação</mat-label>
-          <input matInput [formControl]="obsControl">
-        </mat-form-field>
+        @if (produtoSelecionado) {
+          <div class="produto-info-panel">
+            <div class="info-item"><span class="info-label-inline">Estoque Atual:</span><span class="info-value">{{produtoSelecionado.quantidadeEstoque}}</span></div>
+            <div class="info-item"><span class="info-label-inline">Custo Médio:</span><span class="info-value">{{produtoSelecionado.precoCusto | currency:'BRL'}}</span></div>
+          </div>
+        }
+
+        <div class="form-row two-columns">
+          <div class="field-group">
+            <label class="field-label">Qtd</label>
+            <input class="field-input" type="number" inputmode="numeric" [formControl]="qtdMovControl" min="1">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Preço Compra</label>
+            <input class="field-input" type="number" inputmode="decimal" [formControl]="precoCompraControl" step="0.01" placeholder="R$">
+          </div>
+        </div>
+
+        <div class="field-group full-width">
+          <label class="field-label">Observação</label>
+          <input class="field-input" [formControl]="obsControl">
+        </div>
       </form>
     </mat-dialog-content>
 
     <mat-dialog-actions align="end" class="dialog-actions">
-      <button mat-button type="button" (click)="fechar()" [disabled]="salvando">Cancelar</button>
-      <button mat-raised-button color="primary" type="button" (click)="registrar('entrada')" [disabled]="!produtoSelecionado || movForm.invalid || salvando">
+      <button class="action-button secondary" type="button" (click)="fechar()" [disabled]="salvando">Cancelar</button>
+      <button class="action-button primary" type="button" (click)="registrar('entrada')" [disabled]="!produtoSelecionado || movForm.invalid || salvando">
         {{ salvando && tipoAcao === 'entrada' ? 'Registrando...' : 'Registrar entrada' }}
       </button>
-      <button mat-raised-button color="warn" type="button" (click)="registrar('saida')" [disabled]="!produtoSelecionado || movForm.invalid || salvando">
+      <button class="action-button danger" type="button" (click)="registrar('saida')" [disabled]="!produtoSelecionado || movForm.invalid || salvando">
         {{ salvando && tipoAcao === 'saida' ? 'Registrando...' : 'Registrar saída' }}
       </button>
     </mat-dialog-actions>
@@ -82,13 +87,76 @@ import { AutocompleteItem } from '../../core/models/consulta.model';
     .dialog-title-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
     .dialog-title { margin: 0; font-size: 1.3rem; line-height: 1.2; }
     .dialog-subtitle { margin: 6px 0 0; color: #666; font-size: 0.9rem; }
+    .close-button {
+      width: 40px;
+      height: 40px;
+      border: none;
+      border-radius: 999px;
+      background: transparent;
+      color: #16324f;
+      font-size: 28px;
+      line-height: 1;
+      cursor: pointer;
+    }
+    .close-button:disabled { opacity: 0.5; cursor: default; }
     .dialog-content { max-height: min(72vh, 720px); -webkit-overflow-scrolling: touch; }
-    .dialog-form { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; width: min(100%, 760px); }
-    .form-row { display: grid; gap: 0 16px; }
+    .dialog-form { display: flex; flex-direction: column; gap: 16px; margin-top: 12px; width: min(100%, 760px); }
+    .form-row { display: grid; gap: 16px; }
     .two-columns { grid-template-columns: 1fr 1fr; }
-    .full-width, mat-form-field { width: 100%; }
-    .dialog-actions { display: flex; gap: 12px; padding-top: 12px; border-top: 1px solid #ece3f4; position: sticky; bottom: 0; background: #fff; }
-    .dialog-actions .mdc-button { min-height: 44px; }
+    .field-group { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+    .full-width { width: 100%; }
+    .produto-info-panel {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #f5f0fa, #ede4f7);
+      border-left: 3px solid #c9a84c;
+    }
+    .info-item { display: flex; gap: 6px; align-items: center; }
+    .info-label-inline { font-size: 13px; color: #6b5b7b; font-weight: 600; }
+    .info-value { font-size: 14px; font-weight: 700; color: #1f2430; }
+    .field-label { font-size: 0.9rem; font-weight: 600; color: #4a4060; }
+    .field-input {
+      width: 100%;
+      min-height: 48px;
+      padding: 12px 14px;
+      border: 1px solid #cbb9e0;
+      border-radius: 12px;
+      background: #fff;
+      color: #1f2430;
+      font: inherit;
+      box-sizing: border-box;
+      outline: none;
+    }
+    .field-input:focus {
+      border-color: #5b2d8e;
+      box-shadow: 0 0 0 3px rgba(91, 45, 142, 0.14);
+    }
+    .dialog-actions {
+      display: flex;
+      gap: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #ece3f4;
+      position: sticky;
+      bottom: 0;
+      background: #fff;
+    }
+    .action-button {
+      min-height: 44px;
+      padding: 0 18px;
+      border: none;
+      border-radius: 10px;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .action-button:disabled { opacity: 0.5; cursor: default; transform: none; }
+    .action-button.primary { background: #3f51b5; color: #fff; }
+    .action-button.danger { background: #d14343; color: #fff; }
+    .action-button.secondary { background: transparent; color: #222; }
     @media (max-width: 768px) {
       .dialog-title-row { position: sticky; top: 0; background: #fff; z-index: 2; padding-bottom: 8px; border-bottom: 1px solid #ece3f4; }
       .dialog-content { max-height: calc(100dvh - 180px); }
@@ -99,8 +167,8 @@ import { AutocompleteItem } from '../../core/models/consulta.model';
   `]
 })
 export class EstoqueMovimentoDialogComponent implements OnInit {
-  produtosFiltrados: AutocompleteItem[] = [];
-  produtoSelecionado: AutocompleteItem | null = null;
+  produtosFiltrados: ProdutoAutocompleteItem[] = [];
+  produtoSelecionado: ProdutoAutocompleteItem | null = null;
   produtoControl = new FormControl('');
   movForm: FormGroup;
   salvando = false;
@@ -128,14 +196,19 @@ export class EstoqueMovimentoDialogComponent implements OnInit {
     this.produtoControl.valueChanges.pipe(
       debounceTime(300),
       filter(v => typeof v === 'string' && v.length >= 2),
-      switchMap(v => this.consultaService.buscarProdutos(v as string))
+      switchMap(v => this.consultaService.buscarProdutosComPreco(v as string))
     ).subscribe(p => this.produtosFiltrados = p);
   }
 
   displayFn(item: AutocompleteItem): string { return item?.label || ''; }
 
-  onProdutoSelected(item: AutocompleteItem): void {
+  trackProduto(_: number, item: ProdutoAutocompleteItem): number {
+    return item.id;
+  }
+
+  onProdutoSelected(item: ProdutoAutocompleteItem): void {
     this.produtoSelecionado = item;
+    this.precoCompraControl.setValue(item.precoCusto || null);
   }
 
   registrar(tipo: 'entrada' | 'saida'): void {

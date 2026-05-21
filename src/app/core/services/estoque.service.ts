@@ -62,11 +62,12 @@ export class EstoqueService {
       this.supabaseService.getClient()
         .from(this.produtosTable)
         .select('*')
-        .lt('quantidadeEstoque', 10)
     ).pipe(
       map(response => {
         if (response.error) throw response.error;
-        return (response.data || []) as Produto[];
+        return ((response.data || []) as Array<Record<string, any>>)
+          .map(row => this.mapProduto(row))
+          .filter(produto => produto.quantidadeEstoque <= produto.estoqueMinimo || produto.quantidadeEstoque < 10);
       })
     );
   }
@@ -95,6 +96,23 @@ export class EstoqueService {
 
   private obterQuantidadeAtual(produto: { quantidadeEstoque?: number | null; quantidade?: number | null }): number {
     return Number(produto.quantidadeEstoque ?? produto.quantidade ?? 0);
+  }
+
+  private mapProduto(row: Record<string, any>): Produto {
+    return {
+      id: row['id'],
+      codigo: row['codigo'] || row['sku'] || '',
+      descricao: row['descricao'] || row['nome'] || '',
+      fornecedorId: row['fornecedorId'] ?? null,
+      fornecedorNome: row['fornecedorNome'] || undefined,
+      categoria: row['categoria'] || '',
+      precoCusto: Number(row['precoCusto'] ?? row['preco_custo'] ?? 0),
+      precoVenda: Number(row['precoVenda'] ?? row['preco_venda'] ?? 0),
+      quantidadeEstoque: Number(row['quantidadeEstoque'] ?? row['disponivel'] ?? row['quantidade'] ?? 0),
+      estoqueMaximo: Number(row['estoqueMaximo'] ?? 0),
+      estoqueMinimo: Number(row['estoqueMinimo'] ?? 0),
+      ativo: row['ativo'] ?? true
+    };
   }
 
   private async obterEstoqueProduto(produtoId: number): Promise<{ produtoId: number; estoqueAtual: number; comprometido: number; estoqueFuturo: number }> {
