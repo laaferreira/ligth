@@ -4,6 +4,27 @@ import { map } from 'rxjs/operators';
 import { SupabaseService } from './supabase.service';
 import { Cliente } from '../models/cliente.model';
 
+type ClienteDbRow = {
+  id?: number;
+  nome: string;
+  cpf_cnpj?: string | null;
+  telefone?: string | null;
+  contato?: string | null;
+  email?: string | null;
+  endereco?: string | null;
+  logradouro?: string | null;
+  numero?: string | null;
+  complemento?: string | null;
+  bairro?: string | null;
+  cidade?: string | null;
+  uf?: string | null;
+  cep?: string | null;
+  observacao?: string | null;
+  responsavel_id?: string | null;
+  data_cadastro?: string | null;
+  created_at?: string | null;
+};
+
 @Injectable({ providedIn: 'root' })
 export class ClienteService {
   private readonly table = 'clientes';
@@ -19,7 +40,7 @@ export class ClienteService {
     ).pipe(
       map(response => {
         if (response.error) throw response.error;
-        return (response.data || []) as Cliente[];
+        return ((response.data || []) as ClienteDbRow[]).map(row => this.fromDb(row));
       })
     );
   }
@@ -34,7 +55,7 @@ export class ClienteService {
     ).pipe(
       map(response => {
         if (response.error) throw response.error;
-        return response.data as Cliente;
+        return this.fromDb(response.data as ClienteDbRow);
       })
     );
   }
@@ -43,13 +64,27 @@ export class ClienteService {
     return from(
       this.supabaseService.getClient()
         .from(this.table)
-        .insert([cliente])
+        .insert([this.toDb(cliente)])
         .select()
         .single()
     ).pipe(
       map(response => {
         if (response.error) throw response.error;
-        return response.data as Cliente;
+        return this.fromDb(response.data as ClienteDbRow);
+      })
+    );
+  }
+
+  importar(clientes: Cliente[]): Observable<Cliente[]> {
+    return from(
+      this.supabaseService.getClient()
+        .from(this.table)
+        .insert(clientes.map(cliente => this.toDb(cliente)))
+        .select()
+    ).pipe(
+      map(response => {
+        if (response.error) throw response.error;
+        return ((response.data || []) as ClienteDbRow[]).map(row => this.fromDb(row));
       })
     );
   }
@@ -58,14 +93,14 @@ export class ClienteService {
     return from(
       this.supabaseService.getClient()
         .from(this.table)
-        .update(cliente)
+        .update(this.toDb(cliente))
         .eq('id', id)
         .select()
         .single()
     ).pipe(
       map(response => {
         if (response.error) throw response.error;
-        return response.data as Cliente;
+        return this.fromDb(response.data as ClienteDbRow);
       })
     );
   }
@@ -93,8 +128,51 @@ export class ClienteService {
     ).pipe(
       map(response => {
         if (response.error) throw response.error;
-        return (response.data || []) as Cliente[];
+        return ((response.data || []) as ClienteDbRow[]).map(row => this.fromDb(row));
       })
     );
+  }
+
+  private fromDb(row: ClienteDbRow): Cliente {
+    return {
+      id: row.id,
+      nome: row.nome,
+      cpfCnpj: row.cpf_cnpj || '',
+      telefone: row.telefone || '',
+      contato: row.contato || '',
+      email: row.email || '',
+      endereco: row.endereco || '',
+      logradouro: row.logradouro || '',
+      numero: row.numero || '',
+      complemento: row.complemento || '',
+      bairro: row.bairro || '',
+      cidade: row.cidade || '',
+      uf: row.uf || '',
+      cep: row.cep || '',
+      observacao: row.observacao || '',
+      responsavelId: row.responsavel_id || null,
+      dataCadastro: row.data_cadastro || row.created_at || undefined
+    };
+  }
+
+  private toDb(cliente: Partial<Cliente>): Partial<ClienteDbRow> {
+    return {
+      nome: cliente.nome,
+      cpf_cnpj: cliente.cpfCnpj,
+      telefone: cliente.telefone,
+      contato: cliente.contato,
+      email: cliente.email,
+      endereco: cliente.endereco,
+      logradouro: cliente.logradouro,
+      numero: cliente.numero,
+      complemento: cliente.complemento,
+      bairro: cliente.bairro,
+      cidade: cliente.cidade,
+      uf: cliente.uf,
+      cep: cliente.cep,
+      observacao: cliente.observacao,
+      responsavel_id: cliente.responsavelId,
+      data_cadastro: cliente.dataCadastro
+    };
   }
 }
