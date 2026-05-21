@@ -114,7 +114,7 @@ type ClienteDialogData = {
           <mat-form-field appearance="outline">
             <mat-label>Responsável *</mat-label>
             <mat-select formControlName="responsavelId">
-              @for (responsavel of data.responsaveis; track responsavel.id) {
+              @for (responsavel of data.responsaveis; track trackResponsavel(responsavel)) {
                 <mat-option [value]="responsavel.id">{{ responsavel.nome }}{{ responsavel.is_active ? '' : ' (inativo)' }}</mat-option>
               }
             </mat-select>
@@ -336,6 +336,10 @@ export class ClienteDialogComponent {
 
   alternarConfirmacaoExclusao(): void {
     this.confirmandoExclusao = !this.confirmandoExclusao;
+  }
+
+  trackResponsavel(responsavel: AppUser): string {
+    return responsavel.id;
   }
 
   salvar(): void {

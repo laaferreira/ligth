@@ -145,6 +145,16 @@ export class ClientesComponent implements OnInit {
     return responsavel.is_active ? responsavel.nome : `${responsavel.nome} (inativo)`;
   }
 
+  trackResponsavel(responsavel: AppUser): string {
+    return responsavel.id;
+  }
+
+  trackCliente(cliente: Cliente): string {
+    return cliente.id != null
+      ? String(cliente.id)
+      : `${cliente.nome}-${cliente.cpfCnpj || cliente.dataCadastro || 'sem-id'}`;
+  }
+
   private mapearLinhaImportacao(row: Record<string, unknown>): Cliente | null {
     const nome = this.obterValor(row, ['nome']);
     if (!nome) {
