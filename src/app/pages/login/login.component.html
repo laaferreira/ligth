@@ -1,4 +1,6 @@
 <div class="login-container">
+  <div class="login-backdrop-shape login-backdrop-shape-1"></div>
+  <div class="login-backdrop-shape login-backdrop-shape-2"></div>
   <mat-card class="login-card">
     <div class="login-header">
       <mat-icon class="logo-icon">lightbulb</mat-icon>
@@ -37,12 +39,17 @@
         @if (loading) {
           <mat-spinner diameter="20"></mat-spinner>
         } @else {
+          <mat-icon>login</mat-icon>
           Entrar
         }
       </button>
     </form>
 
     <div class="login-footer">
+      <div class="login-footer-highlight">
+        <mat-icon>smartphone</mat-icon>
+        <span>Interface preparada para uso rápido no celular.</span>
+      </div>
       <small>Use o e-mail e senha cadastrados no Supabase</small>
     </div>
   </mat-card>

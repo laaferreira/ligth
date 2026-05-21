@@ -1,38 +1,33 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormControl, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatChipsModule } from '@angular/material/chips';
 import { MatSelectModule } from '@angular/material/select';
-import { MatNativeDateModule } from '@angular/material/core';
-import { debounceTime, filter, switchMap } from 'rxjs';
 import { PedidoService } from '../../core/services/pedido.service';
-import { ConsultaService } from '../../core/services/consulta.service';
-import { EstoqueService } from '../../core/services/estoque.service';
 import { AuthService } from '../../core/services/auth.service';
-import { Pedido, CriarPedido } from '../../core/models/pedido.model';
-import { AutocompleteItem, ProdutoAutocompleteItem } from '../../core/models/consulta.model';
+import { Pedido } from '../../core/models/pedido.model';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { PedidoDialogComponent } from './pedido-dialog.component';
 
 @Component({
   selector: 'app-pedidos',
   standalone: true,
   imports: [
     CommonModule, ReactiveFormsModule,
-    MatToolbarModule, MatCardModule, MatFormFieldModule, MatInputModule,
-    MatAutocompleteModule, MatButtonModule, MatIconModule,
-    MatTableModule, MatMenuModule, MatSnackBarModule, MatChipsModule, MatSelectModule, MatNativeDateModule
+    MatToolbarModule, MatCardModule, MatDialogModule, MatFormFieldModule, MatInputModule,
+    MatButtonModule, MatIconModule,
+    MatTableModule, MatMenuModule, MatSnackBarModule, MatSelectModule
   ],
   templateUrl: './pedidos.component.html',
   styleUrl: './pedidos.component.scss'
@@ -41,8 +36,6 @@ export class PedidosComponent implements OnInit {
   todosPedidos: Pedido[] = [];
   pedidos: Pedido[] = [];
   displayedColumns = ['numero', 'dataPedido', 'clienteNome', 'valorTotal', 'status', 'acoes'];
-  mostrarForm = false;
-  editandoId: number | null = null;
 
   // Filtros
   filtroTexto = '';
@@ -50,48 +43,16 @@ export class PedidosComponent implements OnInit {
   filtroDataDe = '';
   filtroDataAte = '';
 
-  clienteControl = new FormControl('');
-  clientesFiltrados: AutocompleteItem[] = [];
-  clienteSelecionado: AutocompleteItem | null = null;
-
-  produtoControl = new FormControl('');
-  produtosFiltrados: ProdutoAutocompleteItem[] = [];
-  produtoSelecionado: ProdutoAutocompleteItem | null = null;
-
-  estoqueInfo: { estoqueAtual: number; comprometido: number; estoqueFuturo: number } | null = null;
-
-  itemForm: FormGroup;
-  get qtdControl(): FormControl { return this.itemForm.get('quantidade') as FormControl; }
-  get vlrControl(): FormControl { return this.itemForm.get('valorUnitario') as FormControl; }
-
-  itensNovoPedido: { produtoId: number; produtoLabel: string; quantidade: number; valorUnitario: number; valorTotal: number }[] = [];
-  itensColumns = ['produto', 'quantidade', 'valorUnitario', 'valorTotal', 'remover'];
-
   constructor(
     private pedidoService: PedidoService,
-    private consultaService: ConsultaService,
-    private estoqueService: EstoqueService,
     private authService: AuthService,
+    private dialog: MatDialog,
     private router: Router,
-    private fb: FormBuilder,
     private snackBar: MatSnackBar
-  ) {
-    this.itemForm = this.fb.group({
-      quantidade: [1, [Validators.required, Validators.min(1)]],
-      valorUnitario: [null, [Validators.required, Validators.min(0.01)]]
-    });
-  }
+  ) {}
 
   ngOnInit(): void {
     this.carregar();
-    this.clienteControl.valueChanges.pipe(
-      debounceTime(300), filter(v => typeof v === 'string' && v.length >= 2),
-      switchMap(v => this.consultaService.buscarClientes(v as string))
-    ).subscribe(c => this.clientesFiltrados = c);
-    this.produtoControl.valueChanges.pipe(
-      debounceTime(300), filter(v => typeof v === 'string' && v.length >= 2),
-      switchMap(v => this.consultaService.buscarProdutosComPreco(v as string))
-    ).subscribe(p => this.produtosFiltrados = p);
   }
 
   carregar(): void {
@@ -138,79 +99,13 @@ export class PedidosComponent implements OnInit {
     this.filtroDataAte = '';
     this.aplicarFiltros();
   }
-  displayFn(item: AutocompleteItem): string { return item?.label || ''; }
-  onClienteSelected(item: AutocompleteItem): void { this.clienteSelecionado = item; }
-  onProdutoSelected(item: ProdutoAutocompleteItem): void {
-    this.produtoSelecionado = item;
-    this.estoqueInfo = null;
-    this.estoqueService.estoqueProduto(item.id).subscribe(info => this.estoqueInfo = info);
-  }
-
-  get precoCusto(): number | null { return this.produtoSelecionado?.precoCusto ?? null; }
-  get margemLucro(): number | null {
-    const vlr = this.itemForm.value.valorUnitario;
-    const custo = this.precoCusto;
-    if (!vlr || !custo || custo === 0) return null;
-    return ((vlr - custo) / custo) * 100;
-  }
-
-  adicionarItem(): void {
-    if (!this.produtoSelecionado || this.itemForm.invalid) return;
-    const qty = this.itemForm.value.quantidade, unit = this.itemForm.value.valorUnitario;
-    this.itensNovoPedido = [...this.itensNovoPedido, {
-      produtoId: this.produtoSelecionado.id, produtoLabel: this.produtoSelecionado.label,
-      quantidade: qty, valorUnitario: unit, valorTotal: qty * unit
-    }];
-    this.produtoSelecionado = null;
-    this.estoqueInfo = null;
-    this.produtoControl.setValue('', { emitEvent: false });
-    this.itemForm.patchValue({ quantidade: 1, valorUnitario: null });
-  }
-
-  removerItem(i: number): void { this.itensNovoPedido = this.itensNovoPedido.filter((_, idx) => idx !== i); }
-  get totalPedido(): number { return this.itensNovoPedido.reduce((s, i) => s + i.valorTotal, 0); }
 
   novo(): void {
-    this.editandoId = null;
-    this.mostrarForm = true;
-    this.itensNovoPedido = [];
-    this.clienteSelecionado = null;
-    this.clienteControl.setValue('');
+    this.abrirDialogoPedido('criar');
   }
 
   editar(p: Pedido): void {
-    this.editandoId = p.id!;
-    this.pedidoService.buscarPorId(p.id!).subscribe(pedido => {
-      this.clienteSelecionado = { id: pedido.clienteId, label: pedido.clienteNome || '' };
-      this.clienteControl.setValue(this.clienteSelecionado as any);
-      this.itensNovoPedido = (pedido.itens || []).map(i => ({
-        produtoId: i.produtoId,
-        produtoLabel: `${i.produtoCodigo} - ${i.produtoDescricao}`,
-        quantidade: i.quantidade,
-        valorUnitario: i.valorUnitario,
-        valorTotal: i.valorTotal || i.quantidade * i.valorUnitario
-      }));
-      this.mostrarForm = true;
-    });
-  }
-
-  salvarPedido(): void {
-    if (!this.clienteSelecionado || this.itensNovoPedido.length === 0) return;
-    const dto: CriarPedido = { clienteId: this.clienteSelecionado.id,
-      itens: this.itensNovoPedido.map(i => ({ produtoId: i.produtoId, quantidade: i.quantidade, valorUnitario: i.valorUnitario }))
-    };
-    const obs = this.editandoId
-      ? this.pedidoService.atualizar(this.editandoId, dto)
-      : this.pedidoService.criar(dto);
-    obs.subscribe({
-      next: () => {
-        this.snackBar.open(this.editandoId ? 'Pedido atualizado!' : 'Pedido criado!', 'OK', { duration: 3000 });
-        this.mostrarForm = false;
-        this.editandoId = null;
-        this.carregar();
-      },
-      error: (e) => this.snackBar.open(e.error?.message || 'Erro ao salvar', 'OK', { duration: 3000 })
-    });
+    this.abrirDialogoPedido('editar', p.id);
   }
 
   confirmar(p: Pedido): void {
@@ -243,16 +138,14 @@ export class PedidosComponent implements OnInit {
     });
   }
 
-  cancelar(): void { this.mostrarForm = false; this.editandoId = null; }
-
-  statusLabel(s: string): string {
+  statusLabel(s?: string): string {
     const map: Record<string, string> = { EM_ABERTO: 'Em Aberto', CONFIRMADO: 'Confirmado', CANCELADO: 'Cancelado', FINALIZADO: 'Finalizado' };
-    return map[s] || s;
+    return s ? (map[s] || s) : '-';
   }
 
-  statusClass(s: string): string {
+  statusClass(s?: string): string {
     const map: Record<string, string> = { EM_ABERTO: 'badge-aberto', CONFIRMADO: 'badge-confirmado', CANCELADO: 'badge-cancelado', FINALIZADO: 'badge-finalizado' };
-    return map[s] || '';
+    return s ? (map[s] || '') : '';
   }
 
   gerarPDF(pedido: Pedido): void {
@@ -287,6 +180,24 @@ export class PedidosComponent implements OnInit {
       doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(80, 80, 80);
       doc.text(new Date().toLocaleDateString('pt-BR') + ' as ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + ' horas', pw / 2, fty + 10, { align: 'center' });
       doc.save(`pedido-${p.numero}.pdf`);
+    });
+  }
+
+  private abrirDialogoPedido(modo: 'criar' | 'editar', pedidoId?: number): void {
+    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+
+    this.dialog.open(PedidoDialogComponent, {
+      width: isMobile ? '100vw' : '960px',
+      height: isMobile ? '100dvh' : undefined,
+      maxWidth: isMobile ? '100vw' : '95vw',
+      maxHeight: isMobile ? '100dvh' : '92vh',
+      autoFocus: false,
+      disableClose: true,
+      data: { modo, pedidoId }
+    }).afterClosed().subscribe(recarregar => {
+      if (recarregar) {
+        this.carregar();
+      }
     });
   }
 

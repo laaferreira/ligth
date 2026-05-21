@@ -59,6 +59,10 @@
   justify-content: flex-end;
 }
 
+.header-actions button {
+  min-height: 44px;
+}
+
 .responsavel-import-field {
   min-width: 260px;
 }
@@ -73,31 +77,15 @@
   font-size: 14px;
 }
 
-.form-container {
-  background: linear-gradient(135deg, #f5f0fa, #ede4f7);
-  border-radius: 14px;
-  padding: 20px;
-  margin-bottom: 20px;
-  border-left: 4px solid #c9a84c;
-  h3 { margin: 0 0 16px; font-size: 16px; font-weight: 600; color: #3d1a6e; }
-  mat-form-field { width: 100%; }
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0 16px;
-}
-
-.three-columns {
-  grid-template-columns: repeat(3, 1fr);
-}
-
-.form-actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 8px;
-}
+.mobile-cards { display: none; gap: 12px; }
+.mobile-card { border-radius: 16px; margin-bottom: 12px; }
+.mobile-card-header { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; margin-bottom: 14px; }
+.mobile-card-title { font-weight: 700; color: #3d1a6e; }
+.mobile-card-subtitle { margin-top: 4px; color: #6b5b7b; font-size: 13px; }
+.mobile-card-details { display: grid; gap: 10px; margin-bottom: 14px; }
+.detail { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+.detail-label { color: #6b5b7b; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+.mobile-card-actions { display: flex; gap: 12px; flex-wrap: wrap; }
 
 .table-wrapper {
   overflow-x: auto;
@@ -110,10 +98,21 @@
 
 @media (max-width: 768px) {
   .nav-links { display: none; }
-  .form-row { grid-template-columns: 1fr; }
-  .three-columns { grid-template-columns: 1fr; }
   .crud-card { padding: 16px; }
   .card-header { gap: 12px; flex-direction: column; }
   .header-actions { width: 100%; justify-content: stretch; }
+  .header-actions button { width: 100%; }
+  .card-header {
+    position: sticky;
+    top: 64px;
+    z-index: 5;
+    background: #fff;
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+  }
+  .desktop-table { display: none; }
+  .mobile-cards { display: block; }
+  .mobile-card-actions { flex-direction: column; }
+  .mobile-card-actions button { width: 100%; }
   .responsavel-import-field { min-width: 100%; }
 }

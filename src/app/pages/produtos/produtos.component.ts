@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatCardModule } from '@angular/material/card';
@@ -11,19 +11,19 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { ProdutoService } from '../../core/services/produto.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Produto } from '../../core/models/produto.model';
+import { ProdutoDialogComponent } from './produto-dialog.component';
 
 @Component({
   selector: 'app-produtos',
   standalone: true,
   imports: [
-    CommonModule, ReactiveFormsModule,
-    MatToolbarModule, MatCardModule, MatFormFieldModule, MatInputModule,
+    CommonModule,
+    MatToolbarModule, MatCardModule, MatDialogModule, MatFormFieldModule, MatInputModule,
     MatButtonModule, MatIconModule, MatTableModule, MatMenuModule,
-    MatSnackBarModule, MatSlideToggleModule
+    MatSnackBarModule
   ],
   templateUrl: './produtos.component.html',
   styleUrl: './produtos.component.scss'
@@ -33,26 +33,14 @@ export class ProdutosComponent implements OnInit {
   produtos: Produto[] = [];
   filtro = '';
   displayedColumns = ['codigo', 'descricao', 'categoria', 'precoCusto', 'quantidadeEstoque', 'ativo', 'acoes'];
-  form: FormGroup;
-  editandoId: number | null = null;
-  mostrarForm = false;
 
   constructor(
     private produtoService: ProdutoService,
     private authService: AuthService,
+    private dialog: MatDialog,
     private router: Router,
-    private fb: FormBuilder,
     private snackBar: MatSnackBar
-  ) {
-    this.form = this.fb.group({
-      codigo: ['', [Validators.required, Validators.maxLength(100)]],
-      descricao: ['', [Validators.required, Validators.maxLength(300)]],
-      categoria: ['', Validators.maxLength(100)],
-      quantidadeEstoque: [0],
-      estoqueMinimo: [5],
-      ativo: [true]
-    });
-  }
+  ) {}
 
   ngOnInit(): void { this.carregar(); }
   carregar(): void {
@@ -84,24 +72,10 @@ export class ProdutosComponent implements OnInit {
     this.filtro = '';
     this.aplicarFiltro();
   }
-  novo(): void { this.editandoId = null; this.form.reset({ ativo: true, quantidadeEstoque: 0, estoqueMinimo: 5 }); this.mostrarForm = true; }
+  novo(): void { this.abrirDialogoProduto('criar'); }
 
   editar(p: Produto): void {
-    this.editandoId = p.id!;
-    this.form.patchValue(p);
-    this.mostrarForm = true;
-  }
-
-  salvar(): void {
-    if (this.form.invalid) return;
-    const dados = this.form.value as Produto;
-    const obs = this.editandoId
-      ? this.produtoService.atualizar(this.editandoId, dados)
-      : this.produtoService.criar(dados);
-    obs.subscribe({
-      next: () => { this.snackBar.open(this.editandoId ? 'Atualizado!' : 'Criado!', 'OK', { duration: 3000 }); this.cancelar(); this.carregar(); },
-      error: () => this.snackBar.open('Erro ao salvar', 'OK', { duration: 3000 })
-    });
+    this.abrirDialogoProduto('editar', p);
   }
 
   excluir(p: Produto): void {
@@ -112,9 +86,25 @@ export class ProdutosComponent implements OnInit {
     });
   }
 
-  cancelar(): void { this.mostrarForm = false; this.editandoId = null; this.form.reset(); }
-
   estoqueBaixo(p: Produto): boolean { return p.ativo && p.quantidadeEstoque <= p.estoqueMinimo; }
+
+  private abrirDialogoProduto(modo: 'criar' | 'editar', produto?: Produto): void {
+    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+
+    this.dialog.open(ProdutoDialogComponent, {
+      width: isMobile ? '100vw' : '720px',
+      height: isMobile ? '100dvh' : undefined,
+      maxWidth: isMobile ? '100vw' : '95vw',
+      maxHeight: isMobile ? '100dvh' : '92vh',
+      autoFocus: false,
+      disableClose: true,
+      data: { modo, produto }
+    }).afterClosed().subscribe(recarregar => {
+      if (recarregar) {
+        this.carregar();
+      }
+    });
+  }
 
   navegarConsulta(): void { this.router.navigate(['/consulta']); }
   navegarClientes(): void { this.router.navigate(['/clientes']); }

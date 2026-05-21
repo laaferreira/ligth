@@ -7,6 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatSelectModule } from '@angular/material/select';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatCardModule } from '@angular/material/card';
@@ -33,6 +34,7 @@ import { CriarEditarUsuarioDialogComponent } from './criar-editar-usuario-dialog
     MatDialogModule,
     MatFormFieldModule,
     MatInputModule,
+    MatMenuModule,
     MatSelectModule,
     MatToolbarModule,
     MatCardModule,
@@ -73,7 +75,7 @@ import { CriarEditarUsuarioDialogComponent } from './criar-editar-usuario-dialog
             </mat-form-field>
           </div>
 
-          <div class="table-container">
+          <div class="table-container desktop-table">
             <table mat-table [dataSource]="usuarios" class="usuarios-table">
               <!-- Email Column -->
               <ng-container matColumnDef="email">
@@ -136,6 +138,53 @@ import { CriarEditarUsuarioDialogComponent } from './criar-editar-usuario-dialog
             </table>
           </div>
 
+          <div class="mobile-cards" *ngIf="usuarios.length > 0">
+            <mat-card class="user-mobile-card" *ngFor="let user of usuarios">
+              <div class="user-mobile-header">
+                <div>
+                  <div class="user-mobile-name">{{ user.nome }}</div>
+                  <div class="user-mobile-email">{{ user.email }}</div>
+                </div>
+                <div class="user-mobile-header-side">
+                  <span [class]="'badge badge-' + user.role">{{ traduzirRole(user.role) }}</span>
+                  <button mat-icon-button [matMenuTriggerFor]="userActionsMenu" aria-label="Ações do usuário">
+                    <mat-icon>more_vert</mat-icon>
+                  </button>
+                  <mat-menu #userActionsMenu="matMenu">
+                    <button mat-menu-item (click)="editarUsuario(user)">
+                      <mat-icon>edit</mat-icon>
+                      <span>Editar</span>
+                    </button>
+                    <button mat-menu-item (click)="mudarStatus(user)">
+                      <mat-icon>{{ user.is_active ? 'block' : 'check_circle' }}</mat-icon>
+                      <span>{{ user.is_active ? 'Desativar' : 'Ativar' }}</span>
+                    </button>
+                  </mat-menu>
+                </div>
+              </div>
+
+              <div class="user-mobile-details">
+                <div class="user-mobile-detail">
+                  <span class="detail-label">Status</span>
+                  <span [class]="user.is_active ? 'status-ativo' : 'status-inativo'">
+                    {{ user.is_active ? 'Ativo' : 'Inativo' }}
+                  </span>
+                </div>
+                <div class="user-mobile-detail">
+                  <span class="detail-label">Criado em</span>
+                  <span>{{ user.created_at | date: 'dd/MM/yyyy' }}</span>
+                </div>
+              </div>
+
+              <div class="user-mobile-actions">
+                <button mat-stroked-button color="primary" (click)="editarUsuario(user)">
+                  <mat-icon>edit</mat-icon>
+                  Editar
+                </button>
+              </div>
+            </mat-card>
+          </div>
+
           <div *ngIf="usuarios.length === 0" class="sem-dados">
             <p>Nenhum usuário encontrado</p>
           </div>
@@ -164,6 +213,68 @@ import { CriarEditarUsuarioDialogComponent } from './criar-editar-usuario-dialog
 
     .table-container {
       overflow-x: auto;
+    }
+
+    .mobile-cards {
+      display: none;
+      gap: 12px;
+    }
+
+    .user-mobile-card {
+      border-radius: 16px;
+      margin-bottom: 12px;
+    }
+
+    .user-mobile-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 14px;
+    }
+
+    .user-mobile-header-side {
+      display: flex;
+      align-items: flex-start;
+      gap: 4px;
+    }
+
+    .user-mobile-name {
+      font-weight: 700;
+      color: #3d1a6e;
+      margin-bottom: 4px;
+    }
+
+    .user-mobile-email {
+      font-size: 13px;
+      color: #6b5b7b;
+      word-break: break-word;
+    }
+
+    .user-mobile-details {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .user-mobile-detail {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 14px;
+    }
+
+    .detail-label {
+      color: #6b5b7b;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .user-mobile-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
     }
 
     .usuarios-table {
@@ -210,6 +321,38 @@ import { CriarEditarUsuarioDialogComponent } from './criar-editar-usuario-dialog
 
     mat-toolbar {
       margin-bottom: 16px;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 16px;
+      }
+
+      .actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .actions button,
+      .filter {
+        width: 100%;
+      }
+
+      .desktop-table {
+        display: none;
+      }
+
+      .mobile-cards {
+        display: block;
+      }
+
+      .user-mobile-actions {
+        flex-direction: column;
+      }
+
+      .user-mobile-actions button {
+        width: 100%;
+      }
     }
   `]
 })
@@ -259,8 +402,14 @@ export class GerenciaUsuariosComponent implements OnInit {
   }
 
   abrirDialogoCriarUsuario() {
+    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+
     const dialogRef = this.dialog.open(CriarEditarUsuarioDialogComponent, {
-      width: '500px',
+      width: isMobile ? '100vw' : '500px',
+      height: isMobile ? '100dvh' : undefined,
+      maxWidth: isMobile ? '100vw' : '95vw',
+      maxHeight: isMobile ? '100dvh' : '92vh',
+      autoFocus: false,
       data: {
         usuarioAtual: this.usuarioAtual,
         modo: 'criar'
@@ -275,8 +424,14 @@ export class GerenciaUsuariosComponent implements OnInit {
   }
 
   editarUsuario(usuario: AppUser) {
+    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+
     const dialogRef = this.dialog.open(CriarEditarUsuarioDialogComponent, {
-      width: '500px',
+      width: isMobile ? '100vw' : '500px',
+      height: isMobile ? '100dvh' : undefined,
+      maxWidth: isMobile ? '100vw' : '95vw',
+      maxHeight: isMobile ? '100dvh' : '92vh',
+      autoFocus: false,
       data: {
         usuario,
         usuarioAtual: this.usuarioAtual,

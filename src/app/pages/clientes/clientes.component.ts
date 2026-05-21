@@ -7,6 +7,7 @@ import * as XLSX from 'xlsx';
 import { firstValueFrom } from 'rxjs';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatCardModule } from '@angular/material/card';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
@@ -20,13 +21,14 @@ import { AuthService } from '../../core/services/auth.service';
 import { Cliente } from '../../core/models/cliente.model';
 import { AppUser } from '../../core/models/user.model';
 import { UserManagementService } from '../../core/services/user-management.service';
+import { ClienteDialogComponent } from './cliente-dialog.component';
 
 @Component({
   selector: 'app-clientes',
   standalone: true,
   imports: [
     CommonModule, FormsModule, ReactiveFormsModule,
-    MatToolbarModule, MatCardModule, MatFormFieldModule, MatInputModule,
+    MatToolbarModule, MatCardModule, MatDialogModule, MatFormFieldModule, MatInputModule,
     MatButtonModule, MatIconModule, MatTableModule, MatMenuModule, MatSnackBarModule, MatSelectModule
   ],
   templateUrl: './clientes.component.html',
@@ -35,10 +37,8 @@ import { UserManagementService } from '../../core/services/user-management.servi
 export class ClientesComponent implements OnInit {
   clientes: Cliente[] = [];
   displayedColumns = ['nome', 'cpfCnpj', 'contato', 'telefone', 'cidade', 'responsavel', 'dataCadastro', 'acoes'];
-  form: FormGroup;
-  editandoId: number | null = null;
-  mostrarForm = false;
   importando = false;
+  podeImportarXls = false;
   resumoImportacao = '';
   responsaveis: AppUser[] = [];
   responsavelPadraoId: string | null = null;
@@ -47,28 +47,10 @@ export class ClientesComponent implements OnInit {
     private clienteService: ClienteService,
     private authService: AuthService,
     private userManagementService: UserManagementService,
+    private dialog: MatDialog,
     private router: Router,
-    private fb: FormBuilder,
     private snackBar: MatSnackBar
-  ) {
-    this.form = this.fb.group({
-      nome: ['', [Validators.required, Validators.maxLength(200)]],
-      cpfCnpj: ['', Validators.maxLength(20)],
-      telefone: ['', Validators.maxLength(20)],
-      contato: ['', Validators.maxLength(200)],
-      email: ['', Validators.maxLength(200)],
-      endereco: ['', Validators.maxLength(500)],
-      logradouro: ['', Validators.maxLength(255)],
-      numero: ['', Validators.maxLength(50)],
-      complemento: ['', Validators.maxLength(255)],
-      bairro: ['', Validators.maxLength(255)],
-      cidade: ['', Validators.maxLength(255)],
-      uf: ['', Validators.maxLength(2)],
-      cep: ['', Validators.maxLength(20)],
-      observacao: ['', Validators.maxLength(1000)],
-      responsavelId: [null, Validators.required]
-    });
-  }
+  ) {}
 
   ngOnInit(): void {
     this.carregar();
@@ -77,41 +59,19 @@ export class ClientesComponent implements OnInit {
   carregar(): void { this.clienteService.listar().subscribe(d => this.clientes = d); }
 
   novo(): void {
-    this.editandoId = null;
-    this.form.reset({ responsavelId: this.responsavelPadraoId });
-    this.mostrarForm = true;
+    this.abrirDialogoCliente('criar');
   }
 
   editar(c: Cliente): void {
-    this.editandoId = c.id!;
-    this.form.patchValue(c);
-    this.mostrarForm = true;
-  }
-
-  salvar(): void {
-    if (this.form.invalid) return;
-    const dados = this.form.value as Cliente;
-    if (!dados.endereco?.trim()) {
-      dados.endereco = this.montarEndereco(
-        dados.logradouro,
-        dados.numero,
-        dados.complemento,
-        dados.bairro,
-        dados.cidade,
-        dados.uf,
-        dados.cep
-      );
-    }
-    const obs = this.editandoId
-      ? this.clienteService.atualizar(this.editandoId, dados)
-      : this.clienteService.criar(dados);
-    obs.subscribe({
-      next: () => { this.snackBar.open(this.editandoId ? 'Atualizado!' : 'Criado!', 'OK', { duration: 3000 }); this.cancelar(); this.carregar(); },
-      error: () => this.snackBar.open('Erro ao salvar', 'OK', { duration: 3000 })
-    });
+    this.abrirDialogoCliente('editar', c);
   }
 
   async importarArquivo(event: Event): Promise<void> {
+    if (!this.podeImportarXls) {
+      this.snackBar.open('Somente administradores podem importar clientes por XLSX.', 'OK', { duration: 4000 });
+      return;
+    }
+
     const input = event.target as HTMLInputElement;
     const arquivo = input.files?.[0];
 
@@ -170,15 +130,6 @@ export class ClientesComponent implements OnInit {
     }
   }
 
-  excluir(c: Cliente): void {
-    if (!confirm(`Excluir "${c.nome}"?`)) return;
-    this.clienteService.excluir(c.id!).subscribe({
-      next: () => { this.snackBar.open('Excluido!', 'OK', { duration: 3000 }); this.carregar(); },
-      error: () => this.snackBar.open('Erro ao excluir', 'OK', { duration: 4000 })
-    });
-  }
-
-  cancelar(): void { this.mostrarForm = false; this.editandoId = null; this.form.reset({ responsavelId: this.responsavelPadraoId }); }
   navegarConsulta(): void { this.router.navigate(['/consulta']); }
   navegarProdutos(): void { this.router.navigate(['/produtos']); }
   navegarPedidos(): void { this.router.navigate(['/pedidos']); }
@@ -252,15 +203,36 @@ export class ClientesComponent implements OnInit {
       .toLowerCase();
   }
 
+  private abrirDialogoCliente(modo: 'criar' | 'editar', cliente?: Cliente): void {
+    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+
+    this.dialog.open(ClienteDialogComponent, {
+      width: isMobile ? '100vw' : '960px',
+      height: isMobile ? '100dvh' : undefined,
+      maxWidth: isMobile ? '100vw' : '95vw',
+      maxHeight: isMobile ? '100dvh' : '92vh',
+      disableClose: true,
+      autoFocus: false,
+      data: {
+        modo,
+        cliente,
+        responsaveis: this.responsaveis,
+        responsavelPadraoId: this.responsavelPadraoId
+      }
+    }).afterClosed().subscribe(recarregar => {
+      if (recarregar) {
+        this.carregar();
+      }
+    });
+  }
+
   private carregarResponsaveis(): void {
     this.userManagementService.listarUsuarios().subscribe({
       next: usuarios => {
         this.responsaveis = usuarios;
         this.userManagementService.obterUsuarioAtualComRole().then(usuarioAtual => {
+          this.podeImportarXls = usuarioAtual?.role === 'administrador';
           this.responsavelPadraoId = usuarioAtual?.id || usuarios[0]?.id || null;
-          if (!this.form.get('responsavelId')?.value) {
-            this.form.patchValue({ responsavelId: this.responsavelPadraoId });
-          }
         });
       },
       error: () => {

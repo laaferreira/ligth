@@ -6,6 +6,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 import { UserManagementService } from '../../core/services/user-management.service';
@@ -22,25 +23,32 @@ import { AppUser, UserRole } from '../../core/models/user.model';
     MatInputModule,
     MatSelectModule,
     MatButtonModule,
+    MatIconModule,
     MatSnackBarModule
   ],
   template: `
-    <h2 mat-dialog-title>
-      {{ data.modo === 'criar' ? 'Novo Usuário' : 'Editar ' + data.usuario?.nome }}
-    </h2>
+    <div class="dialog-title-row" mat-dialog-title>
+      <div>
+        <h2 class="dialog-title">{{ data.modo === 'criar' ? 'Novo Usuário' : 'Editar ' + data.usuario?.nome }}</h2>
+        <p class="dialog-subtitle">Formulário otimizado para preenchimento rápido no celular.</p>
+      </div>
+      <button mat-icon-button (click)="onCancel()" [disabled]="saving" aria-label="Fechar popup">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
 
-    <mat-dialog-content>
+    <mat-dialog-content class="dialog-content">
       <form [formGroup]="form" class="form">
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Email</mat-label>
-          <input matInput formControlName="email" [readonly]="data.modo === 'editar'">
+          <input matInput formControlName="email" [readonly]="data.modo === 'editar'" inputmode="email" autocomplete="email">
           <mat-error *ngIf="form.get('email')?.hasError('required')">Email é obrigatório</mat-error>
           <mat-error *ngIf="form.get('email')?.hasError('email')">Email inválido</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Nome</mat-label>
-          <input matInput formControlName="nome" required>
+          <input matInput formControlName="nome" required autocomplete="name">
           <mat-error *ngIf="form.get('nome')?.hasError('required')">Nome é obrigatório</mat-error>
         </mat-form-field>
 
@@ -58,7 +66,7 @@ import { AppUser, UserRole } from '../../core/models/user.model';
 
         <mat-form-field appearance="outline" class="full-width" *ngIf="data.modo === 'criar'">
           <mat-label>Senha</mat-label>
-          <input matInput type="password" formControlName="password" required>
+          <input matInput type="password" formControlName="password" required autocomplete="new-password">
           <mat-error *ngIf="form.get('password')?.hasError('required')">Senha é obrigatória</mat-error>
           <mat-error *ngIf="form.get('password')?.hasError('minlength')">Mínimo 6 caracteres</mat-error>
         </mat-form-field>
@@ -75,19 +83,43 @@ import { AppUser, UserRole } from '../../core/models/user.model';
       </form>
     </mat-dialog-content>
 
-    <mat-dialog-actions align="end">
-      <button mat-button (click)="onCancel()">Cancelar</button>
+    <mat-dialog-actions align="end" class="dialog-actions">
+      <button mat-button (click)="onCancel()" [disabled]="saving">Cancelar</button>
       <button mat-raised-button color="primary" (click)="onSave()" [disabled]="!form.valid || saving">
         {{ saving ? 'Salvando...' : (data.modo === 'criar' ? 'Criar' : 'Salvar') }}
       </button>
     </mat-dialog-actions>
   `,
   styles: [`
+    .dialog-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .dialog-title {
+      margin: 0;
+      font-size: 1.3rem;
+      line-height: 1.2;
+    }
+
+    .dialog-subtitle {
+      margin: 6px 0 0;
+      color: #666;
+      font-size: 0.9rem;
+    }
+
+    .dialog-content {
+      max-height: min(72vh, 800px);
+      -webkit-overflow-scrolling: touch;
+    }
+
     .form {
       display: flex;
       flex-direction: column;
       gap: 16px;
-      margin-top: 16px;
+      margin-top: 12px;
     }
 
     .full-width {
@@ -99,6 +131,43 @@ import { AppUser, UserRole } from '../../core/models/user.model';
       color: #666;
       margin-top: 8px;
       font-style: italic;
+    }
+
+    .dialog-actions {
+      display: flex;
+      gap: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #ece3f4;
+      position: sticky;
+      bottom: 0;
+      background: #fff;
+    }
+
+    .dialog-actions .mdc-button {
+      min-height: 44px;
+    }
+
+    @media (max-width: 768px) {
+      .dialog-title-row {
+        position: sticky;
+        top: 0;
+        background: #fff;
+        z-index: 2;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #ece3f4;
+      }
+
+      .dialog-content {
+        max-height: calc(100dvh - 180px);
+      }
+
+      .dialog-actions {
+        flex-direction: column;
+      }
+
+      .dialog-actions button {
+        width: 100%;
+      }
     }
   `]
 })

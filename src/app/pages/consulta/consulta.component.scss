@@ -92,7 +92,12 @@
   .table-wrapper { display: none; }
   .mobile-cards { display: block; }
   .nav-links { display: none; }
-  .search-actions { flex-direction: column; button { width: 100%; } }
+  .search-card {
+    position: sticky;
+    top: 72px;
+    z-index: 4;
+  }
+  .search-actions { flex-direction: column; button { width: 100%; min-height: 48px; } }
   .search-card, .results-card { padding: 16px; }
   .card-header { h2 { font-size: 18px; } }
 }

@@ -17,9 +17,21 @@ import { UserManagementService } from './core/services/user-management.service';
     @if (deveExibirMenu()) {
       <mat-toolbar class="app-header">
         <div class="header-content">
-          <div class="brand" (click)="navegar('/dashboard')">
-            <mat-icon class="brand-icon">lightbulb</mat-icon>
-            <span class="brand-name">LIGTH</span>
+          <div class="header-top-row">
+            <div class="brand" (click)="navegar('/dashboard')">
+              <mat-icon class="brand-icon">lightbulb</mat-icon>
+              <span class="brand-name">LIGTH</span>
+            </div>
+
+            <div class="header-mobile-actions">
+              <button mat-icon-button class="mobile-nav-trigger" [matMenuTriggerFor]="mobileNavMenu" aria-label="Abrir navegacao">
+                <mat-icon>menu</mat-icon>
+              </button>
+
+              <button mat-icon-button [matMenuTriggerFor]="userMenu" aria-label="Menu do usuario">
+                <mat-icon>account_circle</mat-icon>
+              </button>
+            </div>
           </div>
 
           <div class="nav-links">
@@ -48,9 +60,43 @@ import { UserManagementService } from './core/services/user-management.service';
             }
           </div>
 
-          <button mat-icon-button [matMenuTriggerFor]="userMenu" aria-label="Menu do usuario">
+          <button mat-icon-button class="desktop-user-trigger" [matMenuTriggerFor]="userMenu" aria-label="Menu do usuario">
             <mat-icon>account_circle</mat-icon>
           </button>
+
+          <mat-menu #mobileNavMenu="matMenu">
+            <button mat-menu-item (click)="navegar('/dashboard')">
+              <mat-icon>dashboard</mat-icon>
+              <span>Dashboard</span>
+            </button>
+            <button mat-menu-item (click)="navegar('/consulta')">
+              <mat-icon>search</mat-icon>
+              <span>Consulta</span>
+            </button>
+            <button mat-menu-item (click)="navegar('/clientes')">
+              <mat-icon>people</mat-icon>
+              <span>Clientes</span>
+            </button>
+            <button mat-menu-item (click)="navegar('/produtos')">
+              <mat-icon>inventory_2</mat-icon>
+              <span>Produtos</span>
+            </button>
+            <button mat-menu-item (click)="navegar('/pedidos')">
+              <mat-icon>receipt_long</mat-icon>
+              <span>Pedidos</span>
+            </button>
+            <button mat-menu-item (click)="navegar('/estoque')">
+              <mat-icon>warehouse</mat-icon>
+              <span>Estoque</span>
+            </button>
+            @if (podeGerenciarUsuarios()) {
+              <button mat-menu-item (click)="navegar('/gerencia-usuarios')">
+                <mat-icon>manage_accounts</mat-icon>
+                <span>Usuários</span>
+              </button>
+            }
+          </mat-menu>
+
           <mat-menu #userMenu="matMenu">
             <button mat-menu-item (click)="logout()">
               <mat-icon>logout</mat-icon>
@@ -59,6 +105,36 @@ import { UserManagementService } from './core/services/user-management.service';
           </mat-menu>
         </div>
       </mat-toolbar>
+
+      <nav class="mobile-bottom-nav" aria-label="Navegação principal mobile">
+        <button mat-button class="mobile-bottom-link" (click)="navegar('/dashboard')" [class.active]="estaAtiva('/dashboard')">
+          <mat-icon>dashboard</mat-icon>
+          <span>Início</span>
+        </button>
+        <button mat-button class="mobile-bottom-link" (click)="navegar('/clientes')" [class.active]="estaAtiva('/clientes')">
+          <mat-icon>people</mat-icon>
+          <span>Clientes</span>
+        </button>
+        <button mat-button class="mobile-bottom-link" (click)="navegar('/pedidos')" [class.active]="estaAtiva('/pedidos')">
+          <mat-icon>receipt_long</mat-icon>
+          <span>Pedidos</span>
+        </button>
+        <button mat-button class="mobile-bottom-link" (click)="navegar('/estoque')" [class.active]="estaAtiva('/estoque')">
+          <mat-icon>warehouse</mat-icon>
+          <span>Estoque</span>
+        </button>
+        @if (podeGerenciarUsuarios()) {
+          <button mat-button class="mobile-bottom-link" (click)="navegar('/gerencia-usuarios')" [class.active]="estaAtiva('/gerencia-usuarios')">
+            <mat-icon>manage_accounts</mat-icon>
+            <span>Usuários</span>
+          </button>
+        } @else {
+          <button mat-button class="mobile-bottom-link" [matMenuTriggerFor]="mobileNavMenu">
+            <mat-icon>more_horiz</mat-icon>
+            <span>Mais</span>
+          </button>
+        }
+      </nav>
     }
 
     <router-outlet />
@@ -75,6 +151,13 @@ import { UserManagementService } from './core/services/user-management.service';
       display: flex;
       align-items: center;
       gap: 16px;
+    }
+    .header-top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      gap: 12px;
     }
     .brand {
       display: flex;
@@ -103,14 +186,71 @@ import { UserManagementService } from './core/services/user-management.service';
       background: rgba(255, 255, 255, 0.16);
       color: #fff;
     }
+    .header-mobile-actions,
+    .mobile-nav-trigger {
+      display: none;
+    }
+    .mobile-bottom-nav {
+      display: none;
+    }
     @media (max-width: 900px) {
+      :host {
+        padding-bottom: 84px;
+      }
       .header-content {
-        align-items: flex-start;
         flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
         padding: 8px 0;
       }
       .nav-links {
-        width: 100%;
+        display: none;
+      }
+      .desktop-user-trigger {
+        display: none;
+      }
+      .header-mobile-actions,
+      .mobile-nav-trigger {
+        display: inline-flex;
+      }
+      .mobile-bottom-nav {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 120;
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 4px;
+        padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+        background: rgba(255, 255, 255, 0.96);
+        backdrop-filter: blur(12px);
+        border-top: 1px solid rgba(91, 45, 142, 0.14);
+        box-shadow: 0 -8px 24px rgba(61, 26, 110, 0.12);
+      }
+      .mobile-bottom-link {
+        min-width: 0;
+        min-height: 56px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        border-radius: 14px;
+        color: #6b5b7b;
+        padding: 6px 4px;
+        line-height: 1;
+      }
+      .mobile-bottom-link span {
+        font-size: 11px;
+        font-weight: 600;
+      }
+      .mobile-bottom-link mat-icon {
+        margin: 0;
+      }
+      .mobile-bottom-link.active {
+        background: #f1e8fa;
+        color: #5b2d8e;
       }
     }
   `]

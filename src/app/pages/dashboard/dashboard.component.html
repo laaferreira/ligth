@@ -1,6 +1,28 @@
 <div class="page-wrapper">
   <main class="main-content">
     @if (data) {
+      <section class="dashboard-hero">
+        <div>
+          <p class="hero-kicker">Painel Geral</p>
+          <h1>Resumo do negócio em tempo real</h1>
+          <p class="hero-text">Acompanhe clientes, pedidos, faturamento e alertas de estoque com leitura rápida no desktop e no celular.</p>
+        </div>
+        <div class="hero-highlights">
+          <div class="hero-highlight">
+            <span class="highlight-label">Faturamento</span>
+            <strong>{{data.faturamentoTotal | currency:'BRL'}}</strong>
+          </div>
+          <div class="hero-highlight">
+            <span class="highlight-label">Pedidos abertos</span>
+            <strong>{{data.pedidosAbertos}}</strong>
+          </div>
+          <div class="hero-highlight alerta" [class.tem-alerta]="data.produtosEstoqueBaixo > 0">
+            <span class="highlight-label">Estoque baixo</span>
+            <strong>{{data.produtosEstoqueBaixo}}</strong>
+          </div>
+        </div>
+      </section>
+
       <!-- KPI Cards -->
       <div class="kpi-grid">
         <mat-card class="kpi-card">
@@ -71,7 +93,7 @@
       @if (data.estoqueCritico.length > 0) {
         <mat-card class="chart-card">
           <h3><mat-icon style="color:#c62828">warning</mat-icon> Produtos com Estoque Critico</h3>
-          <div class="table-wrapper">
+          <div class="table-wrapper desktop-table">
             <table mat-table [dataSource]="data.estoqueCritico">
               <ng-container matColumnDef="codigo"><th mat-header-cell *matHeaderCellDef>Codigo</th><td mat-cell *matCellDef="let r">{{r.codigo}}</td></ng-container>
               <ng-container matColumnDef="descricao"><th mat-header-cell *matHeaderCellDef>Descricao</th><td mat-cell *matCellDef="let r">{{r.descricao}}</td></ng-container>
@@ -80,6 +102,20 @@
               <tr mat-header-row *matHeaderRowDef="estoqueCols"></tr>
               <tr mat-row *matRowDef="let r; columns: estoqueCols;"></tr>
             </table>
+          </div>
+          <div class="mobile-stock-cards">
+            @for (r of data.estoqueCritico; track r.codigo) {
+              <div class="mobile-stock-card">
+                <div>
+                  <div class="mobile-stock-title">{{r.descricao}}</div>
+                  <div class="mobile-stock-code">{{r.codigo}}</div>
+                </div>
+                <div class="mobile-stock-values">
+                  <span><strong>{{r.estoque}}</strong> em estoque</span>
+                  <span>Mínimo: {{r.minimo}}</span>
+                </div>
+              </div>
+            }
           </div>
         </mat-card>
       }
