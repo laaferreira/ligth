@@ -130,6 +130,8 @@ type PedidoDialogData = {
               <ng-container matColumnDef="produto"><th mat-header-cell *matHeaderCellDef>Produto</th><td mat-cell *matCellDef="let r">{{r.produtoLabel}}</td></ng-container>
               <ng-container matColumnDef="quantidade"><th mat-header-cell *matHeaderCellDef>Qtd</th><td mat-cell *matCellDef="let r">{{r.quantidade}}</td></ng-container>
               <ng-container matColumnDef="valorUnitario"><th mat-header-cell *matHeaderCellDef>Unit.</th><td mat-cell *matCellDef="let r">{{r.valorUnitario | currency:'BRL'}}</td></ng-container>
+              <ng-container matColumnDef="custoTotal"><th mat-header-cell *matHeaderCellDef>Custo</th><td mat-cell *matCellDef="let r">{{r.custoTotal | currency:'BRL'}}</td></ng-container>
+              <ng-container matColumnDef="lucroTotal"><th mat-header-cell *matHeaderCellDef>Lucro</th><td mat-cell *matCellDef="let r"><span [class.margem-positiva]="r.lucroTotal >= 0" [class.margem-negativa]="r.lucroTotal < 0">{{r.lucroTotal | currency:'BRL'}}</span></td></ng-container>
               <ng-container matColumnDef="margemLucro"><th mat-header-cell *matHeaderCellDef>Margem</th><td mat-cell *matCellDef="let r">{{r.margemLucro === null ? '-' : ((r.margemLucro | number:'1.1-1') + '%')}}</td></ng-container>
               <ng-container matColumnDef="valorTotal"><th mat-header-cell *matHeaderCellDef>Total</th><td mat-cell *matCellDef="let r">{{r.valorTotal | currency:'BRL'}}</td></ng-container>
               <ng-container matColumnDef="remover"><th mat-header-cell *matHeaderCellDef></th><td mat-cell *matCellDef="let r; let i = index"><button mat-icon-button color="warn" (click)="removerItem(i)" matTooltip="Remover item do pedido"><mat-icon>delete</mat-icon></button></td></ng-container>
@@ -137,7 +139,11 @@ type PedidoDialogData = {
               <tr mat-row *matRowDef="let r; columns: itensColumns;"></tr>
             </table>
           </div>
-          <div class="total-row"><strong>Total: {{totalPedido | currency:'BRL'}}</strong></div>
+          <div class="total-row">
+            <strong>Total: {{totalPedido | currency:'BRL'}}</strong>
+            <strong>Custo total: {{custoTotalPedido | currency:'BRL'}}</strong>
+            <strong [class.margem-positiva]="lucroTotalPedido >= 0" [class.margem-negativa]="lucroTotalPedido < 0">Lucro total: {{lucroTotalPedido | currency:'BRL'}}</strong>
+          </div>
         }
       </div>
     </mat-dialog-content>
@@ -176,7 +182,7 @@ type PedidoDialogData = {
     .margem-negativa { color: #c62828; }
     .table-wrapper { overflow-x: auto; border-radius: 10px; border: 1px solid #e0d4ec; }
     .table-wrapper table { width: 100%; }
-    .total-row { text-align: right; padding: 12px 16px; font-size: 16px; color: #2e7d32; }
+    .total-row { display: flex; justify-content: flex-end; gap: 20px; flex-wrap: wrap; padding: 12px 16px; font-size: 16px; color: #2e7d32; }
     .dialog-actions { display: flex; gap: 12px; padding-top: 12px; border-top: 1px solid #ece3f4; position: sticky; bottom: 0; background: #fff; }
     .dialog-actions .mdc-button { min-height: 44px; }
     mat-form-field { width: 100%; }
@@ -188,7 +194,7 @@ type PedidoDialogData = {
       .btn-add-item { border-radius: 12px; min-height: 44px; }
       .dialog-actions { flex-direction: column; }
       .dialog-actions button { width: 100%; }
-      .total-row { text-align: left; padding-left: 0; padding-right: 0; }
+      .total-row { justify-content: flex-start; padding-left: 0; padding-right: 0; }
     }
   `]
 })
@@ -208,8 +214,8 @@ export class PedidoDialogComponent implements OnInit {
   get vlrControl(): FormControl { return this.itemForm.get('valorUnitario') as FormControl; }
   get margemControl(): FormControl { return this.itemForm.get('margemLucro') as FormControl; }
 
-  itensNovoPedido: { produtoId: number; produtoLabel: string; quantidade: number; valorUnitario: number; margemLucro: number | null; valorTotal: number }[] = [];
-  itensColumns = ['produto', 'quantidade', 'valorUnitario', 'margemLucro', 'valorTotal', 'remover'];
+  itensNovoPedido: { produtoId: number; produtoLabel: string; quantidade: number; valorUnitario: number; custoUnitario: number; custoTotal: number; margemLucro: number | null; lucroTotal: number; valorTotal: number }[] = [];
+  itensColumns = ['produto', 'quantidade', 'valorUnitario', 'custoTotal', 'lucroTotal', 'margemLucro', 'valorTotal', 'remover'];
   salvando = false;
   private atualizandoCamposPreco = false;
 
@@ -282,7 +288,10 @@ export class PedidoDialogComponent implements OnInit {
           produtoLabel: `${i.produtoCodigo} - ${i.produtoDescricao}`,
           quantidade: i.quantidade,
           valorUnitario: i.valorUnitario,
-          margemLucro: null,
+          custoUnitario: i.custoUnitario || 0,
+          custoTotal: i.custoTotal || i.quantidade * (i.custoUnitario || 0),
+          margemLucro: i.custoUnitario ? this.roundToTwo(((i.valorUnitario - i.custoUnitario) / i.custoUnitario) * 100) : null,
+          lucroTotal: (i.valorTotal || i.quantidade * i.valorUnitario) - (i.custoTotal || i.quantidade * (i.custoUnitario || 0)),
           valorTotal: i.valorTotal || i.quantidade * i.valorUnitario
         }));
       });
@@ -366,13 +375,19 @@ export class PedidoDialogComponent implements OnInit {
     if (!this.produtoSelecionado || this.itemForm.invalid) return;
     const qty = this.itemForm.value.quantidade;
     const unit = this.itemForm.value.valorUnitario;
+    const custoUnitario = this.precoCusto ?? 0;
+    const valorTotal = qty * unit;
+    const custoTotal = qty * custoUnitario;
     this.itensNovoPedido = [...this.itensNovoPedido, {
       produtoId: this.produtoSelecionado.id,
       produtoLabel: this.produtoSelecionado.label,
       quantidade: qty,
       valorUnitario: unit,
+      custoUnitario,
+      custoTotal,
       margemLucro: this.margemLucro,
-      valorTotal: qty * unit
+      lucroTotal: this.roundToTwo(valorTotal - custoTotal),
+      valorTotal
     }];
     this.produtoSelecionado = null;
     this.estoqueInfo = null;
@@ -386,6 +401,14 @@ export class PedidoDialogComponent implements OnInit {
 
   get totalPedido(): number {
     return this.itensNovoPedido.reduce((s, i) => s + i.valorTotal, 0);
+  }
+
+  get custoTotalPedido(): number {
+    return this.itensNovoPedido.reduce((s, i) => s + i.custoTotal, 0);
+  }
+
+  get lucroTotalPedido(): number {
+    return this.roundToTwo(this.totalPedido - this.custoTotalPedido);
   }
 
   salvarPedido(): void {

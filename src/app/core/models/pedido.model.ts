@@ -5,6 +5,8 @@ export interface ItemPedido {
   produtoCodigo?: string;
   quantidade: number;
   valorUnitario: number;
+  custoUnitario?: number;
+  custoTotal?: number;
   valorTotal?: number;
 }
 
@@ -16,6 +18,8 @@ export interface Pedido {
   clienteNome?: string;
   itens?: ItemPedido[];
   valorTotal?: number;
+  custoTotal?: number;
+  lucroTotal?: number;
   status?: string;
 }
 

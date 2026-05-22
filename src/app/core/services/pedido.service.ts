@@ -19,7 +19,7 @@ type ItemPedidoDbRow = {
   id?: number;
   pedido_id?: number | null;
   produto_id?: number | null;
-  quantidade?: number | null;
+  quantidade?: number | string | null;
   preco_unitario?: number | string | null;
   subtotal?: number | string | null;
   produtos?: {
@@ -27,11 +27,15 @@ type ItemPedidoDbRow = {
     nome?: string | null;
     codigo?: string | null;
     sku?: string | null;
+    precoCusto?: number | string | null;
+    preco_custo?: number | string | null;
   } | Array<{
     descricao?: string | null;
     nome?: string | null;
     codigo?: string | null;
     sku?: string | null;
+    precoCusto?: number | string | null;
+    preco_custo?: number | string | null;
   }> | null;
 };
 
@@ -45,7 +49,7 @@ export class PedidoService {
     return from(this.listarComControleAcesso()).pipe(
       map(response => {
         if (response.error) throw response.error;
-        return ((response.data || []) as PedidoDbRow[]).map(row => this.fromDb(row));
+        return (response.data || []) as Pedido[];
       })
     );
   }
@@ -158,7 +162,44 @@ export class PedidoService {
       query = query.eq('user_id', userId);
     }
 
-    return query;
+    const pedidosResponse = await query;
+    if (pedidosResponse.error || !pedidosResponse.data?.length) {
+      return {
+        data: ((pedidosResponse.data || []) as PedidoDbRow[]).map(row => this.fromDb(row)),
+        error: pedidosResponse.error
+      };
+    }
+
+    const pedidoIds = ((pedidosResponse.data || []) as PedidoDbRow[])
+      .map(row => row.id)
+      .filter((id): id is number => typeof id === 'number');
+
+    const itensResponse = await this.supabaseService.getClient()
+      .from('itens_pedidos')
+      .select('id, pedido_id, produto_id, quantidade, preco_unitario, subtotal, produtos(descricao, nome, codigo, sku, precoCusto, preco_custo)')
+      .in('pedido_id', pedidoIds)
+      .order('id', { ascending: true });
+
+    if (itensResponse.error) {
+      return { data: null, error: itensResponse.error };
+    }
+
+    const itensPorPedido = new Map<number, ItemPedidoDbRow[]>();
+    ((itensResponse.data || []) as ItemPedidoDbRow[]).forEach(item => {
+      const pedidoId = item.pedido_id;
+      if (pedidoId == null) {
+        return;
+      }
+
+      const itens = itensPorPedido.get(pedidoId) || [];
+      itens.push(item);
+      itensPorPedido.set(pedidoId, itens);
+    });
+
+    return {
+      data: ((pedidosResponse.data || []) as PedidoDbRow[]).map(row => this.fromDb(row, itensPorPedido.get(row.id ?? 0) || [])),
+      error: null
+    };
   }
 
   private async buscarPorIdComControleAcesso(id: number) {
@@ -179,7 +220,7 @@ export class PedidoService {
 
     const itensResponse = await this.supabaseService.getClient()
       .from('itens_pedidos')
-      .select('id, pedido_id, produto_id, quantidade, preco_unitario, subtotal, produtos(descricao, nome, codigo, sku)')
+      .select('id, pedido_id, produto_id, quantidade, preco_unitario, subtotal, produtos(descricao, nome, codigo, sku, precoCusto, preco_custo)')
       .eq('pedido_id', id)
       .order('id', { ascending: true });
 
@@ -299,29 +340,41 @@ export class PedidoService {
   }
 
   private fromDb(row: PedidoDbRow, itens: ItemPedidoDbRow[] = []): Pedido {
+    const itensPedido = itens.map(item => {
+      const produto = this.getProduto(item.produtos);
+      const quantidade = this.toNumber(item.quantidade);
+      const valorUnitario = this.toNumber(item.preco_unitario);
+      const custoUnitario = this.toNumber(produto?.precoCusto ?? produto?.preco_custo);
+      const valorTotal = this.toNumber(item.subtotal) || quantidade * valorUnitario;
+      const custoTotal = quantidade * custoUnitario;
+
+      return {
+        id: item.id,
+        produtoId: item.produto_id ?? 0,
+        produtoDescricao: produto?.descricao || produto?.nome || '',
+        produtoCodigo: produto?.codigo || produto?.sku || '',
+        quantidade,
+        valorUnitario,
+        custoUnitario,
+        custoTotal,
+        valorTotal
+      };
+    });
+
+    const custoTotal = itensPedido.reduce((total, item) => total + Number(item.custoTotal || 0), 0);
+    const valorTotal = this.toNumber(row.valor_total);
+
     return {
       id: row.id,
       numero: row.id ? String(row.id) : undefined,
       dataPedido: row.data || undefined,
       clienteId: row.cliente_id ?? 0,
       clienteNome: this.getClienteNome(row.clientes),
-      valorTotal: this.toNumber(row.valor_total),
+      valorTotal,
+      custoTotal,
+      lucroTotal: valorTotal - custoTotal,
       status: this.normalizeStatus(row.status),
-      itens: itens.map(item => {
-        const produto = this.getProduto(item.produtos);
-        const valorUnitario = this.toNumber(item.preco_unitario);
-        const valorTotal = this.toNumber(item.subtotal) || (item.quantidade || 0) * valorUnitario;
-
-        return {
-          id: item.id,
-          produtoId: item.produto_id ?? 0,
-          produtoDescricao: produto?.descricao || produto?.nome || '',
-          produtoCodigo: produto?.codigo || produto?.sku || '',
-          quantidade: item.quantidade ?? 0,
-          valorUnitario,
-          valorTotal
-        };
-      })
+      itens: itensPedido
     };
   }
 

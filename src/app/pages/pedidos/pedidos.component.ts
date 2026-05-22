@@ -38,7 +38,7 @@ import { PedidoDialogComponent } from './pedido-dialog.component';
 export class PedidosComponent implements OnInit {
   todosPedidos: Pedido[] = [];
   pedidos: Pedido[] = [];
-  displayedColumns = ['numero', 'dataPedido', 'clienteNome', 'valorTotal', 'status', 'acoes'];
+  displayedColumns = ['numero', 'dataPedido', 'clienteNome', 'valorTotal', 'custoTotal', 'lucroTotal', 'status', 'acoes'];
 
   // Filtros
   filtroTexto = '';
