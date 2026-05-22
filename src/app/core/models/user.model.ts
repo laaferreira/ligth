@@ -5,6 +5,7 @@ export interface AppUser {
   email: string;
   nome: string;
   role: UserRole;
+  comissao: number;
   created_at: string;
   created_by: string; // ID do usuário que criou
   is_active: boolean;
@@ -14,6 +15,7 @@ export interface CreateUserRequest {
   email: string;
   nome: string;
   role: UserRole;
+  comissao: number;
   password: string;
 }
 
@@ -24,5 +26,6 @@ export interface CreateUserFunctionResponse {
 export interface UpdateUserRequest {
   nome?: string;
   role?: UserRole;
+  comissao?: number;
   is_active?: boolean;
 }

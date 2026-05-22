@@ -20,6 +20,20 @@ export class UserManagementService {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   }
 
+  private normalizarComissao(comissao: number): number {
+    if (!Number.isFinite(comissao)) {
+      throw new Error('Informe uma comissão válida.');
+    }
+
+    const valorNormalizado = Number(comissao);
+
+    if (valorNormalizado < 0 || valorNormalizado > 100) {
+      throw new Error('A comissão deve estar entre 0 e 100.');
+    }
+
+    return valorNormalizado;
+  }
+
   /**
    * Criar novo usuário (requer permissão)
    * - Administrador pode criar qualquer perfil
@@ -48,6 +62,8 @@ export class UserManagementService {
       throw new Error('Informe um e-mail válido sem espaços extras');
     }
 
+    const comissaoNormalizada = this.normalizarComissao(dados.comissao);
+
     try {
       const response = await this.supabaseService.invokeFunction<CreateUserRequest, CreateUserFunctionResponse>(
         this.createUserFunctionName,
@@ -55,6 +71,7 @@ export class UserManagementService {
           email: emailNormalizado,
           nome: dados.nome.trim(),
           role: dados.role,
+          comissao: comissaoNormalizada,
           password: dados.password
         }
       );
@@ -140,10 +157,16 @@ export class UserManagementService {
       }
     }
 
+    const payload: UpdateUserRequest = { ...dados };
+
+    if (dados.comissao !== undefined) {
+      payload.comissao = this.normalizarComissao(dados.comissao);
+    }
+
     const { data, error } = await this.supabaseService
       .getClient()
       .from(this.table)
-      .update(dados)
+      .update(payload)
       .eq('id', id)
       .select()
       .single();

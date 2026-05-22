@@ -11,6 +11,7 @@ type CreateUserPayload = {
   email?: string;
   nome?: string;
   role?: UserRole;
+  comissao?: number;
   password?: string;
 };
 
@@ -19,6 +20,7 @@ type AppUser = {
   email: string;
   nome: string;
   role: UserRole;
+  comissao: number;
   created_at: string;
   created_by: string;
   is_active: boolean;
@@ -109,6 +111,7 @@ Deno.serve(async (request) => {
   const email = normalizeEmail(payload.email ?? '');
   const nome = (payload.nome ?? '').trim();
   const role = payload.role;
+  const comissao = Number(payload.comissao ?? 0);
   const password = payload.password ?? '';
 
   if (!emailRegex.test(email)) {
@@ -121,6 +124,10 @@ Deno.serve(async (request) => {
 
   if (!role || !['administrador', 'gerente', 'vendedor'].includes(role)) {
     return jsonResponse({ error: 'Perfil inválido.' }, 400);
+  }
+
+  if (!Number.isFinite(comissao) || comissao < 0 || comissao > 100) {
+    return jsonResponse({ error: 'A comissão deve estar entre 0 e 100.' }, 400);
   }
 
   if (password.length < 6) {
@@ -164,6 +171,7 @@ Deno.serve(async (request) => {
     email,
     nome,
     role,
+    comissao,
     created_by: requestingUserId,
     is_active: true
   };

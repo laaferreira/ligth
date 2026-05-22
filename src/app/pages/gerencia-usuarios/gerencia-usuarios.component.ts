@@ -97,6 +97,12 @@ import { CriarEditarUsuarioDialogComponent } from './criar-editar-usuario-dialog
                 </td>
               </ng-container>
 
+              <!-- Comissao Column -->
+              <ng-container matColumnDef="comissao">
+                <th mat-header-cell *matHeaderCellDef>Comissão</th>
+                <td mat-cell *matCellDef="let user">{{ formatarComissao(user.comissao) }}</td>
+              </ng-container>
+
               <!-- Status Column -->
               <ng-container matColumnDef="status">
                 <th mat-header-cell *matHeaderCellDef>Status</th>
@@ -164,6 +170,10 @@ import { CriarEditarUsuarioDialogComponent } from './criar-editar-usuario-dialog
               </div>
 
               <div class="user-mobile-details">
+                <div class="user-mobile-detail">
+                  <span class="detail-label">Comissão</span>
+                  <span>{{ formatarComissao(user.comissao) }}</span>
+                </div>
                 <div class="user-mobile-detail">
                   <span class="detail-label">Status</span>
                   <span [class]="user.is_active ? 'status-ativo' : 'status-inativo'">
@@ -361,7 +371,7 @@ export class GerenciaUsuariosComponent implements OnInit {
   usuarioAtual: AppUser | null = null;
   filtroRole: string = '';
   filtroAtivo: any = '';
-  colunas: string[] = ['email', 'nome', 'role', 'status', 'created_at', 'acoes'];
+  colunas: string[] = ['email', 'nome', 'role', 'comissao', 'status', 'created_at', 'acoes'];
 
   constructor(
     private userManagementService: UserManagementService,
@@ -475,5 +485,9 @@ export class GerenciaUsuariosComponent implements OnInit {
       vendedor: 'Vendedor'
     };
     return traducoes[role] || role;
+  }
+
+  formatarComissao(comissao: number): string {
+    return `${Number(comissao ?? 0).toFixed(2)}%`;
   }
 }

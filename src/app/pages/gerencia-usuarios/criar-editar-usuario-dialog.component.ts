@@ -64,6 +64,16 @@ import { AppUser, UserRole } from '../../core/models/user.model';
           <mat-error *ngIf="form.get('role')?.hasError('required')">Perfil é obrigatório</mat-error>
         </mat-form-field>
 
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Comissão (%)</mat-label>
+          <input matInput type="number" min="0" max="100" step="0.01" formControlName="comissao" required>
+          <mat-hint>Percentual aplicado sobre cada pedido finalizado.</mat-hint>
+          <mat-error *ngIf="form.get('comissao')?.hasError('required')">Comissão é obrigatória</mat-error>
+          <mat-error *ngIf="form.get('comissao')?.hasError('min') || form.get('comissao')?.hasError('max')">
+            A comissão deve estar entre 0 e 100.
+          </mat-error>
+        </mat-form-field>
+
         <mat-form-field appearance="outline" class="full-width" *ngIf="data.modo === 'criar'">
           <mat-label>Senha</mat-label>
           <input matInput type="password" formControlName="password" required autocomplete="new-password">
@@ -199,6 +209,7 @@ export class CriarEditarUsuarioDialogComponent {
       ],
       nome: [isEditar ? this.data.usuario?.nome : '', Validators.required],
       role: [isEditar ? this.data.usuario?.role : '', Validators.required],
+      comissao: [isEditar ? this.data.usuario?.comissao : 0, [Validators.required, Validators.min(0), Validators.max(100)]],
       password: [
         '',
         this.data.modo === 'criar' ? [Validators.required, Validators.minLength(6)] : []
@@ -251,7 +262,8 @@ export class CriarEditarUsuarioDialogComponent {
     const formValue = this.form.getRawValue();
     const atualizacoes = {
       nome: formValue.nome,
-      role: formValue.role
+      role: formValue.role,
+      comissao: formValue.comissao
     };
 
     this.saving = true;
