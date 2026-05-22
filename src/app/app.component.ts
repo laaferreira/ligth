@@ -19,8 +19,8 @@ import { UserManagementService } from './core/services/user-management.service';
         <div class="header-content">
           <div class="header-top-row">
             <div class="brand" (click)="navegar('/dashboard')">
-              <mat-icon class="brand-icon">lightbulb</mat-icon>
-              <span class="brand-name">LIGTH</span>
+              <img class="brand-logo" src="assets/light-brand.png" alt="Light">
+              <span class="brand-name">LIGHT</span>
             </div>
 
             <div class="header-mobile-actions">
@@ -174,6 +174,13 @@ import { UserManagementService } from './core/services/user-management.service';
       cursor: pointer;
       user-select: none;
       white-space: nowrap;
+    }
+    .brand-logo {
+      width: 34px;
+      height: 34px;
+      display: block;
+      flex: 0 0 auto;
+      filter: drop-shadow(0 4px 10px rgba(255, 181, 0, 0.28));
     }
     .brand-name {
       font-weight: 700;

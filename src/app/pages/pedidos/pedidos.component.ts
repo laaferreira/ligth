@@ -36,6 +36,8 @@ import { PedidoDialogComponent } from './pedido-dialog.component';
   styleUrl: './pedidos.component.scss'
 })
 export class PedidosComponent implements OnInit {
+  private readonly brandLogoPath = 'assets/light-brand.png';
+  private brandLogoDataUrlPromise: Promise<string> | null = null;
   todosPedidos: Pedido[] = [];
   pedidos: Pedido[] = [];
   displayedColumns = ['numero', 'dataPedido', 'clienteNome', 'valorTotal', 'custoTotal', 'lucroTotal', 'status', 'acoes'];
@@ -184,14 +186,21 @@ export class PedidosComponent implements OnInit {
   }
 
   gerarPDF(pedido: Pedido): void {
-    this.pedidoService.buscarPorId(pedido.id!).subscribe(p => {
+    this.pedidoService.buscarPorId(pedido.id!).subscribe(async p => {
       const doc = new jsPDF();
       const pw = doc.internal.pageSize.getWidth();
-      doc.setFillColor(106, 27, 154); doc.rect(14, 10, 30, 30, 'F');
-      doc.setTextColor(255, 255, 255); doc.setFontSize(8);
-      doc.text('LIGTH', 22, 25, { align: 'center' }); doc.text('COMERCIAL', 22, 30, { align: 'center' });
-      doc.setTextColor(0, 0, 0); doc.setFontSize(22); doc.setFont('helvetica', 'bold');
-      doc.text('LIGTH COMERCIAL', pw / 2, 25, { align: 'center' });
+      try {
+        const brandLogo = await this.getBrandLogoDataUrl();
+        doc.addImage(brandLogo, 'PNG', 14, 10, 28, 28);
+      } catch {
+        doc.setFillColor(255, 197, 22);
+        doc.circle(28, 24, 12, 'F');
+      }
+      doc.setTextColor(91, 45, 142); doc.setFontSize(22); doc.setFont('helvetica', 'bold');
+      doc.text('LIGHT COMERCIAL', 50, 24);
+      doc.setTextColor(107, 91, 123); doc.setFontSize(10); doc.setFont('helvetica', 'normal');
+      doc.text('Sistema de pedidos', 50, 31);
+      doc.setTextColor(0, 0, 0);
       doc.setFontSize(12); doc.setFont('helvetica', 'normal');
       doc.text(p.clienteNome || '', pw / 2, 45, { align: 'center' });
       doc.setFontSize(10); doc.setTextColor(100, 100, 100);
@@ -215,6 +224,30 @@ export class PedidosComponent implements OnInit {
       doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(80, 80, 80);
       doc.text(new Date().toLocaleDateString('pt-BR') + ' as ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + ' horas', pw / 2, fty + 10, { align: 'center' });
       doc.save(`pedido-${p.numero}.pdf`);
+    });
+  }
+
+  private async getBrandLogoDataUrl(): Promise<string> {
+    if (!this.brandLogoDataUrlPromise) {
+      this.brandLogoDataUrlPromise = this.imageToDataUrl(this.brandLogoPath);
+    }
+
+    return this.brandLogoDataUrlPromise;
+  }
+
+  private async imageToDataUrl(path: string): Promise<string> {
+    const response = await fetch(path);
+    if (!response.ok) {
+      throw new Error('Nao foi possivel carregar o logo da marca.');
+    }
+
+    const blob = await response.blob();
+
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = () => reject(new Error('Falha ao processar o logo da marca.'));
+      reader.readAsDataURL(blob);
     });
   }
 
