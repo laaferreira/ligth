@@ -35,15 +35,15 @@ export class ConsultaService {
     return from(
       this.supabaseService.getClient()
         .from(this.produtosTable)
-        .select('id, nome')
-        .ilike('nome', `%${termo}%`)
+        .select('id, nome, descricao, codigo, sku')
+        .or(`descricao.ilike.%${termo}%,codigo.ilike.%${termo}%,nome.ilike.%${termo}%,sku.ilike.%${termo}%`)
         .limit(10)
     ).pipe(
       map(response => {
         if (response.error) throw response.error;
         return (response.data || []).map(item => ({
           id: item.id,
-          label: item.nome
+          label: this.formatarProdutoLabel(item)
         })) as AutocompleteItem[];
       })
     );
@@ -53,15 +53,15 @@ export class ConsultaService {
     return from(
       this.supabaseService.getClient()
         .from(this.produtosTable)
-        .select('id, nome, descricao, preco_venda, precoVenda, preco_custo, precoCusto, quantidadeEstoque, quantidade')
-        .ilike('nome', `%${termo}%`)
+        .select('id, nome, descricao, codigo, sku, preco_venda, precoVenda, preco_custo, precoCusto, quantidadeEstoque, quantidade')
+        .or(`descricao.ilike.%${termo}%,codigo.ilike.%${termo}%,nome.ilike.%${termo}%,sku.ilike.%${termo}%`)
         .limit(10)
     ).pipe(
       map(response => {
         if (response.error) throw response.error;
         return (response.data || []).map(item => ({
           id: item.id,
-          label: item.nome || item.descricao,
+          label: this.formatarProdutoLabel(item),
           valor: item.preco_venda,
           precoCusto: item.precoCusto ?? item.preco_custo ?? 0,
           quantidadeEstoque: Number(item.quantidadeEstoque ?? item.quantidade ?? 0)
@@ -139,5 +139,21 @@ export class ConsultaService {
   private toNumber(value: number | string | null | undefined): number {
     const parsed = Number(value ?? 0);
     return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  private formatarProdutoLabel(item: {
+    codigo?: string | null;
+    sku?: string | null;
+    descricao?: string | null;
+    nome?: string | null;
+  }): string {
+    const codigo = (item.codigo || item.sku || '').trim();
+    const descricao = (item.descricao || item.nome || '').trim();
+
+    if (codigo && descricao) {
+      return `${codigo} - ${descricao}`;
+    }
+
+    return codigo || descricao;
   }
 }
