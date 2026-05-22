@@ -25,11 +25,15 @@
         </mat-form-field>
         <mat-form-field appearance="outline" class="filtro-data">
           <mat-label>De</mat-label>
-          <input matInput type="date" [value]="filtroDataDe" (change)="filtroDataDe=$any($event.target).value; aplicarFiltros()">
+          <input matInput [matDatepicker]="pickerDataDe" [value]="filtroDataDe" (dateChange)="filtroDataDe=$event.value; aplicarFiltros()" placeholder="dd/mm/yyyy">
+          <mat-datepicker-toggle matIconSuffix [for]="pickerDataDe"></mat-datepicker-toggle>
+          <mat-datepicker #pickerDataDe></mat-datepicker>
         </mat-form-field>
         <mat-form-field appearance="outline" class="filtro-data">
           <mat-label>Ate</mat-label>
-          <input matInput type="date" [value]="filtroDataAte" (change)="filtroDataAte=$any($event.target).value; aplicarFiltros()">
+          <input matInput [matDatepicker]="pickerDataAte" [value]="filtroDataAte" (dateChange)="filtroDataAte=$event.value; aplicarFiltros()" placeholder="dd/mm/yyyy">
+          <mat-datepicker-toggle matIconSuffix [for]="pickerDataAte"></mat-datepicker-toggle>
+          <mat-datepicker #pickerDataAte></mat-datepicker>
         </mat-form-field>
         @if (filtroTexto || filtroStatus || filtroDataDe || filtroDataAte) {
           <button mat-stroked-button (click)="limparFiltros()" class="btn-limpar-filtro" matTooltip="Limpar filtros aplicados">

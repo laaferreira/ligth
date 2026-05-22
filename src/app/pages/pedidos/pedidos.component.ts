@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, Injectable, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -7,6 +7,8 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { DateAdapter, MAT_DATE_FORMATS, MAT_DATE_LOCALE, MatNativeDateModule, NativeDateAdapter } from '@angular/material/core';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
@@ -25,14 +27,60 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { PedidoDialogComponent } from './pedido-dialog.component';
 
+const PEDIDOS_DATE_FORMATS = {
+  parse: {
+    dateInput: 'DD/MM/YYYY'
+  },
+  display: {
+    dateInput: 'dd/MM/yyyy',
+    monthYearLabel: 'MMM yyyy',
+    dateA11yLabel: 'dd/MM/yyyy',
+    monthYearA11yLabel: 'MMMM yyyy'
+  }
+};
+
+@Injectable()
+class PedidosDateAdapter extends NativeDateAdapter {
+  override parse(value: unknown): Date | null {
+    if (typeof value === 'string') {
+      const valor = value.trim();
+      if (!valor) {
+        return null;
+      }
+
+      const match = valor.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if (match) {
+        const [, dia, mes, ano] = match;
+        const data = new Date(Number(ano), Number(mes) - 1, Number(dia));
+        return this.isValid(data) ? data : null;
+      }
+    }
+
+    const data = value instanceof Date ? value : new Date(value as string);
+    return this.isValid(data) ? data : null;
+  }
+
+  override format(date: Date): string {
+    const dia = String(date.getDate()).padStart(2, '0');
+    const mes = String(date.getMonth() + 1).padStart(2, '0');
+    const ano = date.getFullYear();
+    return `${dia}/${mes}/${ano}`;
+  }
+}
+
 @Component({
   selector: 'app-pedidos',
   standalone: true,
   imports: [
     CommonModule, ReactiveFormsModule,
-    MatToolbarModule, MatCardModule, MatDialogModule, MatFormFieldModule, MatInputModule,
+    MatToolbarModule, MatCardModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatDatepickerModule, MatNativeDateModule,
     MatButtonModule, MatIconModule,
     MatTableModule, MatMenuModule, MatSnackBarModule, MatSelectModule, MatPaginatorModule, MatTooltipModule
+  ],
+  providers: [
+    { provide: MAT_DATE_LOCALE, useValue: 'pt-BR' },
+    { provide: DateAdapter, useClass: PedidosDateAdapter },
+    { provide: MAT_DATE_FORMATS, useValue: PEDIDOS_DATE_FORMATS }
   ],
   templateUrl: './pedidos.component.html',
   styleUrl: './pedidos.component.scss'
@@ -48,8 +96,8 @@ export class PedidosComponent implements OnInit {
   // Filtros
   filtroTexto = '';
   filtroStatus = '';
-  filtroDataDe = '';
-  filtroDataAte = '';
+  filtroDataDe: Date | null = null;
+  filtroDataAte: Date | null = null;
   paginaAtual = 0;
   itensPorPagina = 10;
   readonly opcoesItensPorPagina = [10, 25, 50];
@@ -101,12 +149,14 @@ export class PedidosComponent implements OnInit {
 
     // Filtro data de
     if (this.filtroDataDe) {
-      resultado = resultado.filter(p => (p.dataPedido || '') >= this.filtroDataDe);
+      const dataDe = this.formatarDataFiltro(this.filtroDataDe);
+      resultado = resultado.filter(p => (p.dataPedido || '') >= dataDe);
     }
 
     // Filtro data ate
     if (this.filtroDataAte) {
-      resultado = resultado.filter(p => (p.dataPedido || '') <= this.filtroDataAte);
+      const dataAte = this.formatarDataFiltro(this.filtroDataAte);
+      resultado = resultado.filter(p => (p.dataPedido || '') <= dataAte);
     }
 
     this.pedidos = resultado;
@@ -116,9 +166,16 @@ export class PedidosComponent implements OnInit {
   limparFiltros(): void {
     this.filtroTexto = '';
     this.filtroStatus = '';
-    this.filtroDataDe = '';
-    this.filtroDataAte = '';
+    this.filtroDataDe = null;
+    this.filtroDataAte = null;
     this.aplicarFiltros();
+  }
+
+  private formatarDataFiltro(data: Date): string {
+    const ano = data.getFullYear();
+    const mes = String(data.getMonth() + 1).padStart(2, '0');
+    const dia = String(data.getDate()).padStart(2, '0');
+    return `${ano}-${mes}-${dia}`;
   }
 
   novo(): void {
