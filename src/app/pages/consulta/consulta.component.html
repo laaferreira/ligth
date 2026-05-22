@@ -1,14 +1,28 @@
 <div class="page-wrapper">
   <main class="main-content">
-    <div class="container">
-      <!-- Search Card -->
-      <mat-card class="search-card">
-        <div class="card-header">
-          <mat-icon>search</mat-icon>
-          <div>
-            <h2>Consulta de Historico</h2>
-            <p>Pesquise os ultimos pedidos de produtos para um cliente</p>
-          </div>
+    <section class="page-hero">
+      <div>
+        <p class="hero-kicker">Consulta comercial</p>
+        <h1>Consulta de histórico</h1>
+        <p class="hero-text">Pesquise os últimos pedidos por cliente e produto com o mesmo padrão visual aplicado às demais telas operacionais.</p>
+      </div>
+      <div class="hero-highlights">
+        <div class="hero-highlight">
+          <span class="highlight-label">Filtro principal</span>
+          <strong>Cliente + produtos</strong>
+        </div>
+        <div class="hero-highlight destaque">
+          <span class="highlight-label">Resultado</span>
+          <strong>{{ resultados.length }} registro(s)</strong>
+        </div>
+      </div>
+    </section>
+
+    <mat-card class="filtros-card">
+      <mat-card-content>
+        <div class="section-heading">
+          <p class="section-kicker">Consulta</p>
+          <h2>Selecione cliente e produtos</h2>
         </div>
 
         <div class="search-fields">
@@ -82,27 +96,37 @@
             </button>
           </div>
         </div>
-      </mat-card>
+      </mat-card-content>
+    </mat-card>
 
       <!-- Results -->
       @if (loading) {
-        <div class="loading-container">
-          <mat-spinner diameter="40"></mat-spinner>
-          <p>Buscando historico...</p>
-        </div>
+        <mat-card class="estado estado-loading">
+          <mat-card-content>
+            <mat-spinner diameter="40"></mat-spinner>
+            <span>Buscando histórico...</span>
+          </mat-card-content>
+        </mat-card>
       }
 
       @if (pesquisaRealizada && !loading) {
-        <mat-card class="results-card">
-          <div class="results-header">
-            <mat-icon>receipt_long</mat-icon>
-            <h3>Ultimos Pedidos</h3>
-            <span class="results-count">{{ resultados.length }} registro(s)</span>
-          </div>
+        <mat-card class="resultado-card">
+          <mat-card-content>
+            <div class="resultado-header">
+              <div>
+                <p class="section-kicker">Resultado</p>
+                <h2>Últimos pedidos</h2>
+                <p class="resultado-subtitle">Histórico encontrado para os filtros informados.</p>
+              </div>
+              <div class="resultado-chip">
+                <span>{{ resultados.length }}</span>
+                <small>registro(s)</small>
+              </div>
+            </div>
 
           @if (resultados.length > 0) {
             <!-- Desktop Table -->
-            <div class="table-wrapper">
+            <div class="table-wrapper desktop-table">
               <table mat-table [dataSource]="resultados" class="results-table">
                 <ng-container matColumnDef="dataPedido">
                   <th mat-header-cell *matHeaderCellDef>Data do Pedido</th>
@@ -163,13 +187,13 @@
               }
             </div>
           } @else {
-            <div class="empty-state">
+            <div class="empty-state estado-vazio-interno">
               <mat-icon>search_off</mat-icon>
-              <p>Nenhum pedido encontrado para esta combinacao de cliente e produto(s).</p>
+              <p>Nenhum pedido encontrado para esta combinação de cliente e produto(s).</p>
             </div>
           }
+          </mat-card-content>
         </mat-card>
       }
-    </div>
   </main>
 </div>

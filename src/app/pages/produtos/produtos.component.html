@@ -1,18 +1,40 @@
 <div class="page-wrapper">
-  <main class="main-content"><div class="container">
-    <mat-card class="crud-card">
-      <div class="card-header">
-        <div><h2>Produtos</h2><p>Gerencie produtos, fornecedores e estoque</p></div>
+  <main class="main-content">
+    <section class="page-hero">
+      <div>
+        <p class="hero-kicker">Catálogo e estoque</p>
+        <h1>Produtos</h1>
+        <p class="hero-text">Gerencie o catálogo, acompanhe indicadores de estoque e faturamento e mantenha a operação no mesmo padrão visual das outras telas.</p>
+      </div>
+      <div class="hero-highlights">
+        <div class="hero-highlight">
+          <span class="highlight-label">Cadastros</span>
+          <strong>{{ produtos.length }} produto(s)</strong>
+        </div>
+        <div class="hero-highlight destaque">
+          <span class="highlight-label">Operação</span>
+          <strong>Cadastro e importação</strong>
+        </div>
+      </div>
+    </section>
+
+    <mat-card class="filtros-card">
+      <mat-card-content>
+        <div class="section-heading">
+          <p class="section-kicker">Operação</p>
+          <h2>Gerencie produtos e indicadores</h2>
+        </div>
+
         <div class="header-actions">
           <input #fileInput type="file" accept=".xlsx,.xls" hidden (change)="importarArquivo($event)">
           <button mat-stroked-button type="button" (click)="fileInput.click()" [disabled]="importando">
             <mat-icon>upload_file</mat-icon>
             {{ importando ? 'Importando...' : 'Importar XLSX' }}
           </button>
-          <button mat-raised-button color="primary" (click)="novo()"><mat-icon>add</mat-icon> Novo</button>
+          <button mat-raised-button color="primary" (click)="novo()"><mat-icon>add</mat-icon> Novo produto</button>
         </div>
-      </div>
-      <div class="top-summary-cards">
+
+        <div class="top-summary-cards">
         <mat-card class="summary-card summary-card-estoque" matTooltip="Soma de quantidade em estoque multiplicada pelo custo médio de cada produto">
           <div class="summary-card-label">Custo do Estoque</div>
           <div class="summary-card-value">{{ custoTotalEstoque | currency:'BRL' }}</div>
@@ -28,26 +50,54 @@
           <div class="summary-card-value">{{ valorPotencialEstoqueVenda | currency:'BRL' }}</div>
           <div class="summary-card-caption">Estoque atual x preço de venda dos produtos</div>
         </mat-card>
-      </div>
-      @if (resumoImportacao) {
-        <div class="import-summary">{{ resumoImportacao }}</div>
-      }
-      <div class="filtro-container">
-        <mat-form-field appearance="outline" class="filtro-field">
-          <mat-label>Filtrar produtos</mat-label>
-          <input matInput [value]="filtro" (input)="onFiltroChange($any($event.target).value)"
-                 placeholder="Buscar por codigo, descricao, categoria ou fornecedor...">
-          <mat-icon matPrefix>filter_list</mat-icon>
-          @if (filtro) {
-            <button mat-icon-button matSuffix (click)="limparFiltro()" aria-label="Limpar filtro">
-              <mat-icon>close</mat-icon>
-            </button>
-          }
-        </mat-form-field>
-        <span class="filtro-count">{{produtos.length}} de {{todosProdutos.length}} produto(s)</span>
-      </div>
-      <div class="table-wrapper desktop-table">
-        <table mat-table [dataSource]="produtosPaginados">
+        </div>
+        @if (resumoImportacao) {
+          <div class="import-summary">{{ resumoImportacao }}</div>
+        }
+        <div class="filtro-container">
+          <mat-form-field appearance="outline" class="filtro-field">
+            <mat-label>Filtrar produtos</mat-label>
+            <input matInput [value]="filtro" (input)="onFiltroChange($any($event.target).value)"
+                   placeholder="Buscar por codigo, descricao, categoria ou fornecedor...">
+            <mat-icon matPrefix>filter_list</mat-icon>
+            @if (filtro) {
+              <button mat-icon-button matSuffix (click)="limparFiltro()" aria-label="Limpar filtro">
+                <mat-icon>close</mat-icon>
+              </button>
+            }
+          </mat-form-field>
+          <span class="filtro-count">{{produtos.length}} de {{todosProdutos.length}} produto(s)</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    @if (produtos.length === 0) {
+      <mat-card class="estado estado-vazio">
+        <mat-card-content>
+          <mat-icon>inventory_2</mat-icon>
+          <div>
+            <strong>Nenhum produto encontrado</strong>
+            <p>Cadastre um produto manualmente ou importe uma planilha para iniciar o catálogo.</p>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    } @else {
+      <mat-card class="resultado-card">
+        <mat-card-content>
+          <div class="resultado-header">
+            <div>
+              <p class="section-kicker">Resultado</p>
+              <h2>Produtos cadastrados</h2>
+              <p class="resultado-subtitle">Listagem com paginação, estoque, custo médio e valor de venda.</p>
+            </div>
+            <div class="resultado-chip">
+              <span>{{ produtos.length }}</span>
+              <small>registro(s)</small>
+            </div>
+          </div>
+
+          <div class="table-wrapper desktop-table">
+            <table mat-table [dataSource]="produtosPaginados">
           <ng-container matColumnDef="descricao"><th mat-header-cell *matHeaderCellDef>Descricao</th><td mat-cell *matCellDef="let r">{{r.descricao}}</td></ng-container>
           <ng-container matColumnDef="fornecedor"><th mat-header-cell *matHeaderCellDef>Fornecedor</th><td mat-cell *matCellDef="let r">{{nomeFornecedor(r)}}</td></ng-container>
           <ng-container matColumnDef="precoCusto"><th mat-header-cell *matHeaderCellDef>Custo Medio</th><td mat-cell *matCellDef="let r">{{r.precoCusto | currency:'BRL'}}</td></ng-container>
@@ -63,17 +113,17 @@
           </td></ng-container>
           <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
           <tr mat-row *matRowDef="let r; columns: displayedColumns;"></tr>
-        </table>
-      </div>
-      <mat-paginator
-        [length]="produtos.length"
-        [pageIndex]="paginaAtual"
-        [pageSize]="itensPorPagina"
-        [pageSizeOptions]="opcoesItensPorPagina"
-        [showFirstLastButtons]="true"
-        (page)="aoMudarPagina($event)">
-      </mat-paginator>
-      <div class="mobile-cards">
+            </table>
+          </div>
+          <mat-paginator
+            [length]="produtos.length"
+            [pageIndex]="paginaAtual"
+            [pageSize]="itensPorPagina"
+            [pageSizeOptions]="opcoesItensPorPagina"
+            [showFirstLastButtons]="true"
+            (page)="aoMudarPagina($event)">
+          </mat-paginator>
+          <div class="mobile-cards">
         @for (r of produtosPaginados; track trackProduto(r)) {
           <mat-card class="mobile-card">
             <div class="mobile-card-header">
@@ -103,7 +153,9 @@
             </div>
           </mat-card>
         }
-      </div>
-    </mat-card>
-  </div></main>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    }
+  </main>
 </div>

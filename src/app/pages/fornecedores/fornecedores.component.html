@@ -1,8 +1,30 @@
 <div class="page-wrapper">
-  <main class="main-content"><div class="container">
-    <mat-card class="crud-card">
-      <div class="card-header">
-        <div><h2>Fornecedores</h2><p>Gerencie e importe os fornecedores cadastrados</p></div>
+  <main class="main-content">
+    <section class="page-hero">
+      <div>
+        <p class="hero-kicker">Abastecimento</p>
+        <h1>Fornecedores</h1>
+        <p class="hero-text">Centralize os fornecedores cadastrados, mantenha os responsáveis definidos e importe planilhas no mesmo padrão visual das demais telas operacionais.</p>
+      </div>
+      <div class="hero-highlights">
+        <div class="hero-highlight">
+          <span class="highlight-label">Cadastros</span>
+          <strong>{{ fornecedores.length }} fornecedor(es)</strong>
+        </div>
+        <div class="hero-highlight destaque">
+          <span class="highlight-label">Operação</span>
+          <strong>Cadastro e importação</strong>
+        </div>
+      </div>
+    </section>
+
+    <mat-card class="filtros-card">
+      <mat-card-content>
+        <div class="section-heading">
+          <p class="section-kicker">Operação</p>
+          <h2>Gerencie a base de fornecedores</h2>
+        </div>
+
         <div class="header-actions">
           @if (podeImportarXls) {
             <mat-form-field appearance="outline" class="responsavel-import-field">
@@ -19,54 +41,85 @@
               {{ importando ? 'Importando...' : 'Importar XLSX' }}
             </button>
           }
-          <button mat-raised-button color="primary" (click)="novo()"><mat-icon>add</mat-icon> Novo</button>
+          <button mat-raised-button color="primary" (click)="novo()"><mat-icon>add</mat-icon> Novo fornecedor</button>
         </div>
-      </div>
-      @if (resumoImportacao) {
-        <div class="import-summary">{{ resumoImportacao }}</div>
-      }
-      <div class="table-wrapper desktop-table">
-        <table mat-table [dataSource]="fornecedores">
-          <ng-container matColumnDef="nome"><th mat-header-cell *matHeaderCellDef>Nome Fantasia</th><td mat-cell *matCellDef="let r">{{r.nome}}</td></ng-container>
-          <ng-container matColumnDef="razaoSocial"><th mat-header-cell *matHeaderCellDef>Razão Social</th><td mat-cell *matCellDef="let r">{{r.razaoSocial || '-'}}</td></ng-container>
-          <ng-container matColumnDef="cnpjCpf"><th mat-header-cell *matHeaderCellDef>CNPJ/CPF</th><td mat-cell *matCellDef="let r">{{r.cnpjCpf || '-'}}</td></ng-container>
-          <ng-container matColumnDef="telefone"><th mat-header-cell *matHeaderCellDef>Telefone</th><td mat-cell *matCellDef="let r">{{r.telefone || '-'}}</td></ng-container>
-          <ng-container matColumnDef="responsavel"><th mat-header-cell *matHeaderCellDef>Responsável</th><td mat-cell *matCellDef="let r">{{nomeResponsavel(r)}}</td></ng-container>
-          <ng-container matColumnDef="dataCadastro"><th mat-header-cell *matHeaderCellDef>Cadastro</th><td mat-cell *matCellDef="let r">{{r.dataCadastro | date:'dd/MM/yyyy'}}</td></ng-container>
-          <ng-container matColumnDef="acoes"><th mat-header-cell *matHeaderCellDef></th><td mat-cell *matCellDef="let r">
-            <button mat-icon-button color="primary" (click)="editar(r)"><mat-icon>edit</mat-icon></button>
-          </td></ng-container>
-          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-          <tr mat-row *matRowDef="let r; columns: displayedColumns;"></tr>
-        </table>
-      </div>
-      <div class="mobile-cards">
-        @for (r of fornecedores; track trackFornecedor(r)) {
-          <mat-card class="mobile-card">
-            <div class="mobile-card-header">
-              <div>
-                <div class="mobile-card-title">{{r.nome}}</div>
-                <div class="mobile-card-subtitle">{{r.razaoSocial || 'Sem razão social'}}{{r.cnpjCpf ? ' · ' + r.cnpjCpf : ''}}</div>
-              </div>
-              <button mat-icon-button color="primary" (click)="editar(r)" aria-label="Editar fornecedor">
-                <mat-icon>edit</mat-icon>
-              </button>
-            </div>
-            <div class="mobile-card-details">
-              <div class="detail"><span class="detail-label">Contato</span><span>{{r.contato || '-'}}</span></div>
-              <div class="detail"><span class="detail-label">Telefone</span><span>{{r.telefone || '-'}}</span></div>
-              <div class="detail"><span class="detail-label">Responsável</span><span>{{nomeResponsavel(r)}}</span></div>
-              <div class="detail"><span class="detail-label">Cadastro</span><span>{{r.dataCadastro | date:'dd/MM/yyyy'}}</span></div>
-            </div>
-            <div class="mobile-card-actions">
-              <button mat-stroked-button color="primary" (click)="editar(r)">
-                <mat-icon>edit</mat-icon>
-                Editar fornecedor
-              </button>
-            </div>
-          </mat-card>
+
+        @if (resumoImportacao) {
+          <div class="import-summary">{{ resumoImportacao }}</div>
         }
-      </div>
+      </mat-card-content>
     </mat-card>
-  </div></main>
+
+    @if (fornecedores.length === 0) {
+      <mat-card class="estado estado-vazio">
+        <mat-card-content>
+          <mat-icon>inventory_2</mat-icon>
+          <div>
+            <strong>Nenhum fornecedor encontrado</strong>
+            <p>Cadastre um fornecedor manualmente ou importe uma planilha para montar a base.</p>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    } @else {
+      <mat-card class="resultado-card">
+        <mat-card-content>
+          <div class="resultado-header">
+            <div>
+              <p class="section-kicker">Resultado</p>
+              <h2>Fornecedores cadastrados</h2>
+              <p class="resultado-subtitle">Listagem com razão social, documento, responsável e data de cadastro.</p>
+            </div>
+            <div class="resultado-chip">
+              <span>{{ fornecedores.length }}</span>
+              <small>registro(s)</small>
+            </div>
+          </div>
+
+          <div class="table-wrapper desktop-table">
+            <table mat-table [dataSource]="fornecedores">
+              <ng-container matColumnDef="nome"><th mat-header-cell *matHeaderCellDef>Nome Fantasia</th><td mat-cell *matCellDef="let r">{{r.nome}}</td></ng-container>
+              <ng-container matColumnDef="razaoSocial"><th mat-header-cell *matHeaderCellDef>Razão Social</th><td mat-cell *matCellDef="let r">{{r.razaoSocial || '-'}}</td></ng-container>
+              <ng-container matColumnDef="cnpjCpf"><th mat-header-cell *matHeaderCellDef>CNPJ/CPF</th><td mat-cell *matCellDef="let r">{{r.cnpjCpf || '-'}}</td></ng-container>
+              <ng-container matColumnDef="telefone"><th mat-header-cell *matHeaderCellDef>Telefone</th><td mat-cell *matCellDef="let r">{{r.telefone || '-'}}</td></ng-container>
+              <ng-container matColumnDef="responsavel"><th mat-header-cell *matHeaderCellDef>Responsável</th><td mat-cell *matCellDef="let r">{{nomeResponsavel(r)}}</td></ng-container>
+              <ng-container matColumnDef="dataCadastro"><th mat-header-cell *matHeaderCellDef>Cadastro</th><td mat-cell *matCellDef="let r">{{r.dataCadastro | date:'dd/MM/yyyy'}}</td></ng-container>
+              <ng-container matColumnDef="acoes"><th mat-header-cell *matHeaderCellDef></th><td mat-cell *matCellDef="let r">
+                <button mat-icon-button color="primary" (click)="editar(r)"><mat-icon>edit</mat-icon></button>
+              </td></ng-container>
+              <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+              <tr mat-row *matRowDef="let r; columns: displayedColumns;"></tr>
+            </table>
+          </div>
+
+          <div class="mobile-cards">
+            @for (r of fornecedores; track trackFornecedor(r)) {
+              <mat-card class="mobile-card">
+                <div class="mobile-card-header">
+                  <div>
+                    <div class="mobile-card-title">{{r.nome}}</div>
+                    <div class="mobile-card-subtitle">{{r.razaoSocial || 'Sem razão social'}}{{r.cnpjCpf ? ' · ' + r.cnpjCpf : ''}}</div>
+                  </div>
+                  <button mat-icon-button color="primary" (click)="editar(r)" aria-label="Editar fornecedor">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                </div>
+                <div class="mobile-card-details">
+                  <div class="detail"><span class="detail-label">Contato</span><span>{{r.contato || '-'}}</span></div>
+                  <div class="detail"><span class="detail-label">Telefone</span><span>{{r.telefone || '-'}}</span></div>
+                  <div class="detail"><span class="detail-label">Responsável</span><span>{{nomeResponsavel(r)}}</span></div>
+                  <div class="detail"><span class="detail-label">Cadastro</span><span>{{r.dataCadastro | date:'dd/MM/yyyy'}}</span></div>
+                </div>
+                <div class="mobile-card-actions">
+                  <button mat-stroked-button color="primary" (click)="editar(r)">
+                    <mat-icon>edit</mat-icon>
+                    Editar fornecedor
+                  </button>
+                </div>
+              </mat-card>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+    }
+  </main>
 </div>

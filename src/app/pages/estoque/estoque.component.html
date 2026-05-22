@@ -1,9 +1,35 @@
 <div class="page-wrapper">
-  <main class="main-content"><div class="container">
-    <mat-tab-group>
+  <main class="main-content">
+    <section class="page-hero">
+      <div>
+        <p class="hero-kicker">Operação de estoque</p>
+        <h1>Estoque</h1>
+        <p class="hero-text">Controle movimentações, acompanhe itens abaixo do mínimo e consulte o histórico no mesmo padrão visual das outras áreas.</p>
+      </div>
+      <div class="hero-highlights">
+        <div class="hero-highlight">
+          <span class="highlight-label">Estoque baixo</span>
+          <strong>{{ produtosBaixo.length }} item(ns)</strong>
+        </div>
+        <div class="hero-highlight destaque">
+          <span class="highlight-label">Histórico</span>
+          <strong>{{ movimentacoes.length }} mov.</strong>
+        </div>
+      </div>
+    </section>
+
+    <mat-card class="filtros-card tabs-card">
+      <mat-card-content>
+        <div class="section-heading">
+          <p class="section-kicker">Operação</p>
+          <h2>Gerencie movimentações e monitoramento</h2>
+        </div>
+
+        <mat-tab-group>
       <!-- Movimentacao -->
       <mat-tab label="Movimentacao">
-        <mat-card class="crud-card tab-card">
+        <mat-card class="resultado-card tab-card section-card">
+          <mat-card-content>
           <div class="mov-card-header">
             <div>
               <h3>Entrada / Saída de Estoque</h3>
@@ -14,12 +40,24 @@
               Movimentar estoque
             </button>
           </div>
+          </mat-card-content>
         </mat-card>
       </mat-tab>
 
       <!-- Estoque Baixo -->
       <mat-tab label="Estoque Baixo">
-        <mat-card class="crud-card tab-card">
+        <mat-card class="resultado-card tab-card section-card">
+          <mat-card-content>
+          <div class="resultado-header tab-header">
+            <div>
+              <p class="section-kicker">Resultado</p>
+              <h2>Produtos com estoque baixo</h2>
+            </div>
+            <div class="resultado-chip">
+              <span>{{ produtosBaixo.length }}</span>
+              <small>item(ns)</small>
+            </div>
+          </div>
           <h3><mat-icon class="alerta-icon">warning</mat-icon> Produtos com Estoque Baixo ({{produtosBaixo.length}})</h3>
           <div class="table-wrapper desktop-table">
             <table mat-table [dataSource]="produtosBaixoPaginados">
@@ -55,12 +93,24 @@
               </mat-card>
             }
           </div>
+          </mat-card-content>
         </mat-card>
       </mat-tab>
 
       <!-- Historico -->
       <mat-tab label="Historico">
-        <mat-card class="crud-card tab-card">
+        <mat-card class="resultado-card tab-card section-card">
+          <mat-card-content>
+          <div class="resultado-header tab-header">
+            <div>
+              <p class="section-kicker">Resultado</p>
+              <h2>Histórico de movimentações</h2>
+            </div>
+            <div class="resultado-chip">
+              <span>{{ movimentacoes.length }}</span>
+              <small>registro(s)</small>
+            </div>
+          </div>
           <h3>Historico de Movimentacoes</h3>
           <div class="table-wrapper desktop-table">
             <table mat-table [dataSource]="movimentacoesPaginadas">
@@ -103,8 +153,11 @@
               </mat-card>
             }
           </div>
+          </mat-card-content>
         </mat-card>
       </mat-tab>
-    </mat-tab-group>
-  </div></main>
+        </mat-tab-group>
+      </mat-card-content>
+    </mat-card>
+  </main>
 </div>
