@@ -82,6 +82,15 @@ export class PedidoService {
     );
   }
 
+  listarFinalizadosPorUsuarioPeriodo(userId: string, dataInicio: string, dataFim: string): Observable<Pedido[]> {
+    return from(this.listarFinalizadosPorUsuarioPeriodoComItens(userId, dataInicio, dataFim)).pipe(
+      map(response => {
+        if (response.error) throw response.error;
+        return (response.data || []) as Pedido[];
+      })
+    );
+  }
+
   confirmar(id: number): Observable<Pedido> {
     return from(
       this.supabaseService.getClient()
@@ -166,6 +175,56 @@ export class PedidoService {
     }
 
     const pedidosResponse = await query;
+    if (pedidosResponse.error || !pedidosResponse.data?.length) {
+      return {
+        data: ((pedidosResponse.data || []) as PedidoDbRow[]).map(row => this.fromDb(row)),
+        error: pedidosResponse.error
+      };
+    }
+
+    const pedidoIds = ((pedidosResponse.data || []) as PedidoDbRow[])
+      .map(row => row.id)
+      .filter((id): id is number => typeof id === 'number');
+
+    const itensResponse = await this.supabaseService.getClient()
+      .from('itens_pedidos')
+      .select('id, pedido_id, produto_id, quantidade, preco_unitario, subtotal, produtos(descricao, nome, codigo, sku, precoCusto, preco_custo)')
+      .in('pedido_id', pedidoIds)
+      .order('id', { ascending: true });
+
+    if (itensResponse.error) {
+      return { data: null, error: itensResponse.error };
+    }
+
+    const itensPorPedido = new Map<number, ItemPedidoDbRow[]>();
+    ((itensResponse.data || []) as ItemPedidoDbRow[]).forEach(item => {
+      const pedidoId = item.pedido_id;
+      if (pedidoId == null) {
+        return;
+      }
+
+      const itens = itensPorPedido.get(pedidoId) || [];
+      itens.push(item);
+      itensPorPedido.set(pedidoId, itens);
+    });
+
+    return {
+      data: ((pedidosResponse.data || []) as PedidoDbRow[]).map(row => this.fromDb(row, itensPorPedido.get(row.id ?? 0) || [])),
+      error: null
+    };
+  }
+
+  private async listarFinalizadosPorUsuarioPeriodoComItens(userId: string, dataInicio: string, dataFim: string) {
+    const pedidosResponse = await this.supabaseService.getClient()
+      .from(this.table)
+      .select('id, cliente_id, status, valor_total, data, data_finalizacao, observacao, user_id, clientes(nome)')
+      .eq('user_id', userId)
+      .in('status', ['finalizado', 'FINALIZADO'])
+      .gte('data_finalizacao', dataInicio)
+      .lte('data_finalizacao', dataFim)
+      .order('data_finalizacao', { ascending: false })
+      .order('id', { ascending: false });
+
     if (pedidosResponse.error || !pedidosResponse.data?.length) {
       return {
         data: ((pedidosResponse.data || []) as PedidoDbRow[]).map(row => this.fromDb(row)),

@@ -60,6 +60,9 @@ import { UserManagementService } from './core/services/user-management.service';
               <button mat-button (click)="navegar('/gerencia-usuarios')" [disabled]="estaAtiva('/gerencia-usuarios')">
                 <mat-icon>manage_accounts</mat-icon> Usuários
               </button>
+              <button mat-button (click)="navegar('/comissoes')" [disabled]="estaAtiva('/comissoes')">
+                <mat-icon>percent</mat-icon> Comissões
+              </button>
             }
           </div>
 
@@ -100,6 +103,10 @@ import { UserManagementService } from './core/services/user-management.service';
               <button mat-menu-item (click)="navegar('/gerencia-usuarios')">
                 <mat-icon>manage_accounts</mat-icon>
                 <span>Usuários</span>
+              </button>
+              <button mat-menu-item (click)="navegar('/comissoes')">
+                <mat-icon>percent</mat-icon>
+                <span>Comissões</span>
               </button>
             }
           </mat-menu>

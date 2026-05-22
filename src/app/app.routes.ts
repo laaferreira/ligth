@@ -47,6 +47,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/gerencia-usuarios/gerencia-usuarios.component').then(m => m.GerenciaUsuariosComponent),
     canActivate: [authGuard, gerenciaUsuariosGuard]
   },
+  {
+    path: 'comissoes',
+    loadComponent: () => import('./pages/comissoes/comissoes.component').then(m => m.ComissoesComponent),
+    canActivate: [authGuard, gerenciaUsuariosGuard]
+  },
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
   { path: '**', redirectTo: 'dashboard' }
 ];
