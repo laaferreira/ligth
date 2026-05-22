@@ -16,6 +16,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatSelectModule } from '@angular/material/select';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { ProdutoService } from '../../core/services/produto.service';
 import { PedidoService } from '../../core/services/pedido.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -31,7 +32,7 @@ import { FornecedorService } from '../../core/services/fornecedor.service';
     CommonModule, FormsModule,
     MatToolbarModule, MatCardModule, MatDialogModule, MatFormFieldModule, MatInputModule,
     MatButtonModule, MatIconModule, MatTableModule, MatMenuModule, MatSelectModule, MatPaginatorModule,
-    MatSnackBarModule
+    MatSnackBarModule, MatTooltipModule
   ],
   templateUrl: './produtos.component.html',
   styleUrl: './produtos.component.scss'
@@ -48,6 +49,7 @@ export class ProdutosComponent implements OnInit {
   readonly opcoesItensPorPagina = [10, 25, 50];
   custoTotalEstoque = 0;
   valorPrevistoFaturamento = 0;
+  valorPotencialEstoqueVenda = 0;
   displayedColumns = ['descricao', 'fornecedor', 'precoCusto', 'precoVenda', 'quantidadeEstoque', 'acoes'];
 
   constructor(
@@ -69,7 +71,11 @@ export class ProdutosComponent implements OnInit {
     this.produtoService.listar().subscribe(d => {
       this.todosProdutos = d;
       this.custoTotalEstoque = d.reduce(
-        (total, produto) => total + Number(produto.quantidadeEstoque || 0) * Number(produto.precoCusto || 0),
+        (total, produto) => total + this.parseNumeric(produto.quantidadeEstoque) * this.parseNumeric(produto.precoCusto),
+        0
+      );
+      this.valorPotencialEstoqueVenda = d.reduce(
+        (total, produto) => total + this.parseNumeric(produto.quantidadeEstoque) * this.parseNumeric(produto.precoVenda),
         0
       );
       this.aplicarFiltro();
@@ -280,9 +286,23 @@ export class ProdutosComponent implements OnInit {
       return fallback;
     }
 
-    const normalizado = valor
+    const numero = this.parseNumeric(valor, fallback);
+    return Number.isFinite(numero) ? numero : fallback;
+  }
+
+  private parseNumeric(value: unknown, fallback = 0): number {
+    if (typeof value === 'number') {
+      return Number.isFinite(value) ? value : fallback;
+    }
+
+    if (value == null) {
+      return fallback;
+    }
+
+    const normalizado = String(value)
       .replace(/R\$/gi, '')
-      .replace(/\./g, '')
+      .replace(/\s+/g, '')
+      .replace(/\.(?=\d{3}(?:\D|$))/g, '')
       .replace(',', '.')
       .trim();
 

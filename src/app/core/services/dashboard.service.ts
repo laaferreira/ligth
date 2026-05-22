@@ -9,6 +9,9 @@ export interface Dashboard {
   totalPedidos: number;
   pedidosAbertos: number;
   faturamentoTotal: number;
+  custoTotalEstoque: number;
+  valorPrevistoFaturamento: number;
+  valorPotencialEstoqueVenda: number;
   produtosEstoqueBaixo: number;
   produtosMaisVendidos: { label: string; valor: number; quantidade: number }[];
   clientesMaisCompraram: { label: string; valor: number; quantidade: number }[];
@@ -57,6 +60,35 @@ export class DashboardService {
 
     const faturamentoTotal = pedidosFaturamento?.reduce((sum, p) => sum + (p.valor_total || 0), 0) || 0;
 
+    const { data: produtosFinanceiro } = await client
+      .from('produtos')
+      .select('*');
+
+    const custoTotalEstoque = (produtosFinanceiro || []).reduce((sum, produto: any) => {
+      const quantidade = this.parseNumeric(produto.quantidadeEstoque ?? produto.disponivel ?? produto.quantidade);
+      const precoCusto = this.parseNumeric(produto.precoCusto ?? produto.preco_custo);
+      return sum + quantidade * precoCusto;
+    }, 0);
+
+    const valorPotencialEstoqueVenda = (produtosFinanceiro || []).reduce((sum, produto: any) => {
+      const quantidade = this.parseNumeric(produto.quantidadeEstoque ?? produto.disponivel ?? produto.quantidade);
+      const precoVenda = this.parseNumeric(produto.precoVenda ?? produto.preco_venda);
+      return sum + quantidade * precoVenda;
+    }, 0);
+
+    const { data: pedidosPrevistos } = await client
+      .from('pedidos')
+      .select('valor_total, status');
+
+    const valorPrevistoFaturamento = (pedidosPrevistos || []).reduce((sum, pedido: any) => {
+      const status = this.normalizeStatus(pedido.status);
+      if (status !== 'EM_ABERTO' && status !== 'CONFIRMADO') {
+        return sum;
+      }
+
+      return sum + Number(pedido.valor_total || 0);
+    }, 0);
+
     // Produtos mais vendidos (simulado)
     const produtosMaisVendidos: any[] = [];
     const clientesMaisCompraram: any[] = [];
@@ -85,6 +117,9 @@ export class DashboardService {
       totalPedidos: totalPedidos || 0,
       pedidosAbertos: pedidosAbertos?.length || 0,
       faturamentoTotal,
+      custoTotalEstoque,
+      valorPrevistoFaturamento,
+      valorPotencialEstoqueVenda,
       produtosEstoqueBaixo: produtosBaixo?.length || 0,
       produtosMaisVendidos,
       clientesMaisCompraram,
@@ -92,5 +127,35 @@ export class DashboardService {
       estoqueCritico,
       pedidosPorStatus: statusCounts || []
     };
+  }
+
+  private normalizeStatus(status?: string | null): string {
+    const normalized = String(status || '').trim().toUpperCase();
+
+    if (normalized === 'PENDENTE') {
+      return 'EM_ABERTO';
+    }
+
+    return normalized;
+  }
+
+  private parseNumeric(value: unknown, fallback = 0): number {
+    if (typeof value === 'number') {
+      return Number.isFinite(value) ? value : fallback;
+    }
+
+    if (value == null) {
+      return fallback;
+    }
+
+    const normalized = String(value)
+      .replace(/R\$/gi, '')
+      .replace(/\s+/g, '')
+      .replace(/\.(?=\d{3}(?:\D|$))/g, '')
+      .replace(',', '.')
+      .trim();
+
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : fallback;
   }
 }

@@ -23,6 +23,33 @@
         </div>
       </section>
 
+      <section class="financial-summary">
+        <div class="section-heading">
+          <p class="section-kicker">Financeiro</p>
+          <h2>Visão consolidada do estoque e da receita</h2>
+        </div>
+        <div class="financial-grid">
+          <mat-card class="kpi-card financeiro estoque financeiro-card" matTooltip="Soma de quantidade em estoque multiplicada pelo custo médio de cada produto">
+            <mat-icon class="kpi-icon" style="color:#c98a16">inventory</mat-icon>
+            <div class="kpi-value moeda">{{data.custoTotalEstoque | currency:'BRL'}}</div>
+            <div class="kpi-label">Custo do Estoque</div>
+            <div class="kpi-caption">Quantidade em estoque multiplicada pelo custo médio dos produtos.</div>
+          </mat-card>
+          <mat-card class="kpi-card financeiro pedidos financeiro-card" matTooltip="Soma do valor total dos pedidos em aberto e confirmados">
+            <mat-icon class="kpi-icon" style="color:#2e7d32">timeline</mat-icon>
+            <div class="kpi-value moeda">{{data.valorPrevistoFaturamento | currency:'BRL'}}</div>
+            <div class="kpi-label">Previsto em Pedidos</div>
+            <div class="kpi-caption">Soma do valor total dos pedidos em aberto e confirmados.</div>
+          </mat-card>
+          <mat-card class="kpi-card financeiro potencial financeiro-card" matTooltip="Soma do estoque atual multiplicado pelo preço de venda dos produtos">
+            <mat-icon class="kpi-icon" style="color:#1565c0">sell</mat-icon>
+            <div class="kpi-value moeda">{{data.valorPotencialEstoqueVenda | currency:'BRL'}}</div>
+            <div class="kpi-label">Potencial do Estoque</div>
+            <div class="kpi-caption">Estoque atual multiplicado pelo preço de venda dos produtos.</div>
+          </mat-card>
+        </div>
+      </section>
+
       <!-- KPI Cards -->
       <div class="kpi-grid">
         <mat-card class="kpi-card">

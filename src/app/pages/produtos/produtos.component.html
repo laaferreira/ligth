@@ -13,15 +13,20 @@
         </div>
       </div>
       <div class="top-summary-cards">
-        <mat-card class="summary-card summary-card-estoque">
-          <div class="summary-card-label">Custo Total do Estoque</div>
+        <mat-card class="summary-card summary-card-estoque" matTooltip="Soma de quantidade em estoque multiplicada pelo custo médio de cada produto">
+          <div class="summary-card-label">Custo do Estoque</div>
           <div class="summary-card-value">{{ custoTotalEstoque | currency:'BRL' }}</div>
           <div class="summary-card-caption">Quantidade em estoque x custo médio dos produtos</div>
         </mat-card>
-        <mat-card class="summary-card summary-card-faturamento">
-          <div class="summary-card-label">Valor Previsto de Faturamento</div>
+        <mat-card class="summary-card summary-card-faturamento" matTooltip="Soma do valor total dos pedidos em aberto e confirmados">
+          <div class="summary-card-label">Previsto em Pedidos</div>
           <div class="summary-card-value">{{ valorPrevistoFaturamento | currency:'BRL' }}</div>
           <div class="summary-card-caption">Pedidos em aberto e confirmados</div>
+        </mat-card>
+        <mat-card class="summary-card summary-card-venda-estoque" matTooltip="Soma do estoque atual multiplicado pelo preço de venda dos produtos">
+          <div class="summary-card-label">Potencial do Estoque</div>
+          <div class="summary-card-value">{{ valorPotencialEstoqueVenda | currency:'BRL' }}</div>
+          <div class="summary-card-caption">Estoque atual x preço de venda dos produtos</div>
         </mat-card>
       </div>
       @if (resumoImportacao) {

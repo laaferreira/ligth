@@ -77,6 +77,35 @@
   color: #c62828;
 }
 
+.financial-summary {
+  margin-bottom: 24px;
+}
+
+.section-heading {
+  margin-bottom: 14px;
+}
+
+.section-kicker {
+  margin: 0 0 6px;
+  color: #7b4bab;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+}
+
+.section-heading h2 {
+  margin: 0;
+  color: #3d1a6e;
+  font-size: 22px;
+}
+
+.financial-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
 .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 16px; margin-bottom: 24px; }
 
 .kpi-card {
@@ -87,9 +116,31 @@
   &:hover { transform: translateY(-3px); box-shadow: 0 6px 24px rgba(91, 45, 142, 0.15); }
   &.alerta { border-top-color: #c62828; }
 }
+.kpi-card.financeiro.estoque { border-top-color: #c98a16; }
+.kpi-card.financeiro.pedidos { border-top-color: #2e7d32; }
+.kpi-card.financeiro.potencial { border-top-color: #1565c0; }
+.kpi-card.financeiro-card {
+  box-shadow: 0 14px 30px rgba(61, 26, 110, 0.08);
+  border-width: 1px;
+  border-style: solid;
+}
+.kpi-card.financeiro-card.estoque {
+  background: linear-gradient(135deg, #fff7e8 0%, #fff1cc 100%);
+  border-color: #f0d8a2;
+}
+.kpi-card.financeiro-card.pedidos {
+  background: linear-gradient(135deg, #eef8ef 0%, #dff1e3 100%);
+  border-color: #b9ddc0;
+}
+.kpi-card.financeiro-card.potencial {
+  background: linear-gradient(135deg, #eef4ff 0%, #dfe9ff 100%);
+  border-color: #bed0f8;
+}
 .kpi-icon { font-size: 34px; width: 34px; height: 34px; margin-bottom: 8px; color: #5b2d8e; }
 .kpi-value { font-size: 26px; font-weight: 700; color: #3d1a6e; }
+.kpi-value.moeda { font-size: 22px; line-height: 1.2; }
 .kpi-label { font-size: 13px; color: #6b5b7b; margin-top: 4px; }
+.kpi-caption { margin-top: 10px; font-size: 13px; color: #6b5b7b; line-height: 1.4; }
 
 .charts-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 24px;
   &.equal { grid-template-columns: 1fr 1fr; }
@@ -144,6 +195,7 @@
     flex-direction: column;
     padding: 20px;
   }
+  .financial-grid { grid-template-columns: 1fr; }
   .charts-grid, .charts-grid.equal { grid-template-columns: 1fr; }
   .nav-links { display: none; }
   .kpi-grid { grid-template-columns: repeat(2, 1fr); }

@@ -7,6 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTableModule } from '@angular/material/table';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { NgChartsModule } from 'ng2-charts';
 import { ChartConfiguration } from 'chart.js';
 import { Chart, registerables } from 'chart.js';
@@ -21,7 +22,7 @@ Chart.register(...registerables);
   standalone: true,
   imports: [
     CommonModule, MatToolbarModule, MatCardModule, MatIconModule,
-    MatButtonModule, MatMenuModule, MatTableModule, NgChartsModule
+    MatButtonModule, MatMenuModule, MatTableModule, MatTooltipModule, NgChartsModule
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
