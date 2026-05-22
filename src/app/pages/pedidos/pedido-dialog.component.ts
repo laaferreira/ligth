@@ -15,12 +15,14 @@ import { PedidoService } from '../../core/services/pedido.service';
 import { ConsultaService } from '../../core/services/consulta.service';
 import { EstoqueService } from '../../core/services/estoque.service';
 import { AutocompleteItem, ProdutoAutocompleteItem } from '../../core/models/consulta.model';
-import { CriarPedido } from '../../core/models/pedido.model';
+import { AtualizarPedido, CriarPedido, Pedido } from '../../core/models/pedido.model';
 import { ErrorPresenterService } from '../../core/errors/error-presenter.service';
+import { UserRole } from '../../core/models/user.model';
 
 type PedidoDialogData = {
   modo: 'criar' | 'editar';
   pedidoId?: number;
+  userRole?: UserRole | null;
 };
 
 @Component({
@@ -54,7 +56,7 @@ type PedidoDialogData = {
       <div class="dialog-form">
         <mat-form-field appearance="outline">
           <mat-label>Cliente</mat-label>
-          <input matInput [formControl]="clienteControl" [matAutocomplete]="autoCliente" placeholder="Buscar cliente...">
+          <input matInput [formControl]="clienteControl" [matAutocomplete]="autoCliente" placeholder="Buscar cliente..." [readonly]="modoSomenteFinalizacao">
           <mat-icon matPrefix>person</mat-icon>
           <mat-autocomplete #autoCliente="matAutocomplete" [displayWith]="displayFn" (optionSelected)="onClienteSelected($event.option.value)">
             @for (c of clientesFiltrados; track c.id) {
@@ -63,6 +65,15 @@ type PedidoDialogData = {
           </mat-autocomplete>
         </mat-form-field>
 
+        @if (podeEditarDataFinalizacao) {
+          <mat-form-field appearance="outline">
+            <mat-label>Data de finalização</mat-label>
+            <input matInput type="date" [formControl]="dataFinalizacaoControl">
+            <mat-hint>Disponível para gerente e administrador.</mat-hint>
+          </mat-form-field>
+        }
+
+        @if (!modoSomenteFinalizacao) {
         <div class="add-item-row">
           <mat-form-field appearance="outline" class="field-produto">
             <mat-label>Produto</mat-label>
@@ -89,8 +100,9 @@ type PedidoDialogData = {
             <mat-icon>add</mat-icon>
           </button>
         </div>
+        }
 
-        @if (produtoSelecionado) {
+        @if (!modoSomenteFinalizacao && produtoSelecionado) {
           <div class="produto-info-panel">
             <div class="info-row">
               <div class="info-item">
@@ -134,7 +146,7 @@ type PedidoDialogData = {
               <ng-container matColumnDef="lucroTotal"><th mat-header-cell *matHeaderCellDef>Lucro</th><td mat-cell *matCellDef="let r"><span [class.margem-positiva]="r.lucroTotal >= 0" [class.margem-negativa]="r.lucroTotal < 0">{{r.lucroTotal | currency:'BRL'}}</span></td></ng-container>
               <ng-container matColumnDef="margemLucro"><th mat-header-cell *matHeaderCellDef>Margem</th><td mat-cell *matCellDef="let r">{{r.margemLucro === null ? '-' : ((r.margemLucro | number:'1.1-1') + '%')}}</td></ng-container>
               <ng-container matColumnDef="valorTotal"><th mat-header-cell *matHeaderCellDef>Total</th><td mat-cell *matCellDef="let r">{{r.valorTotal | currency:'BRL'}}</td></ng-container>
-              <ng-container matColumnDef="remover"><th mat-header-cell *matHeaderCellDef></th><td mat-cell *matCellDef="let r; let i = index"><button mat-icon-button color="warn" (click)="removerItem(i)" matTooltip="Remover item do pedido"><mat-icon>delete</mat-icon></button></td></ng-container>
+              <ng-container matColumnDef="remover"><th mat-header-cell *matHeaderCellDef></th><td mat-cell *matCellDef="let r; let i = index">@if (!modoSomenteFinalizacao) {<button mat-icon-button color="warn" (click)="removerItem(i)" matTooltip="Remover item do pedido"><mat-icon>delete</mat-icon></button>}</td></ng-container>
               <tr mat-header-row *matHeaderRowDef="itensColumns"></tr>
               <tr mat-row *matRowDef="let r; columns: itensColumns;"></tr>
             </table>
@@ -150,12 +162,12 @@ type PedidoDialogData = {
 
     <mat-dialog-actions align="end" class="dialog-actions">
       @if (data.modo === 'editar') {
-        <button mat-stroked-button color="warn" type="button" (click)="excluirPedidoAtual()" [disabled]="salvando" matTooltip="Excluir este pedido">
+        <button mat-stroked-button color="warn" type="button" (click)="excluirPedidoAtual()" [disabled]="salvando || modoSomenteFinalizacao" matTooltip="Excluir este pedido">
           Excluir pedido
         </button>
       }
       <button mat-button type="button" (click)="fechar()" [disabled]="salvando" matTooltip="Fechar sem salvar">Cancelar</button>
-      <button mat-raised-button color="primary" type="button" (click)="salvarPedido()" [disabled]="!clienteSelecionado || itensNovoPedido.length === 0 || salvando" matTooltip="Salvar alterações do pedido">
+      <button mat-raised-button color="primary" type="button" (click)="salvarPedido()" [disabled]="salvarDesabilitado" matTooltip="Salvar alterações do pedido">
         {{ salvando ? 'Salvando...' : (data.modo === 'criar' ? 'Criar pedido' : 'Salvar pedido') }}
       </button>
     </mat-dialog-actions>
@@ -217,7 +229,23 @@ export class PedidoDialogComponent implements OnInit {
   itensNovoPedido: { produtoId: number; produtoLabel: string; quantidade: number; valorUnitario: number; custoUnitario: number; custoTotal: number; margemLucro: number | null; lucroTotal: number; valorTotal: number }[] = [];
   itensColumns = ['produto', 'quantidade', 'valorUnitario', 'custoTotal', 'lucroTotal', 'margemLucro', 'valorTotal', 'remover'];
   salvando = false;
+  dataFinalizacaoControl = new FormControl('');
+  pedidoAtual: Pedido | null = null;
+  podeEditarDataFinalizacao = false;
+  modoSomenteFinalizacao = false;
   private atualizandoCamposPreco = false;
+
+  get salvarDesabilitado(): boolean {
+    if (this.salvando) {
+      return true;
+    }
+
+    if (this.modoSomenteFinalizacao) {
+      return !this.podeEditarDataFinalizacao;
+    }
+
+    return !this.clienteSelecionado || this.itensNovoPedido.length === 0;
+  }
 
   constructor(
     private pedidoService: PedidoService,
@@ -281,8 +309,12 @@ export class PedidoDialogComponent implements OnInit {
 
     if (this.data.modo === 'editar' && this.data.pedidoId) {
       this.pedidoService.buscarPorId(this.data.pedidoId).subscribe(pedido => {
+        this.pedidoAtual = pedido;
+        this.podeEditarDataFinalizacao = this.usuarioPodeEditarDataFinalizacao();
+        this.modoSomenteFinalizacao = pedido.status === 'FINALIZADO' && this.podeEditarDataFinalizacao;
         this.clienteSelecionado = { id: pedido.clienteId, label: pedido.clienteNome || '' };
         this.clienteControl.setValue(this.clienteSelecionado as never, { emitEvent: false });
+        this.dataFinalizacaoControl.setValue(this.formatarDataInput(pedido.dataFinalizacao), { emitEvent: false });
         this.itensNovoPedido = (pedido.itens || []).map(i => ({
           produtoId: i.produtoId,
           produtoLabel: `${i.produtoCodigo} - ${i.produtoDescricao}`,
@@ -294,8 +326,17 @@ export class PedidoDialogComponent implements OnInit {
           lucroTotal: (i.valorTotal || i.quantidade * i.valorUnitario) - (i.custoTotal || i.quantidade * (i.custoUnitario || 0)),
           valorTotal: i.valorTotal || i.quantidade * i.valorUnitario
         }));
+
+        if (this.modoSomenteFinalizacao) {
+          this.itemForm.disable({ emitEvent: false });
+          this.produtoControl.disable({ emitEvent: false });
+        }
       });
     }
+  }
+
+  private usuarioPodeEditarDataFinalizacao(): boolean {
+    return this.data.userRole === 'administrador' || this.data.userRole === 'gerente';
   }
 
   displayFn(item: AutocompleteItem): string { return item?.label || ''; }
@@ -412,6 +453,11 @@ export class PedidoDialogComponent implements OnInit {
   }
 
   salvarPedido(): void {
+    if (this.modoSomenteFinalizacao) {
+      this.salvarDataFinalizacao();
+      return;
+    }
+
     if (!this.clienteSelecionado || this.itensNovoPedido.length === 0) return;
 
     this.salvando = true;
@@ -475,6 +521,41 @@ export class PedidoDialogComponent implements OnInit {
 
   fechar(): void {
     this.dialogRef.close();
+  }
+
+  private salvarDataFinalizacao(): void {
+    if (!this.data.pedidoId) {
+      return;
+    }
+
+    this.salvando = true;
+
+    const dto: AtualizarPedido = {
+      dataFinalizacao: this.dataFinalizacaoControl.value || null
+    };
+
+    this.pedidoService.atualizar(this.data.pedidoId, dto).subscribe({
+      next: () => {
+        this.salvando = false;
+        this.snackBar.open('Data de finalização atualizada!', 'OK', { duration: 3000 });
+        this.dialogRef.close(true);
+      },
+      error: (e) => {
+        this.salvando = false;
+        this.errorPresenter.handle(e, {
+          context: 'Pedidos.EditarDataFinalizacao',
+          source: 'supabase',
+          code: 'ORDER_FINISH_DATE_UPDATE_FAILED',
+          title: 'Falha ao atualizar data de finalização',
+          fallbackMessage: 'Erro ao atualizar data de finalização.',
+          duration: 5000
+        });
+      }
+    });
+  }
+
+  private formatarDataInput(data?: string): string {
+    return data ? data.slice(0, 10) : '';
   }
 
   private calcularMargemPorValorUnitario(valorUnitario: number | null): number | null {

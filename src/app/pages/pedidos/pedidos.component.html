@@ -56,6 +56,9 @@
                 <button mat-icon-button color="primary" (click)="editar(r)" matTooltip="Editar pedido"><mat-icon>edit</mat-icon></button>
                 <button mat-icon-button color="primary" (click)="confirmar(r)" matTooltip="Confirmar pedido"><mat-icon>check_circle</mat-icon></button>
               }
+              @if (podeEditarDataFinalizacao(r)) {
+                <button mat-icon-button color="primary" (click)="editar(r)" matTooltip="Editar data de finalização"><mat-icon>event</mat-icon></button>
+              }
               @if (r.status === 'CONFIRMADO') {
                 <button mat-icon-button color="primary" (click)="finalizar(r)" matTooltip="Finalizar pedido"><mat-icon>done_all</mat-icon></button>
               }
@@ -100,6 +103,12 @@
                       <span>Confirmar</span>
                     </button>
                   }
+                  @if (podeEditarDataFinalizacao(r)) {
+                    <button mat-menu-item (click)="editar(r)" matTooltip="Editar data de finalização">
+                      <mat-icon>event</mat-icon>
+                      <span>Editar finalização</span>
+                    </button>
+                  }
                   @if (r.status === 'CONFIRMADO') {
                     <button mat-menu-item (click)="finalizar(r)" matTooltip="Finalizar pedido">
                       <mat-icon>done_all</mat-icon>
@@ -126,6 +135,9 @@
               <div class="detail"><span class="detail-label">Lucro</span><span>{{r.lucroTotal | currency:'BRL'}}</span></div>
             </div>
             <div class="mobile-card-actions">
+              @if (podeEditarDataFinalizacao(r)) {
+                <button mat-stroked-button color="primary" (click)="editar(r)" matTooltip="Editar data de finalização"><mat-icon>event</mat-icon> Finalização</button>
+              }
               @if (r.status === 'EM_ABERTO') {
                 <button mat-stroked-button color="primary" (click)="confirmar(r)" matTooltip="Confirmar pedido"><mat-icon>check_circle</mat-icon> Confirmar</button>
               }

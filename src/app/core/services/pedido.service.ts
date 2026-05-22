@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable, from } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { SupabaseService } from './supabase.service';
-import { Pedido, CriarPedido } from '../models/pedido.model';
+import { Pedido, CriarPedido, AtualizarPedido } from '../models/pedido.model';
 
 type PedidoDbRow = {
   id?: number;
@@ -10,6 +10,7 @@ type PedidoDbRow = {
   status?: string | null;
   valor_total?: number | string | null;
   data?: string | null;
+  data_finalizacao?: string | null;
   observacao?: string | null;
   user_id?: string | null;
   clientes?: { nome?: string | null } | Array<{ nome?: string | null }> | null;
@@ -72,7 +73,7 @@ export class PedidoService {
     );
   }
 
-  atualizar(id: number, pedido: Partial<CriarPedido>): Observable<Pedido> {
+  atualizar(id: number, pedido: AtualizarPedido): Observable<Pedido> {
     return from(this.atualizarComItens(id, pedido)).pipe(
       map(response => {
         if (response.error) throw response.error;
@@ -114,10 +115,12 @@ export class PedidoService {
   }
 
   finalizar(id: number): Observable<Pedido> {
+    const hoje = new Date().toISOString().slice(0, 10);
+
     return from(
       this.supabaseService.getClient()
         .from(this.table)
-        .update({ status: 'finalizado' } as any)
+        .update({ status: 'finalizado', data_finalizacao: hoje } as any)
         .eq('id', id)
         .select()
         .single()
@@ -155,7 +158,7 @@ export class PedidoService {
     const { userId, role } = await this.getCurrentUserContext();
     let query = this.supabaseService.getClient()
       .from(this.table)
-      .select('id, cliente_id, status, valor_total, data, observacao, user_id, clientes(nome)')
+      .select('id, cliente_id, status, valor_total, data, data_finalizacao, observacao, user_id, clientes(nome)')
       .order('id', { ascending: false });
 
     if (role === 'vendedor') {
@@ -206,7 +209,7 @@ export class PedidoService {
     const { userId, role } = await this.getCurrentUserContext();
     let pedidoQuery = this.supabaseService.getClient()
       .from(this.table)
-      .select('id, cliente_id, status, valor_total, data, observacao, user_id, clientes(nome)')
+      .select('id, cliente_id, status, valor_total, data, data_finalizacao, observacao, user_id, clientes(nome)')
       .eq('id', id);
 
     if (role === 'vendedor') {
@@ -241,7 +244,7 @@ export class PedidoService {
     const { userId, role } = await this.getCurrentUserContext();
     let query = this.supabaseService.getClient()
       .from(this.table)
-      .select('id, cliente_id, status, valor_total, data, observacao, user_id, clientes(nome)');
+      .select('id, cliente_id, status, valor_total, data, data_finalizacao, observacao, user_id, clientes(nome)');
 
     Object.entries(filtros).forEach(([campo, valor]) => {
       query = query.eq(this.toDbField(campo), valor);
@@ -282,7 +285,7 @@ export class PedidoService {
     return resultado as { data: Pedido | null; error: any };
   }
 
-  private async atualizarComItens(id: number, pedido: Partial<CriarPedido>) {
+  private async atualizarComItens(id: number, pedido: AtualizarPedido) {
     const { userId } = await this.getCurrentUserContext();
     const client = this.supabaseService.getClient();
     const camposPedido = this.toDb(pedido);
@@ -368,6 +371,7 @@ export class PedidoService {
       id: row.id,
       numero: row.id ? String(row.id) : undefined,
       dataPedido: row.data || undefined,
+      dataFinalizacao: row.data_finalizacao || undefined,
       clienteId: row.cliente_id ?? 0,
       clienteNome: this.getClienteNome(row.clientes),
       valorTotal,
@@ -378,7 +382,7 @@ export class PedidoService {
     };
   }
 
-  private toDb(pedido: Partial<CriarPedido>) {
+  private toDb(pedido: AtualizarPedido) {
     const db: Record<string, any> = {};
 
     if (pedido.clienteId !== undefined) {
@@ -390,6 +394,10 @@ export class PedidoService {
         (total, item) => total + Number(item.quantidade || 0) * Number(item.valorUnitario || 0),
         0
       );
+    }
+
+    if (pedido.dataFinalizacao !== undefined) {
+      db['data_finalizacao'] = pedido.dataFinalizacao || null;
     }
 
     return db;

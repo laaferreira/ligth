@@ -14,6 +14,7 @@ export interface Pedido {
   id?: number;
   numero?: string;
   dataPedido?: string;
+  dataFinalizacao?: string;
   clienteId: number;
   clienteNome?: string;
   itens?: ItemPedido[];
@@ -26,6 +27,10 @@ export interface Pedido {
 export interface CriarPedido {
   clienteId: number;
   itens: { produtoId: number; quantidade: number; valorUnitario: number }[];
+}
+
+export interface AtualizarPedido extends Partial<CriarPedido> {
+  dataFinalizacao?: string | null;
 }
 
 export interface Movimentacao {

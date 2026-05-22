@@ -19,6 +19,8 @@ import { PedidoService } from '../../core/services/pedido.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Pedido } from '../../core/models/pedido.model';
 import { ErrorPresenterService } from '../../core/errors/error-presenter.service';
+import { UserManagementService } from '../../core/services/user-management.service';
+import { UserRole } from '../../core/models/user.model';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { PedidoDialogComponent } from './pedido-dialog.component';
@@ -41,6 +43,7 @@ export class PedidosComponent implements OnInit {
   todosPedidos: Pedido[] = [];
   pedidos: Pedido[] = [];
   displayedColumns = ['numero', 'dataPedido', 'clienteNome', 'valorTotal', 'custoTotal', 'lucroTotal', 'status', 'acoes'];
+  userRole: UserRole | null = null;
 
   // Filtros
   filtroTexto = '';
@@ -54,6 +57,7 @@ export class PedidosComponent implements OnInit {
   constructor(
     private pedidoService: PedidoService,
     private authService: AuthService,
+    private userManagementService: UserManagementService,
     private dialog: MatDialog,
     private router: Router,
     private snackBar: MatSnackBar,
@@ -61,7 +65,14 @@ export class PedidosComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.carregarUsuarioAtual();
     this.carregar();
+  }
+
+  private carregarUsuarioAtual(): void {
+    this.userManagementService.obterUsuarioAtualComRole().then(usuario => {
+      this.userRole = usuario?.role || null;
+    });
   }
 
   carregar(): void {
@@ -116,6 +127,10 @@ export class PedidosComponent implements OnInit {
 
   editar(p: Pedido): void {
     this.abrirDialogoPedido('editar', p.id);
+  }
+
+  podeEditarDataFinalizacao(p: Pedido): boolean {
+    return p.status === 'FINALIZADO' && (this.userRole === 'administrador' || this.userRole === 'gerente');
   }
 
   confirmar(p: Pedido): void {
@@ -261,7 +276,7 @@ export class PedidosComponent implements OnInit {
       maxHeight: isMobile ? '100dvh' : '92vh',
       autoFocus: false,
       disableClose: true,
-      data: { modo, pedidoId }
+      data: { modo, pedidoId, userRole: this.userRole }
     }).afterClosed().subscribe(recarregar => {
       if (recarregar) {
         this.carregar();
