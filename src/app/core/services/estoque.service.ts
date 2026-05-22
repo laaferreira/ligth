@@ -131,19 +131,15 @@ export class EstoqueService {
     const estoqueAtual = this.obterQuantidadeAtual(produto);
     let comprometido = 0;
 
-    const { data: pedidos } = await client
-      .from('pedidos')
-      .select('status, itens')
-      .in('status', ['EM_ABERTO', 'CONFIRMADO', 'pendente', 'confirmado']);
+    const { data: itensComprometidos } = await client
+      .from('itens_pedidos')
+      .select('quantidade, pedidos!inner(status)')
+      .eq('produto_id', produtoId)
+      .in('pedidos.status', ['EM_ABERTO', 'CONFIRMADO', 'pendente', 'confirmado']);
 
-    if (pedidos) {
-      comprometido = pedidos.reduce((totalPedido, pedido) => {
-        const itens = Array.isArray(pedido.itens) ? pedido.itens : [];
-        const quantidadeComprometida = itens.reduce((totalItem: number, item: any) => {
-          return item?.produtoId === produtoId ? totalItem + Number(item.quantidade || 0) : totalItem;
-        }, 0);
-
-        return totalPedido + quantidadeComprometida;
+    if (itensComprometidos) {
+      comprometido = itensComprometidos.reduce((totalItem, item: any) => {
+        return totalItem + Number(item?.quantidade || 0);
       }, 0);
     }
 

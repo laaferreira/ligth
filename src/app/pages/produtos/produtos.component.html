@@ -12,6 +12,18 @@
           <button mat-raised-button color="primary" (click)="novo()"><mat-icon>add</mat-icon> Novo</button>
         </div>
       </div>
+      <div class="top-summary-cards">
+        <mat-card class="summary-card summary-card-estoque">
+          <div class="summary-card-label">Custo Total do Estoque</div>
+          <div class="summary-card-value">{{ custoTotalEstoque | currency:'BRL' }}</div>
+          <div class="summary-card-caption">Quantidade em estoque x custo médio dos produtos</div>
+        </mat-card>
+        <mat-card class="summary-card summary-card-faturamento">
+          <div class="summary-card-label">Valor Previsto de Faturamento</div>
+          <div class="summary-card-value">{{ valorPrevistoFaturamento | currency:'BRL' }}</div>
+          <div class="summary-card-caption">Pedidos em aberto e confirmados</div>
+        </mat-card>
+      </div>
       @if (resumoImportacao) {
         <div class="import-summary">{{ resumoImportacao }}</div>
       }

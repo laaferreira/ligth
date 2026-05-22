@@ -14,9 +14,11 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatSelectModule } from '@angular/material/select';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { PedidoService } from '../../core/services/pedido.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Pedido } from '../../core/models/pedido.model';
+import { ErrorPresenterService } from '../../core/errors/error-presenter.service';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { PedidoDialogComponent } from './pedido-dialog.component';
@@ -28,7 +30,7 @@ import { PedidoDialogComponent } from './pedido-dialog.component';
     CommonModule, ReactiveFormsModule,
     MatToolbarModule, MatCardModule, MatDialogModule, MatFormFieldModule, MatInputModule,
     MatButtonModule, MatIconModule,
-    MatTableModule, MatMenuModule, MatSnackBarModule, MatSelectModule, MatPaginatorModule
+    MatTableModule, MatMenuModule, MatSnackBarModule, MatSelectModule, MatPaginatorModule, MatTooltipModule
   ],
   templateUrl: './pedidos.component.html',
   styleUrl: './pedidos.component.scss'
@@ -52,7 +54,8 @@ export class PedidosComponent implements OnInit {
     private authService: AuthService,
     private dialog: MatDialog,
     private router: Router,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private errorPresenter: ErrorPresenterService
   ) {}
 
   ngOnInit(): void {
@@ -116,14 +119,28 @@ export class PedidosComponent implements OnInit {
   confirmar(p: Pedido): void {
     this.pedidoService.confirmar(p.id!).subscribe({
       next: () => { this.snackBar.open('Pedido confirmado! Estoque atualizado.', 'OK', { duration: 3000 }); this.carregar(); },
-      error: (e) => this.snackBar.open(e.error?.message || 'Erro ao confirmar', 'OK', { duration: 4000 })
+      error: (e) => this.errorPresenter.handle(e, {
+        context: 'Pedidos.Confirmar',
+        source: 'supabase',
+        code: 'ORDER_CONFIRM_FAILED',
+        title: 'Falha ao confirmar pedido',
+        fallbackMessage: 'Erro ao confirmar pedido.',
+        duration: 5000
+      })
     });
   }
 
   finalizar(p: Pedido): void {
     this.pedidoService.finalizar(p.id!).subscribe({
       next: () => { this.snackBar.open('Pedido finalizado!', 'OK', { duration: 3000 }); this.carregar(); },
-      error: (e) => this.snackBar.open(e.error?.message || 'Erro ao finalizar', 'OK', { duration: 4000 })
+      error: (e) => this.errorPresenter.handle(e, {
+        context: 'Pedidos.Finalizar',
+        source: 'supabase',
+        code: 'ORDER_FINISH_FAILED',
+        title: 'Falha ao finalizar pedido',
+        fallbackMessage: 'Erro ao finalizar pedido.',
+        duration: 5000
+      })
     });
   }
 
@@ -131,15 +148,14 @@ export class PedidosComponent implements OnInit {
     if (!confirm(`Cancelar pedido ${p.numero}?`)) return;
     this.pedidoService.cancelar(p.id!).subscribe({
       next: () => { this.snackBar.open('Pedido cancelado!', 'OK', { duration: 3000 }); this.carregar(); },
-      error: () => this.snackBar.open('Erro ao cancelar', 'OK', { duration: 3000 })
-    });
-  }
-
-  excluir(p: Pedido): void {
-    if (!confirm(`Excluir pedido ${p.numero}?`)) return;
-    this.pedidoService.excluir(p.id!).subscribe({
-      next: () => { this.snackBar.open('Excluido!', 'OK', { duration: 3000 }); this.carregar(); },
-      error: () => this.snackBar.open('Erro ao excluir', 'OK', { duration: 3000 })
+      error: (e) => this.errorPresenter.handle(e, {
+        context: 'Pedidos.Cancelar',
+        source: 'supabase',
+        code: 'ORDER_CANCEL_FAILED',
+        title: 'Falha ao cancelar pedido',
+        fallbackMessage: 'Erro ao cancelar pedido.',
+        duration: 5000
+      })
     });
   }
 
@@ -156,6 +172,10 @@ export class PedidosComponent implements OnInit {
   get pedidosPaginados(): Pedido[] {
     const inicio = this.paginaAtual * this.itensPorPagina;
     return this.pedidos.slice(inicio, inicio + this.itensPorPagina);
+  }
+
+  trackPedido(index: number, pedido: Pedido): number | string {
+    return pedido.id ?? pedido.numero ?? index;
   }
 
   aoMudarPagina(event: PageEvent): void {

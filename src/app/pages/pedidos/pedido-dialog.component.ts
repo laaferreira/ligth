@@ -10,11 +10,13 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { PedidoService } from '../../core/services/pedido.service';
 import { ConsultaService } from '../../core/services/consulta.service';
 import { EstoqueService } from '../../core/services/estoque.service';
 import { AutocompleteItem, ProdutoAutocompleteItem } from '../../core/models/consulta.model';
 import { CriarPedido } from '../../core/models/pedido.model';
+import { ErrorPresenterService } from '../../core/errors/error-presenter.service';
 
 type PedidoDialogData = {
   modo: 'criar' | 'editar';
@@ -34,7 +36,8 @@ type PedidoDialogData = {
     MatButtonModule,
     MatIconModule,
     MatTableModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    MatTooltipModule
   ],
   template: `
     <div class="dialog-title-row" mat-dialog-title>
@@ -42,7 +45,7 @@ type PedidoDialogData = {
         <h2 class="dialog-title">{{ data.modo === 'criar' ? 'Novo Pedido' : 'Editar Pedido' }}</h2>
         <p class="dialog-subtitle">Monte o pedido em um popup otimizado para celular.</p>
       </div>
-      <button mat-icon-button type="button" (click)="fechar()" [disabled]="salvando" aria-label="Fechar popup">
+      <button mat-icon-button type="button" (click)="fechar()" [disabled]="salvando" aria-label="Fechar popup" matTooltip="Fechar pedido">
         <mat-icon>close</mat-icon>
       </button>
     </div>
@@ -82,7 +85,7 @@ type PedidoDialogData = {
             <mat-label>Margem %</mat-label>
             <input matInput type="number" inputmode="decimal" [formControl]="margemControl" step="0.01">
           </mat-form-field>
-          <button mat-mini-fab color="primary" type="button" class="btn-add-item" (click)="adicionarItem()" [disabled]="!produtoSelecionado || itemForm.invalid">
+          <button mat-mini-fab color="primary" type="button" class="btn-add-item" (click)="adicionarItem()" [disabled]="!produtoSelecionado || itemForm.invalid" matTooltip="Adicionar item ao pedido">
             <mat-icon>add</mat-icon>
           </button>
         </div>
@@ -129,7 +132,7 @@ type PedidoDialogData = {
               <ng-container matColumnDef="valorUnitario"><th mat-header-cell *matHeaderCellDef>Unit.</th><td mat-cell *matCellDef="let r">{{r.valorUnitario | currency:'BRL'}}</td></ng-container>
               <ng-container matColumnDef="margemLucro"><th mat-header-cell *matHeaderCellDef>Margem</th><td mat-cell *matCellDef="let r">{{r.margemLucro === null ? '-' : ((r.margemLucro | number:'1.1-1') + '%')}}</td></ng-container>
               <ng-container matColumnDef="valorTotal"><th mat-header-cell *matHeaderCellDef>Total</th><td mat-cell *matCellDef="let r">{{r.valorTotal | currency:'BRL'}}</td></ng-container>
-              <ng-container matColumnDef="remover"><th mat-header-cell *matHeaderCellDef></th><td mat-cell *matCellDef="let r; let i = index"><button mat-icon-button color="warn" (click)="removerItem(i)"><mat-icon>delete</mat-icon></button></td></ng-container>
+              <ng-container matColumnDef="remover"><th mat-header-cell *matHeaderCellDef></th><td mat-cell *matCellDef="let r; let i = index"><button mat-icon-button color="warn" (click)="removerItem(i)" matTooltip="Remover item do pedido"><mat-icon>delete</mat-icon></button></td></ng-container>
               <tr mat-header-row *matHeaderRowDef="itensColumns"></tr>
               <tr mat-row *matRowDef="let r; columns: itensColumns;"></tr>
             </table>
@@ -140,8 +143,13 @@ type PedidoDialogData = {
     </mat-dialog-content>
 
     <mat-dialog-actions align="end" class="dialog-actions">
-      <button mat-button type="button" (click)="fechar()" [disabled]="salvando">Cancelar</button>
-      <button mat-raised-button color="primary" type="button" (click)="salvarPedido()" [disabled]="!clienteSelecionado || itensNovoPedido.length === 0 || salvando">
+      @if (data.modo === 'editar') {
+        <button mat-stroked-button color="warn" type="button" (click)="excluirPedidoAtual()" [disabled]="salvando" matTooltip="Excluir este pedido">
+          Excluir pedido
+        </button>
+      }
+      <button mat-button type="button" (click)="fechar()" [disabled]="salvando" matTooltip="Fechar sem salvar">Cancelar</button>
+      <button mat-raised-button color="primary" type="button" (click)="salvarPedido()" [disabled]="!clienteSelecionado || itensNovoPedido.length === 0 || salvando" matTooltip="Salvar alterações do pedido">
         {{ salvando ? 'Salvando...' : (data.modo === 'criar' ? 'Criar pedido' : 'Salvar pedido') }}
       </button>
     </mat-dialog-actions>
@@ -211,6 +219,7 @@ export class PedidoDialogComponent implements OnInit {
     private estoqueService: EstoqueService,
     private fb: FormBuilder,
     private snackBar: MatSnackBar,
+    private errorPresenter: ErrorPresenterService,
     public dialogRef: MatDialogRef<PedidoDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: PedidoDialogData
   ) {
@@ -399,7 +408,44 @@ export class PedidoDialogComponent implements OnInit {
       },
       error: (e) => {
         this.salvando = false;
-        this.snackBar.open(e.error?.message || 'Erro ao salvar pedido.', 'OK', { duration: 4000 });
+        this.errorPresenter.handle(e, {
+          context: this.data.modo === 'editar' ? 'Pedidos.Editar' : 'Pedidos.Criar',
+          source: 'supabase',
+          code: this.data.modo === 'editar' ? 'ORDER_UPDATE_FAILED' : 'ORDER_CREATE_FAILED',
+          title: this.data.modo === 'editar' ? 'Falha ao atualizar pedido' : 'Falha ao criar pedido',
+          fallbackMessage: 'Erro ao salvar pedido.',
+          duration: 5000
+        });
+      }
+    });
+  }
+
+  excluirPedidoAtual(): void {
+    if (!this.data.pedidoId) {
+      return;
+    }
+
+    if (!confirm('Tem certeza que deseja excluir este pedido? Esta ação não pode ser desfeita.')) {
+      return;
+    }
+
+    this.salvando = true;
+    this.pedidoService.excluir(this.data.pedidoId).subscribe({
+      next: () => {
+        this.salvando = false;
+        this.snackBar.open('Pedido excluído!', 'OK', { duration: 3000 });
+        this.dialogRef.close(true);
+      },
+      error: (e) => {
+        this.salvando = false;
+        this.errorPresenter.handle(e, {
+          context: 'Pedidos.ExcluirNoDialogo',
+          source: 'supabase',
+          code: 'ORDER_DELETE_FAILED',
+          title: 'Falha ao excluir pedido',
+          fallbackMessage: 'Erro ao excluir pedido.',
+          duration: 5000
+        });
       }
     });
   }

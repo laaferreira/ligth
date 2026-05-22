@@ -17,6 +17,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ProdutoService } from '../../core/services/produto.service';
+import { PedidoService } from '../../core/services/pedido.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Produto } from '../../core/models/produto.model';
 import { ProdutoDialogComponent } from './produto-dialog.component';
@@ -45,10 +46,13 @@ export class ProdutosComponent implements OnInit {
   paginaAtual = 0;
   itensPorPagina = 10;
   readonly opcoesItensPorPagina = [10, 25, 50];
+  custoTotalEstoque = 0;
+  valorPrevistoFaturamento = 0;
   displayedColumns = ['descricao', 'fornecedor', 'precoCusto', 'precoVenda', 'quantidadeEstoque', 'acoes'];
 
   constructor(
     private produtoService: ProdutoService,
+    private pedidoService: PedidoService,
     private fornecedorService: FornecedorService,
     private authService: AuthService,
     private dialog: MatDialog,
@@ -64,7 +68,17 @@ export class ProdutosComponent implements OnInit {
   carregar(): void {
     this.produtoService.listar().subscribe(d => {
       this.todosProdutos = d;
+      this.custoTotalEstoque = d.reduce(
+        (total, produto) => total + Number(produto.quantidadeEstoque || 0) * Number(produto.precoCusto || 0),
+        0
+      );
       this.aplicarFiltro();
+    });
+
+    this.pedidoService.listar().subscribe(pedidos => {
+      this.valorPrevistoFaturamento = pedidos
+        .filter(pedido => pedido.status === 'EM_ABERTO' || pedido.status === 'CONFIRMADO')
+        .reduce((total, pedido) => total + Number(pedido.valorTotal || 0), 0);
     });
   }
 
