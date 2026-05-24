@@ -1,11 +1,72 @@
 @use '../clientes/clientes.component' as clientes;
 
 .filtros-container { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+.top-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
 .filtro-texto { flex: 1; min-width: 180px; }
 .filtro-status { width: 160px; }
 .filtro-data { width: 150px; }
 .btn-limpar-filtro { height: 40px; }
 .filtro-count { font-size: 13px; color: #6b5b7b; white-space: nowrap; }
+.top-actions button { min-height: 44px; }
+
+.import-summary {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f5f0fa;
+  color: #3d1a6e;
+  border: 1px solid #e0d4ec;
+  font-size: 14px;
+}
+
+.import-errors {
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #fff8e8;
+  border: 1px solid #f0d8a2;
+  color: #5c4300;
+}
+
+.import-error-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.import-reason-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.import-reason-item {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.import-reason-item span {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.import-reason-item small,
+.import-errors-note {
+  font-size: 12px;
+  color: #7a5b10;
+}
+
+.import-error-item {
+  font-size: 13px;
+  line-height: 1.4;
+}
 
 .add-item-row { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
 .field-produto { flex: 1; min-width: 200px; }
@@ -47,6 +108,8 @@
 
 @media (max-width: 768px) {
   .add-item-row { flex-direction: column; .field-produto, .field-sm { width: 100%; } }
+  .top-actions { flex-direction: column; }
+  .top-actions button { width: 100%; }
   .filtros-container { flex-direction: column; .filtro-texto, .filtro-status, .filtro-data { width: 100%; } }
   .card-header {
     position: sticky;

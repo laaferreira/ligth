@@ -27,7 +27,51 @@
 
         <div class="top-actions">
           <button mat-raised-button color="primary" (click)="novo()" matTooltip="Criar um novo pedido"><mat-icon>add</mat-icon> Novo pedido</button>
+          @if (podeImportarXls) {
+            <input #fileInput type="file" accept=".xlsx,.xls" hidden (change)="importarArquivo($event)">
+            <button mat-stroked-button type="button" (click)="fileInput.click()" [disabled]="importando">
+              <mat-icon>upload_file</mat-icon>
+              {{ importando ? 'Importando...' : 'Importar XLSX' }}
+            </button>
+          }
         </div>
+
+        @if (resumoImportacao) {
+          <div class="import-summary">{{ resumoImportacao }}</div>
+        }
+
+        @if (resumoErrosImportacao.length > 0) {
+          <div class="import-errors">
+            <strong>Diagnóstico da importação</strong>
+            <div class="import-reason-list">
+              @for (resumo of resumoErrosImportacao; track resumo.reason) {
+                <div class="import-reason-item">
+                  <span>{{ resumo.count }} linha(s)</span>
+                  <strong>{{ resumo.reason }}</strong>
+                  @if (resumo.sampleLines.length > 0) {
+                    <small>Exemplos: {{ resumo.sampleLines.join(', ') }}</small>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        @if (detalhesImportacao.length > 0) {
+          <div class="import-errors">
+            <strong>Linhas ignoradas</strong>
+            @if (detalhesImportacaoLimitados) {
+              <p class="import-errors-note">Exibindo os primeiros {{ detalhesImportacao.length }} registros para não sobrecarregar a tela.</p>
+            }
+            <div class="import-error-list">
+              @for (erro of detalhesImportacao; track erro.lineNumber + '-' + erro.reason) {
+                <div class="import-error-item">
+                  Linha {{ erro.lineNumber }}@if (erro.pedidoId) { · Pedido {{ erro.pedidoId }} }: {{ erro.reason }}
+                </div>
+              }
+            </div>
+          </div>
+        }
 
         <div class="filtros-container">
         <mat-form-field appearance="outline" class="filtro-texto">

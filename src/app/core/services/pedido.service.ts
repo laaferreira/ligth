@@ -2,7 +2,8 @@ import { Injectable } from '@angular/core';
 import { Observable, from } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { SupabaseService } from './supabase.service';
-import { Pedido, CriarPedido, AtualizarPedido } from '../models/pedido.model';
+import { Pedido, CriarPedido, AtualizarPedido, ImportarPedidoLinha, ImportarPedidosResponse } from '../models/pedido.model';
+import { environment } from '@env/environment';
 
 type PedidoDbRow = {
   id?: number;
@@ -44,6 +45,8 @@ type ItemPedidoDbRow = {
 @Injectable({ providedIn: 'root' })
 export class PedidoService {
   private readonly table = 'pedidos';
+  private readonly importOrdersFunctionName = environment.supabase.importOrdersFunctionName;
+  private readonly itensPageSize = 1000;
 
   constructor(private supabaseService: SupabaseService) {}
 
@@ -80,6 +83,15 @@ export class PedidoService {
         if (response.error) throw response.error;
         return response.data as Pedido;
       })
+    );
+  }
+
+  importarPedidos(linhas: ImportarPedidoLinha[]): Observable<ImportarPedidosResponse> {
+    return from(
+      this.supabaseService.invokeFunction<{ rows: ImportarPedidoLinha[] }, ImportarPedidosResponse>(
+        this.importOrdersFunctionName,
+        { rows: linhas }
+      )
     );
   }
 
@@ -187,11 +199,7 @@ export class PedidoService {
       .map(row => row.id)
       .filter((id): id is number => typeof id === 'number');
 
-    const itensResponse = await this.supabaseService.getClient()
-      .from('itens_pedidos')
-      .select('id, pedido_id, produto_id, quantidade, preco_unitario, custo_unitario, subtotal, produtos(descricao, nome, codigo, sku, precoCusto, preco_custo)')
-      .in('pedido_id', pedidoIds)
-      .order('id', { ascending: true });
+    const itensResponse = await this.listarItensPorPedidoIds(pedidoIds);
 
     if (itensResponse.error) {
       return { data: null, error: itensResponse.error };
@@ -237,11 +245,7 @@ export class PedidoService {
       .map(row => row.id)
       .filter((id): id is number => typeof id === 'number');
 
-    const itensResponse = await this.supabaseService.getClient()
-      .from('itens_pedidos')
-      .select('id, pedido_id, produto_id, quantidade, preco_unitario, custo_unitario, subtotal, produtos(descricao, nome, codigo, sku, precoCusto, preco_custo)')
-      .in('pedido_id', pedidoIds)
-      .order('id', { ascending: true });
+    const itensResponse = await this.listarItensPorPedidoIds(pedidoIds);
 
     if (itensResponse.error) {
       return { data: null, error: itensResponse.error };
@@ -551,6 +555,39 @@ export class PedidoService {
     }
 
     return produto || undefined;
+  }
+
+  private async listarItensPorPedidoIds(pedidoIds: number[]) {
+    if (!pedidoIds.length) {
+      return { data: [] as ItemPedidoDbRow[], error: null };
+    }
+
+    const itens: ItemPedidoDbRow[] = [];
+    let from = 0;
+
+    while (true) {
+      const response = await this.supabaseService.getClient()
+        .from('itens_pedidos')
+        .select('id, pedido_id, produto_id, quantidade, preco_unitario, custo_unitario, subtotal, produtos(descricao, nome, codigo, sku, precoCusto, preco_custo)')
+        .in('pedido_id', pedidoIds)
+        .order('id', { ascending: true })
+        .range(from, from + this.itensPageSize - 1);
+
+      if (response.error) {
+        return { data: null, error: response.error };
+      }
+
+      const page = (response.data || []) as ItemPedidoDbRow[];
+      itens.push(...page);
+
+      if (page.length < this.itensPageSize) {
+        break;
+      }
+
+      from += this.itensPageSize;
+    }
+
+    return { data: itens, error: null };
   }
 
   private toNumber(value: number | string | null | undefined): number {

@@ -2,6 +2,8 @@ import { Component, Injectable, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import * as XLSX from 'xlsx';
+import { firstValueFrom } from 'rxjs';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatCardModule } from '@angular/material/card';
@@ -19,7 +21,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { PedidoService } from '../../core/services/pedido.service';
 import { AuthService } from '../../core/services/auth.service';
-import { Pedido } from '../../core/models/pedido.model';
+import { Pedido, ImportarPedidoLinha, ImportarPedidoErro, ImportarPedidoResumoErro } from '../../core/models/pedido.model';
 import { ErrorPresenterService } from '../../core/errors/error-presenter.service';
 import { UserManagementService } from '../../core/services/user-management.service';
 import { UserRole } from '../../core/models/user.model';
@@ -86,12 +88,19 @@ class PedidosDateAdapter extends NativeDateAdapter {
   styleUrl: './pedidos.component.scss'
 })
 export class PedidosComponent implements OnInit {
+  private readonly importBatchMaxLines = 300;
   private readonly brandLogoPath = 'assets/light-brand.png';
   private brandLogoDataUrlPromise: Promise<string> | null = null;
   todosPedidos: Pedido[] = [];
   pedidos: Pedido[] = [];
   displayedColumns = ['numero', 'dataPedido', 'clienteNome', 'valorTotal', 'custoTotal', 'lucroTotal', 'status', 'acoes'];
   userRole: UserRole | null = null;
+  podeImportarXls = false;
+  importando = false;
+  resumoImportacao = '';
+  detalhesImportacao: ImportarPedidoErro[] = [];
+  resumoErrosImportacao: ImportarPedidoResumoErro[] = [];
+  detalhesImportacaoLimitados = false;
 
   // Filtros
   filtroTexto = '';
@@ -120,6 +129,7 @@ export class PedidosComponent implements OnInit {
   private carregarUsuarioAtual(): void {
     this.userManagementService.obterUsuarioAtualComRole().then(usuario => {
       this.userRole = usuario?.role || null;
+      this.podeImportarXls = usuario?.role === 'administrador';
     });
   }
 
@@ -171,11 +181,261 @@ export class PedidosComponent implements OnInit {
     this.aplicarFiltros();
   }
 
+  async importarArquivo(event: Event): Promise<void> {
+    if (!this.podeImportarXls) {
+      this.snackBar.open('Somente administradores podem importar pedidos por XLSX.', 'OK', { duration: 4000 });
+      return;
+    }
+
+    const input = event.target as HTMLInputElement;
+    const arquivo = input.files?.[0];
+
+    if (!arquivo) {
+      return;
+    }
+
+    this.importando = true;
+    this.resumoImportacao = '';
+    this.detalhesImportacao = [];
+    this.resumoErrosImportacao = [];
+    this.detalhesImportacaoLimitados = false;
+
+    try {
+      const buffer = await arquivo.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: 'array', cellDates: false });
+      const primeiraAba = workbook.SheetNames[0];
+
+      if (!primeiraAba) {
+        throw new Error('A planilha não contém abas para importação.');
+      }
+
+      const sheet = workbook.Sheets[primeiraAba];
+      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
+        defval: '',
+        raw: true
+      });
+
+      if (!rows.length) {
+        throw new Error('A planilha está vazia.');
+      }
+
+      this.validarCabecalhosObrigatorios(rows[0]);
+
+      const linhas = rows
+        .map((row, index) => this.mapearLinhaImportacao(row, index + 2))
+        .filter((linha): linha is ImportarPedidoLinha => !!linha);
+
+      if (!linhas.length) {
+        throw new Error('Nenhuma linha válida foi encontrada para importação.');
+      }
+
+      const lotes = this.criarLotesImportacao(linhas, this.importBatchMaxLines);
+      const resultado = await this.importarLotes(lotes);
+      this.detalhesImportacao = resultado.errors;
+      this.resumoErrosImportacao = resultado.resumoErros;
+      this.detalhesImportacaoLimitados = resultado.detalhesLimitados;
+      this.resumoImportacao = `${resultado.totalLinhasRecebidas} linha(s) lida(s), ${resultado.totalPedidosIdentificados} pedido(s) identificado(s), ` +
+        `${resultado.pedidosInseridos} pedido(s) importado(s), ${resultado.itensInseridos} item(ns) inserido(s)` +
+        `${resultado.linhasIgnoradas > 0 ? ` e ${resultado.linhasIgnoradas} linha(s) ignorada(s)` : ''}.` +
+        `${lotes.length > 1 ? ` Processado(s) em ${lotes.length} lote(s).` : ''}`;
+
+      this.snackBar.open(this.resumoImportacao, 'OK', { duration: 6000 });
+      this.carregar();
+    } catch (error: any) {
+      this.snackBar.open(error?.message || 'Erro ao importar pedidos.', 'OK', { duration: 5000 });
+    } finally {
+      this.importando = false;
+      input.value = '';
+    }
+  }
+
   private formatarDataFiltro(data: Date): string {
     const ano = data.getFullYear();
     const mes = String(data.getMonth() + 1).padStart(2, '0');
     const dia = String(data.getDate()).padStart(2, '0');
     return `${ano}-${mes}-${dia}`;
+  }
+
+  private validarCabecalhosObrigatorios(primeiraLinha: Record<string, unknown>): void {
+    const cabecalhos = Object.keys(primeiraLinha).map(cabecalho => this.normalizarCabecalho(cabecalho));
+    const obrigatorios = ['pedidoid', 'cliente', 'datavenda', 'datafinalizacao', 'userid', 'descricaoproduto', 'custo', 'precounitario', 'quantidade'];
+    const faltantes = obrigatorios.filter(cabecalho => !cabecalhos.includes(cabecalho));
+
+    if (faltantes.length > 0) {
+      throw new Error(`Cabeçalho inválido. Colunas ausentes: ${faltantes.join(', ')}`);
+    }
+  }
+
+  private mapearLinhaImportacao(row: Record<string, unknown>, lineNumber: number): ImportarPedidoLinha | null {
+    if (this.linhaVazia(row)) {
+      return null;
+    }
+
+    return {
+      lineNumber,
+      pedidoId: this.obterValorTexto(row, ['pedido_id', 'pedido id']),
+      cliente: this.obterValorTexto(row, ['cliente']),
+      dataVenda: this.obterValor(row, ['data venda']),
+      dataFinalizacao: this.obterValor(row, ['data finalizacao', 'data finalização']),
+      userId: this.obterValorTexto(row, ['user_id', 'user id']),
+      descricaoProduto: this.obterValorTexto(row, ['descricao produto', 'descrição produto']),
+      custo: this.obterValor(row, ['custo']),
+      valorUnitario: this.obterValor(row, ['preco unitario', 'preço unitário', 'preco unitário', 'preço unitario']),
+      quantidade: this.obterValor(row, ['quantidade'])
+    };
+  }
+
+  private obterValor(row: Record<string, unknown>, aliases: string[]): string | number | null {
+    const entries = Object.entries(row);
+    for (const [key, value] of entries) {
+      const normalizedKey = this.normalizarCabecalho(key);
+      if (aliases.some(alias => this.normalizarCabecalho(alias) === normalizedKey)) {
+        if (typeof value === 'string' || typeof value === 'number') {
+          return value;
+        }
+
+        return value == null ? null : String(value);
+      }
+    }
+
+    return null;
+  }
+
+  private obterValorTexto(row: Record<string, unknown>, aliases: string[]): string {
+    const valor = this.obterValor(row, aliases);
+    return String(valor ?? '').trim();
+  }
+
+  private criarLotesImportacao(linhas: ImportarPedidoLinha[], maxLinhasPorLote: number): ImportarPedidoLinha[][] {
+    const pedidosAgrupados = new Map<string, ImportarPedidoLinha[]>();
+
+    linhas.forEach(linha => {
+      const pedidoId = linha.pedidoId || `linha-${linha.lineNumber}`;
+      const bucket = pedidosAgrupados.get(pedidoId) || [];
+      bucket.push(linha);
+      pedidosAgrupados.set(pedidoId, bucket);
+    });
+
+    const lotes: ImportarPedidoLinha[][] = [];
+    let loteAtual: ImportarPedidoLinha[] = [];
+
+    pedidosAgrupados.forEach(grupo => {
+      if (loteAtual.length > 0 && loteAtual.length + grupo.length > maxLinhasPorLote) {
+        lotes.push(loteAtual);
+        loteAtual = [];
+      }
+
+      loteAtual.push(...grupo);
+    });
+
+    if (loteAtual.length > 0) {
+      lotes.push(loteAtual);
+    }
+
+    return lotes;
+  }
+
+  private async importarLotes(lotes: ImportarPedidoLinha[][]): Promise<{
+    totalLinhasRecebidas: number;
+    totalLinhasComSucesso: number;
+    totalPedidosIdentificados: number;
+    totalPedidosAgrupados: number;
+    pedidosInseridos: number;
+    itensInseridos: number;
+    linhasIgnoradas: number;
+    detalhesLimitados: boolean;
+    resumoErros: ImportarPedidoResumoErro[];
+    errors: ImportarPedidoErro[];
+  }> {
+    const reasonSummary = new Map<string, ImportarPedidoResumoErro>();
+    const mergedErrors: ImportarPedidoErro[] = [];
+    const mergedPedidoIds = new Set<string>();
+    let totalLinhasRecebidas = 0;
+    let totalLinhasComSucesso = 0;
+    let totalPedidosAgrupados = 0;
+    let pedidosInseridos = 0;
+    let itensInseridos = 0;
+    let linhasIgnoradas = 0;
+    let detalhesLimitados = false;
+
+    for (let index = 0; index < lotes.length; index += 1) {
+      const lote = lotes[index];
+      this.resumoImportacao = `Importando lote ${index + 1} de ${lotes.length}...`;
+
+      try {
+        const resultado = await firstValueFrom(this.pedidoService.importarPedidos(lote));
+
+        totalLinhasRecebidas += resultado.totalLinhasRecebidas;
+        totalLinhasComSucesso += resultado.totalLinhasComSucesso;
+        totalPedidosAgrupados += resultado.totalPedidosAgrupados;
+        pedidosInseridos += resultado.pedidosInseridos;
+        itensInseridos += resultado.itensInseridos;
+        linhasIgnoradas += resultado.linhasIgnoradas;
+        detalhesLimitados = detalhesLimitados || !!resultado.detalhesLimitados;
+
+        lote.forEach(linha => {
+          if (linha.pedidoId) {
+            mergedPedidoIds.add(linha.pedidoId);
+          }
+        });
+
+        (resultado.resumoErros || []).forEach(resumo => {
+          const existing = reasonSummary.get(resumo.reason);
+          if (existing) {
+            existing.count += resumo.count;
+            resumo.sampleLines.forEach(line => {
+              if (existing.sampleLines.length < 5 && !existing.sampleLines.includes(line)) {
+                existing.sampleLines.push(line);
+              }
+            });
+            return;
+          }
+
+          reasonSummary.set(resumo.reason, {
+            reason: resumo.reason,
+            count: resumo.count,
+            sampleLines: [...resumo.sampleLines].slice(0, 5)
+          });
+        });
+
+        (resultado.errors || []).forEach(error => {
+          if (mergedErrors.length < 200) {
+            mergedErrors.push(error);
+          } else {
+            detalhesLimitados = true;
+          }
+        });
+      } catch (error: any) {
+        const processedLots = index;
+        const message = error?.message || 'Erro ao importar pedidos.';
+        throw new Error(`Falha no lote ${index + 1} de ${lotes.length} após ${processedLots} lote(s) concluído(s). ${message}`);
+      }
+    }
+
+    return {
+      totalLinhasRecebidas,
+      totalLinhasComSucesso,
+      totalPedidosIdentificados: mergedPedidoIds.size,
+      totalPedidosAgrupados,
+      pedidosInseridos,
+      itensInseridos,
+      linhasIgnoradas,
+      detalhesLimitados,
+      resumoErros: Array.from(reasonSummary.values()).sort((left, right) => right.count - left.count || left.reason.localeCompare(right.reason)),
+      errors: mergedErrors
+    };
+  }
+
+  private linhaVazia(row: Record<string, unknown>): boolean {
+    return Object.values(row).every(value => String(value ?? '').trim() === '');
+  }
+
+  private normalizarCabecalho(value: string): string {
+    return value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9]/g, '')
+      .toLowerCase();
   }
 
   novo(): void {

@@ -33,6 +33,44 @@ export interface AtualizarPedido extends Partial<CriarPedido> {
   dataFinalizacao?: string | null;
 }
 
+export interface ImportarPedidoLinha {
+  lineNumber: number;
+  pedidoId: string;
+  cliente: string;
+  dataVenda: string | number | null;
+  dataFinalizacao: string | number | null;
+  userId: string;
+  descricaoProduto: string;
+  custo: string | number | null;
+  valorUnitario: string | number | null;
+  quantidade: string | number | null;
+}
+
+export interface ImportarPedidoErro {
+  lineNumber: number;
+  pedidoId?: string;
+  reason: string;
+}
+
+export interface ImportarPedidoResumoErro {
+  reason: string;
+  count: number;
+  sampleLines: number[];
+}
+
+export interface ImportarPedidosResponse {
+  totalLinhasRecebidas: number;
+  totalLinhasComSucesso: number;
+  totalPedidosIdentificados: number;
+  totalPedidosAgrupados: number;
+  pedidosInseridos: number;
+  itensInseridos: number;
+  linhasIgnoradas: number;
+  detalhesLimitados: boolean;
+  resumoErros: ImportarPedidoResumoErro[];
+  errors: ImportarPedidoErro[];
+}
+
 export interface Movimentacao {
   id: number;
   produtoId: number;

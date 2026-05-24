@@ -31,6 +31,30 @@ export class SupabaseService {
     });
 
     if (error) {
+      const response = (error as { context?: Response }).context;
+
+      if (response instanceof Response) {
+        try {
+          const contentType = response.headers.get('content-type') || '';
+
+          if (contentType.includes('application/json')) {
+            const payload = await response.clone().json() as { error?: string; message?: string };
+            const message = payload.error || payload.message;
+
+            if (message) {
+              throw new Error(message);
+            }
+          }
+
+          const text = await response.clone().text();
+          if (text) {
+            throw new Error(text);
+          }
+        } catch {
+          // Falls back to the original Supabase error when the response body cannot be parsed.
+        }
+      }
+
       throw error;
     }
 
