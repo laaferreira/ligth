@@ -47,6 +47,7 @@ export class PedidoService {
   private readonly table = 'pedidos';
   private readonly importOrdersFunctionName = environment.supabase.importOrdersFunctionName;
   private readonly itensPageSize = 1000;
+  private readonly markupMinimoVendedor = 35;
 
   constructor(private supabaseService: SupabaseService) {}
 
@@ -322,7 +323,7 @@ export class PedidoService {
   }
 
   private async criarComUsuario(pedido: CriarPedido) {
-    const { userId } = await this.getCurrentUserContext();
+    const { userId, role } = await this.getCurrentUserContext();
     const client = this.supabaseService.getClient();
     const pedidoInsert = await client
       .from(this.table)
@@ -339,7 +340,7 @@ export class PedidoService {
       return { data: null, error: new Error('Pedido criado sem identificador.') };
     }
 
-    const itensInsert = await this.persistirItensPedido(pedidoId, pedido.itens, userId);
+    const itensInsert = await this.persistirItensPedido(pedidoId, pedido.itens, userId, role);
     if (itensInsert.error) {
       await client.from(this.table).delete().eq('id', pedidoId);
       return { data: null, error: itensInsert.error };
@@ -350,7 +351,7 @@ export class PedidoService {
   }
 
   private async atualizarComItens(id: number, pedido: AtualizarPedido) {
-    const { userId } = await this.getCurrentUserContext();
+    const { userId, role } = await this.getCurrentUserContext();
     const client = this.supabaseService.getClient();
     const camposPedido = this.toDb(pedido);
 
@@ -377,7 +378,7 @@ export class PedidoService {
         return { data: null, error: deleteResponse.error };
       }
 
-      const itensInsert = await this.persistirItensPedido(id, pedido.itens, userId);
+      const itensInsert = await this.persistirItensPedido(id, pedido.itens, userId, role);
       if (itensInsert.error) {
         return { data: null, error: itensInsert.error };
       }
@@ -487,7 +488,8 @@ export class PedidoService {
   private async persistirItensPedido(
     pedidoId: number,
     itens: CriarPedido['itens'],
-    userId: string
+    userId: string,
+    role: string | null
   ) {
     if (!itens.length) {
       return { error: null };
@@ -518,6 +520,26 @@ export class PedidoService {
 
         custosPorProduto.set(produto.id, this.toNumber(produto.precoCusto ?? produto.preco_custo));
       });
+    }
+
+    const itensAbaixoPrecoOuro = role === 'vendedor'
+      ? itens.find(item => {
+          const custoBase = custosPorProduto.get(item.produtoId) ?? this.toNumber(item.custoUnitario);
+          const valorUnitario = this.toNumber(item.valorUnitario);
+
+          if (custoBase <= 0 || valorUnitario <= 0) {
+            return false;
+          }
+
+          const precoMinimo = this.roundToTwo(custoBase * (1 + this.markupMinimoVendedor / 100));
+          return valorUnitario + 0.0001 < precoMinimo;
+        })
+      : undefined;
+
+    if (itensAbaixoPrecoOuro) {
+      return {
+        error: new Error(`Vendedores não podem criar pedidos com valor unitário abaixo do Preço Ouro (${this.markupMinimoVendedor}% acima do custo médio).`)
+      };
     }
 
     const payload = itens.map(item => ({
@@ -593,6 +615,10 @@ export class PedidoService {
   private toNumber(value: number | string | null | undefined): number {
     const numero = Number(value ?? 0);
     return Number.isFinite(numero) ? numero : 0;
+  }
+
+  private roundToTwo(value: number): number {
+    return Math.round(value * 100) / 100;
   }
 
   private toDbField(field: string): string {

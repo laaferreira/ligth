@@ -93,7 +93,6 @@ export class PedidosComponent implements OnInit {
   private brandLogoDataUrlPromise: Promise<string> | null = null;
   todosPedidos: Pedido[] = [];
   pedidos: Pedido[] = [];
-  displayedColumns = ['numero', 'dataPedido', 'clienteNome', 'valorTotal', 'custoTotal', 'lucroTotal', 'status', 'acoes'];
   userRole: UserRole | null = null;
   podeImportarXls = false;
   importando = false;
@@ -110,6 +109,18 @@ export class PedidosComponent implements OnInit {
   paginaAtual = 0;
   itensPorPagina = 10;
   readonly opcoesItensPorPagina = [10, 25, 50];
+
+  get displayedColumns(): string[] {
+    if (this.userRole === 'vendedor') {
+      return ['numero', 'dataPedido', 'clienteNome', 'valorTotal', 'status', 'acoes'];
+    }
+
+    return ['numero', 'dataPedido', 'clienteNome', 'valorTotal', 'custoTotal', 'lucroTotal', 'status', 'acoes'];
+  }
+
+  get isVendedor(): boolean {
+    return this.userRole === 'vendedor';
+  }
 
   constructor(
     private pedidoService: PedidoService,

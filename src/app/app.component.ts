@@ -18,7 +18,7 @@ import { UserManagementService } from './core/services/user-management.service';
       <mat-toolbar class="app-header">
         <div class="header-content">
           <div class="header-top-row">
-            <div class="brand" (click)="navegar('/dashboard')">
+            <div class="brand" (click)="navegar(rotaInicial())">
               <img class="brand-logo" src="assets/light-brand.png" alt="Light">
               <span class="brand-name">LIGHT</span>
             </div>
@@ -35,27 +35,41 @@ import { UserManagementService } from './core/services/user-management.service';
           </div>
 
           <div class="nav-links">
-            <button mat-button (click)="navegar('/dashboard')" [disabled]="estaAtiva('/dashboard')">
-              <mat-icon>dashboard</mat-icon> Dashboard
-            </button>
-            <button mat-button (click)="navegar('/consulta')" [disabled]="estaAtiva('/consulta')">
-              <mat-icon>search</mat-icon> Consulta
-            </button>
-            <button mat-button (click)="navegar('/clientes')" [disabled]="estaAtiva('/clientes')">
-              <mat-icon>people</mat-icon> Clientes
-            </button>
-            <button mat-button (click)="navegar('/fornecedores')" [disabled]="estaAtiva('/fornecedores')">
-              <mat-icon>local_shipping</mat-icon> Fornecedores
-            </button>
-            <button mat-button (click)="navegar('/produtos')" [disabled]="estaAtiva('/produtos')">
-              <mat-icon>inventory_2</mat-icon> Produtos
-            </button>
-            <button mat-button (click)="navegar('/pedidos')" [disabled]="estaAtiva('/pedidos')">
-              <mat-icon>receipt_long</mat-icon> Pedidos
-            </button>
-            <button mat-button (click)="navegar('/estoque')" [disabled]="estaAtiva('/estoque')">
-              <mat-icon>warehouse</mat-icon> Estoque
-            </button>
+            @if (podeAcessarRota('/dashboard')) {
+              <button mat-button (click)="navegar('/dashboard')" [disabled]="estaAtiva('/dashboard')">
+                <mat-icon>dashboard</mat-icon> Dashboard
+              </button>
+            }
+            @if (podeAcessarRota('/consulta')) {
+              <button mat-button (click)="navegar('/consulta')" [disabled]="estaAtiva('/consulta')">
+                <mat-icon>search</mat-icon> Consulta
+              </button>
+            }
+            @if (podeAcessarRota('/clientes')) {
+              <button mat-button (click)="navegar('/clientes')" [disabled]="estaAtiva('/clientes')">
+                <mat-icon>people</mat-icon> Clientes
+              </button>
+            }
+            @if (podeAcessarRota('/fornecedores')) {
+              <button mat-button (click)="navegar('/fornecedores')" [disabled]="estaAtiva('/fornecedores')">
+                <mat-icon>local_shipping</mat-icon> Fornecedores
+              </button>
+            }
+            @if (podeAcessarRota('/produtos')) {
+              <button mat-button (click)="navegar('/produtos')" [disabled]="estaAtiva('/produtos')">
+                <mat-icon>inventory_2</mat-icon> Produtos
+              </button>
+            }
+            @if (podeAcessarRota('/pedidos')) {
+              <button mat-button (click)="navegar('/pedidos')" [disabled]="estaAtiva('/pedidos')">
+                <mat-icon>receipt_long</mat-icon> Pedidos
+              </button>
+            }
+            @if (podeAcessarRota('/estoque')) {
+              <button mat-button (click)="navegar('/estoque')" [disabled]="estaAtiva('/estoque')">
+                <mat-icon>warehouse</mat-icon> Estoque
+              </button>
+            }
             @if (podeGerenciarUsuarios()) {
               <button mat-button (click)="navegar('/gerencia-usuarios')" [disabled]="estaAtiva('/gerencia-usuarios')">
                 <mat-icon>manage_accounts</mat-icon> Usuários
@@ -71,34 +85,48 @@ import { UserManagementService } from './core/services/user-management.service';
           </button>
 
           <mat-menu #mobileNavMenu="matMenu">
-            <button mat-menu-item (click)="navegar('/dashboard')">
-              <mat-icon>dashboard</mat-icon>
-              <span>Dashboard</span>
-            </button>
-            <button mat-menu-item (click)="navegar('/consulta')">
-              <mat-icon>search</mat-icon>
-              <span>Consulta</span>
-            </button>
-            <button mat-menu-item (click)="navegar('/clientes')">
-              <mat-icon>people</mat-icon>
-              <span>Clientes</span>
-            </button>
-            <button mat-menu-item (click)="navegar('/fornecedores')">
-              <mat-icon>local_shipping</mat-icon>
-              <span>Fornecedores</span>
-            </button>
-            <button mat-menu-item (click)="navegar('/produtos')">
-              <mat-icon>inventory_2</mat-icon>
-              <span>Produtos</span>
-            </button>
-            <button mat-menu-item (click)="navegar('/pedidos')">
-              <mat-icon>receipt_long</mat-icon>
-              <span>Pedidos</span>
-            </button>
-            <button mat-menu-item (click)="navegar('/estoque')">
-              <mat-icon>warehouse</mat-icon>
-              <span>Estoque</span>
-            </button>
+            @if (podeAcessarRota('/dashboard')) {
+              <button mat-menu-item (click)="navegar('/dashboard')">
+                <mat-icon>dashboard</mat-icon>
+                <span>Dashboard</span>
+              </button>
+            }
+            @if (podeAcessarRota('/consulta')) {
+              <button mat-menu-item (click)="navegar('/consulta')">
+                <mat-icon>search</mat-icon>
+                <span>Consulta</span>
+              </button>
+            }
+            @if (podeAcessarRota('/clientes')) {
+              <button mat-menu-item (click)="navegar('/clientes')">
+                <mat-icon>people</mat-icon>
+                <span>Clientes</span>
+              </button>
+            }
+            @if (podeAcessarRota('/fornecedores')) {
+              <button mat-menu-item (click)="navegar('/fornecedores')">
+                <mat-icon>local_shipping</mat-icon>
+                <span>Fornecedores</span>
+              </button>
+            }
+            @if (podeAcessarRota('/produtos')) {
+              <button mat-menu-item (click)="navegar('/produtos')">
+                <mat-icon>inventory_2</mat-icon>
+                <span>Produtos</span>
+              </button>
+            }
+            @if (podeAcessarRota('/pedidos')) {
+              <button mat-menu-item (click)="navegar('/pedidos')">
+                <mat-icon>receipt_long</mat-icon>
+                <span>Pedidos</span>
+              </button>
+            }
+            @if (podeAcessarRota('/estoque')) {
+              <button mat-menu-item (click)="navegar('/estoque')">
+                <mat-icon>warehouse</mat-icon>
+                <span>Estoque</span>
+              </button>
+            }
             @if (podeGerenciarUsuarios()) {
               <button mat-menu-item (click)="navegar('/gerencia-usuarios')">
                 <mat-icon>manage_accounts</mat-icon>
@@ -121,28 +149,36 @@ import { UserManagementService } from './core/services/user-management.service';
       </mat-toolbar>
 
       <nav class="mobile-bottom-nav" aria-label="Navegação principal mobile">
-        <button mat-button class="mobile-bottom-link" (click)="navegar('/dashboard')" [class.active]="estaAtiva('/dashboard')">
-          <mat-icon>dashboard</mat-icon>
-          <span>Início</span>
-        </button>
-        <button mat-button class="mobile-bottom-link" (click)="navegar('/clientes')" [class.active]="estaAtiva('/clientes')">
-          <mat-icon>people</mat-icon>
-          <span>Clientes</span>
-        </button>
-        <button mat-button class="mobile-bottom-link" (click)="navegar('/pedidos')" [class.active]="estaAtiva('/pedidos')">
-          <mat-icon>receipt_long</mat-icon>
-          <span>Pedidos</span>
-        </button>
-        <button mat-button class="mobile-bottom-link" (click)="navegar('/estoque')" [class.active]="estaAtiva('/estoque')">
-          <mat-icon>warehouse</mat-icon>
-          <span>Estoque</span>
-        </button>
+        @if (podeAcessarRota('/dashboard')) {
+          <button mat-button class="mobile-bottom-link" (click)="navegar('/dashboard')" [class.active]="estaAtiva('/dashboard')">
+            <mat-icon>dashboard</mat-icon>
+            <span>Início</span>
+          </button>
+        }
+        @if (podeAcessarRota('/clientes')) {
+          <button mat-button class="mobile-bottom-link" (click)="navegar('/clientes')" [class.active]="estaAtiva('/clientes')">
+            <mat-icon>people</mat-icon>
+            <span>Clientes</span>
+          </button>
+        }
+        @if (podeAcessarRota('/pedidos')) {
+          <button mat-button class="mobile-bottom-link" (click)="navegar('/pedidos')" [class.active]="estaAtiva('/pedidos')">
+            <mat-icon>receipt_long</mat-icon>
+            <span>Pedidos</span>
+          </button>
+        }
+        @if (podeAcessarRota('/estoque')) {
+          <button mat-button class="mobile-bottom-link" (click)="navegar('/estoque')" [class.active]="estaAtiva('/estoque')">
+            <mat-icon>warehouse</mat-icon>
+            <span>Estoque</span>
+          </button>
+        }
         @if (podeGerenciarUsuarios()) {
           <button mat-button class="mobile-bottom-link" (click)="navegar('/gerencia-usuarios')" [class.active]="estaAtiva('/gerencia-usuarios')">
             <mat-icon>manage_accounts</mat-icon>
             <span>Usuários</span>
           </button>
-        } @else {
+        } @else if (!isVendedor()) {
           <button mat-button class="mobile-bottom-link" [matMenuTriggerFor]="mobileNavMenu">
             <mat-icon>more_horiz</mat-icon>
             <span>Mais</span>
@@ -283,6 +319,7 @@ import { UserManagementService } from './core/services/user-management.service';
 export class AppComponent {
   currentRoute = '';
   userRole: string | null = null;
+  private readonly vendedorRotasPermitidas = new Set(['/clientes', '/pedidos']);
 
   constructor(
     private router: Router,
@@ -317,6 +354,22 @@ export class AppComponent {
 
   podeGerenciarUsuarios(): boolean {
     return this.userRole === 'administrador' || this.userRole === 'gerente';
+  }
+
+  isVendedor(): boolean {
+    return this.userRole === 'vendedor';
+  }
+
+  podeAcessarRota(path: string): boolean {
+    if (!this.isVendedor()) {
+      return true;
+    }
+
+    return this.vendedorRotasPermitidas.has(path);
+  }
+
+  rotaInicial(): string {
+    return this.isVendedor() ? '/clientes' : '/dashboard';
   }
 
   navegar(path: string): void {

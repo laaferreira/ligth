@@ -80,7 +80,7 @@ type PedidoDialogData = {
             <input matInput [formControl]="produtoControl" [matAutocomplete]="autoProduto" placeholder="Buscar produto...">
             <mat-autocomplete #autoProduto="matAutocomplete" [displayWith]="displayFn" (optionSelected)="onProdutoSelected($event.option.value)">
               @for (p of produtosFiltrados; track p.id) {
-                <mat-option [value]="p">{{p.label}} <small class="option-preco">R$ {{p.precoCusto}}</small></mat-option>
+                <mat-option [value]="p">{{p.label}} @if (!isVendedor) {<small class="option-preco">R$ {{p.precoCusto}}</small>}</mat-option>
               }
             </mat-autocomplete>
           </mat-form-field>
@@ -92,10 +92,12 @@ type PedidoDialogData = {
             <mat-label>Vlr Unit.</mat-label>
             <input matInput type="number" inputmode="decimal" [formControl]="vlrControl" step="0.01">
           </mat-form-field>
-          <mat-form-field appearance="outline" class="field-sm">
-            <mat-label>Margem %</mat-label>
-            <input matInput type="number" inputmode="decimal" [formControl]="margemControl" step="0.01">
-          </mat-form-field>
+          @if (!isVendedor) {
+            <mat-form-field appearance="outline" class="field-sm">
+              <mat-label>Margem %</mat-label>
+              <input matInput type="number" inputmode="decimal" [formControl]="margemControl" step="0.01">
+            </mat-form-field>
+          }
           <button mat-mini-fab color="primary" type="button" class="btn-add-item" (click)="adicionarItem()" [disabled]="!produtoSelecionado || itemForm.invalid" matTooltip="Adicionar item ao pedido">
             <mat-icon>add</mat-icon>
           </button>
@@ -118,12 +120,29 @@ type PedidoDialogData = {
                 <span class="info-value" [class.estoque-baixo]="estoqueFuturoInfo <= 0" [class.margem-positiva]="estoqueFuturoInfo > 0">{{estoqueFuturoInfo}}</span>
               </div>
             </div>
-            <div class="info-row">
-              <div class="info-item"><span class="info-label">Valor Total:</span><span class="info-value">{{valorTotalItem | currency:'BRL'}}</span></div>
-              <div class="info-item"><span class="info-label">Valor Total Custo:</span><span class="info-value">{{valorTotalCustoItem | currency:'BRL'}}</span></div>
-              <div class="info-item"><span class="info-label">Valor Total Lucro:</span><span class="info-value" [class.margem-positiva]="valorTotalLucroItem >= 0" [class.margem-negativa]="valorTotalLucroItem < 0">{{valorTotalLucroItem | currency:'BRL'}}</span></div>
-            </div>
-            @if (precoCusto !== null) {
+            @if (isVendedor && precoCusto !== null) {
+              <div class="price-tier-grid">
+                <button mat-stroked-button type="button" class="price-tier" (click)="aplicarPrecoSugerido(precoOuro)">
+                  <span class="price-tier-label">Preço Ouro</span>
+                  <strong>{{precoOuro | currency:'BRL'}}</strong>
+                </button>
+                <button mat-stroked-button type="button" class="price-tier" (click)="aplicarPrecoSugerido(precoPrata)">
+                  <span class="price-tier-label">Preço Prata</span>
+                  <strong>{{precoPrata | currency:'BRL'}}</strong>
+                </button>
+                <button mat-stroked-button type="button" class="price-tier" (click)="aplicarPrecoSugerido(precoBronze)">
+                  <span class="price-tier-label">Preço Bronze</span>
+                  <strong>{{precoBronze | currency:'BRL'}}</strong>
+                </button>
+              </div>
+            } @else {
+              <div class="info-row">
+                <div class="info-item"><span class="info-label">Valor Total:</span><span class="info-value">{{valorTotalItem | currency:'BRL'}}</span></div>
+                <div class="info-item"><span class="info-label">Valor Total Custo:</span><span class="info-value">{{valorTotalCustoItem | currency:'BRL'}}</span></div>
+                <div class="info-item"><span class="info-label">Valor Total Lucro:</span><span class="info-value" [class.margem-positiva]="valorTotalLucroItem >= 0" [class.margem-negativa]="valorTotalLucroItem < 0">{{valorTotalLucroItem | currency:'BRL'}}</span></div>
+              </div>
+            }
+            @if (!isVendedor && precoCusto !== null) {
               <div class="info-row">
                 <div class="info-item"><span class="info-label">Custo Medio:</span><span class="info-value">{{precoCusto | currency:'BRL'}}</span></div>
                 @if (margemLucro !== null) {
@@ -142,20 +161,24 @@ type PedidoDialogData = {
               <ng-container matColumnDef="produto"><th mat-header-cell *matHeaderCellDef>Produto</th><td mat-cell *matCellDef="let r">{{r.produtoLabel}}</td></ng-container>
               <ng-container matColumnDef="quantidade"><th mat-header-cell *matHeaderCellDef>Qtd</th><td mat-cell *matCellDef="let r">{{r.quantidade}}</td></ng-container>
               <ng-container matColumnDef="valorUnitario"><th mat-header-cell *matHeaderCellDef>Unit.</th><td mat-cell *matCellDef="let r">{{r.valorUnitario | currency:'BRL'}}</td></ng-container>
-              <ng-container matColumnDef="custoTotal"><th mat-header-cell *matHeaderCellDef>Custo</th><td mat-cell *matCellDef="let r">{{r.custoTotal | currency:'BRL'}}</td></ng-container>
-              <ng-container matColumnDef="lucroTotal"><th mat-header-cell *matHeaderCellDef>Lucro</th><td mat-cell *matCellDef="let r"><span [class.margem-positiva]="r.lucroTotal >= 0" [class.margem-negativa]="r.lucroTotal < 0">{{r.lucroTotal | currency:'BRL'}}</span></td></ng-container>
-              <ng-container matColumnDef="margemLucro"><th mat-header-cell *matHeaderCellDef>Margem</th><td mat-cell *matCellDef="let r">{{r.margemLucro === null ? '-' : ((r.margemLucro | number:'1.1-1') + '%')}}</td></ng-container>
-              <ng-container matColumnDef="valorTotal"><th mat-header-cell *matHeaderCellDef>Total</th><td mat-cell *matCellDef="let r">{{r.valorTotal | currency:'BRL'}}</td></ng-container>
+              @if (!isVendedor) {
+                <ng-container matColumnDef="custoTotal"><th mat-header-cell *matHeaderCellDef>Custo</th><td mat-cell *matCellDef="let r">{{r.custoTotal | currency:'BRL'}}</td></ng-container>
+                <ng-container matColumnDef="lucroTotal"><th mat-header-cell *matHeaderCellDef>Lucro</th><td mat-cell *matCellDef="let r"><span [class.margem-positiva]="r.lucroTotal >= 0" [class.margem-negativa]="r.lucroTotal < 0">{{r.lucroTotal | currency:'BRL'}}</span></td></ng-container>
+                <ng-container matColumnDef="margemLucro"><th mat-header-cell *matHeaderCellDef>Margem</th><td mat-cell *matCellDef="let r">{{r.margemLucro === null ? '-' : ((r.margemLucro | number:'1.1-1') + '%')}}</td></ng-container>
+                <ng-container matColumnDef="valorTotal"><th mat-header-cell *matHeaderCellDef>Total</th><td mat-cell *matCellDef="let r">{{r.valorTotal | currency:'BRL'}}</td></ng-container>
+              }
               <ng-container matColumnDef="remover"><th mat-header-cell *matHeaderCellDef></th><td mat-cell *matCellDef="let r; let i = index">@if (!modoSomenteFinalizacao) {<button mat-icon-button color="warn" (click)="removerItem(i)" matTooltip="Remover item do pedido"><mat-icon>delete</mat-icon></button>}</td></ng-container>
               <tr mat-header-row *matHeaderRowDef="itensColumns"></tr>
               <tr mat-row *matRowDef="let r; columns: itensColumns;"></tr>
             </table>
           </div>
-          <div class="total-row">
-            <strong>Total: {{totalPedido | currency:'BRL'}}</strong>
-            <strong>Custo total: {{custoTotalPedido | currency:'BRL'}}</strong>
-            <strong [class.margem-positiva]="lucroTotalPedido >= 0" [class.margem-negativa]="lucroTotalPedido < 0">Lucro total: {{lucroTotalPedido | currency:'BRL'}}</strong>
-          </div>
+          @if (!isVendedor) {
+            <div class="total-row">
+              <strong>Total: {{totalPedido | currency:'BRL'}}</strong>
+              <strong>Custo total: {{custoTotalPedido | currency:'BRL'}}</strong>
+              <strong [class.margem-positiva]="lucroTotalPedido >= 0" [class.margem-negativa]="lucroTotalPedido < 0">Lucro total: {{lucroTotalPedido | currency:'BRL'}}</strong>
+            </div>
+          }
         }
       </div>
     </mat-dialog-content>
@@ -184,6 +207,9 @@ type PedidoDialogData = {
     .btn-add-item { margin-top: 8px; }
     .option-preco { color: #6b5b7b; font-size: 12px; margin-left: 8px; }
     .produto-info-panel { background: linear-gradient(135deg, #f5f0fa, #ede4f7); border-radius: 12px; padding: 12px 16px; margin-bottom: 4px; display: flex; flex-direction: column; gap: 8px; border-left: 3px solid #c9a84c; }
+    .price-tier-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .price-tier { min-height: 72px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px; text-align: left; border-radius: 12px; }
+    .price-tier-label { font-size: 12px; color: #6b5b7b; text-transform: uppercase; letter-spacing: 0.04em; }
     .info-row { display: flex; gap: 24px; flex-wrap: wrap; }
     .info-item { display: flex; gap: 6px; align-items: center; }
     .info-label { font-size: 13px; color: #6b5b7b; font-weight: 500; }
@@ -204,6 +230,7 @@ type PedidoDialogData = {
       .add-item-row { flex-direction: column; }
       .field-produto, .field-sm, .btn-add-item { width: 100%; }
       .btn-add-item { border-radius: 12px; min-height: 44px; }
+      .price-tier-grid { grid-template-columns: 1fr; }
       .dialog-actions { flex-direction: column; }
       .dialog-actions button { width: 100%; }
       .total-row { justify-content: flex-start; padding-left: 0; padding-right: 0; }
@@ -227,7 +254,6 @@ export class PedidoDialogComponent implements OnInit {
   get margemControl(): FormControl { return this.itemForm.get('margemLucro') as FormControl; }
 
   itensNovoPedido: { produtoId: number; produtoLabel: string; quantidade: number; valorUnitario: number; custoUnitario: number; custoTotal: number; margemLucro: number | null; lucroTotal: number; valorTotal: number }[] = [];
-  itensColumns = ['produto', 'quantidade', 'valorUnitario', 'custoTotal', 'lucroTotal', 'margemLucro', 'valorTotal', 'remover'];
   salvando = false;
   dataFinalizacaoControl = new FormControl('');
   pedidoAtual: Pedido | null = null;
@@ -245,6 +271,18 @@ export class PedidoDialogComponent implements OnInit {
     }
 
     return !this.clienteSelecionado || this.itensNovoPedido.length === 0;
+  }
+
+  get isVendedor(): boolean {
+    return this.data.userRole === 'vendedor';
+  }
+
+  get itensColumns(): string[] {
+    if (this.isVendedor) {
+      return ['produto', 'quantidade', 'valorUnitario', 'remover'];
+    }
+
+    return ['produto', 'quantidade', 'valorUnitario', 'custoTotal', 'lucroTotal', 'margemLucro', 'valorTotal', 'remover'];
   }
 
   constructor(
@@ -355,6 +393,14 @@ export class PedidoDialogComponent implements OnInit {
       }
     });
 
+    if (this.isVendedor) {
+      this.atualizandoCamposPreco = true;
+      this.vlrControl.setValue(this.precoOuro, { emitEvent: false });
+      this.margemControl.setValue(null, { emitEvent: false });
+      this.atualizandoCamposPreco = false;
+      return;
+    }
+
     const margemAtual = this.toNumber(this.margemControl.value);
     const valorUnitarioAtual = this.toNumber(this.vlrControl.value);
 
@@ -379,6 +425,18 @@ export class PedidoDialogComponent implements OnInit {
   }
 
   get precoCusto(): number | null { return this.produtoSelecionado?.precoCusto ?? null; }
+
+  get precoOuro(): number {
+    return this.calcularPrecoPorMarkup(35);
+  }
+
+  get precoPrata(): number {
+    return this.calcularPrecoPorMarkup(50);
+  }
+
+  get precoBronze(): number {
+    return this.calcularPrecoPorMarkup(100);
+  }
 
   get estoqueAtualInfo(): number {
     return this.estoqueInfo?.estoqueAtual ?? 0;
@@ -417,6 +475,12 @@ export class PedidoDialogComponent implements OnInit {
     const qty = this.itemForm.value.quantidade;
     const unit = this.itemForm.value.valorUnitario;
     const custoUnitario = this.precoCusto ?? 0;
+
+    if (this.isVendedor && unit < this.precoOuro) {
+      this.snackBar.open('Vendedores não podem informar valor unitário abaixo do Preço Ouro.', 'OK', { duration: 4000 });
+      return;
+    }
+
     const valorTotal = qty * unit;
     const custoTotal = qty * custoUnitario;
     this.itensNovoPedido = [...this.itensNovoPedido, {
@@ -426,7 +490,7 @@ export class PedidoDialogComponent implements OnInit {
       valorUnitario: unit,
       custoUnitario,
       custoTotal,
-      margemLucro: this.margemLucro,
+      margemLucro: this.isVendedor ? null : this.margemLucro,
       lucroTotal: this.roundToTwo(valorTotal - custoTotal),
       valorTotal
     }];
@@ -434,6 +498,10 @@ export class PedidoDialogComponent implements OnInit {
     this.estoqueInfo = null;
     this.produtoControl.setValue('', { emitEvent: false });
     this.itemForm.patchValue({ quantidade: 1, valorUnitario: null, margemLucro: null });
+  }
+
+  aplicarPrecoSugerido(valor: number): void {
+    this.vlrControl.setValue(valor);
   }
 
   removerItem(i: number): void {
@@ -579,6 +647,11 @@ export class PedidoDialogComponent implements OnInit {
     }
 
     return this.roundToTwo(custo * (1 + margemLucro / 100));
+  }
+
+  private calcularPrecoPorMarkup(percentual: number): number {
+    const custo = this.precoCusto ?? 0;
+    return this.roundToTwo(custo * (1 + percentual / 100));
   }
 
   private toNumber(value: unknown): number | null {
