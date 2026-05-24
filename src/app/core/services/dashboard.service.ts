@@ -33,6 +33,7 @@ type ItemPedidoDashboardRow = {
   produto_id?: number | null;
   quantidade?: number | string | null;
   preco_unitario?: number | string | null;
+  custo_unitario?: number | string | null;
   subtotal?: number | string | null;
 };
 
@@ -85,7 +86,7 @@ export class DashboardService {
       client.from('clientes').select('id, nome'),
       client.from('produtos').select('*'),
       client.from('pedidos').select('id, cliente_id, status, valor_total, data'),
-      client.from('itens_pedidos').select('pedido_id, produto_id, quantidade, preco_unitario, subtotal')
+      client.from('itens_pedidos').select('pedido_id, produto_id, quantidade, preco_unitario, custo_unitario, subtotal')
     ]);
 
     if (clientesResponse.error) throw clientesResponse.error;
@@ -185,7 +186,7 @@ export class DashboardService {
       const produto = produtosPorId.get(produtoId);
       const quantidade = this.parseNumeric(item.quantidade);
       const subtotal = this.parseNumeric(item.subtotal) || quantidade * this.parseNumeric(item.preco_unitario);
-      const precoCusto = this.parseNumeric(produto?.precoCusto ?? produto?.preco_custo);
+      const precoCusto = this.parseNumeric(item.custo_unitario ?? produto?.precoCusto ?? produto?.preco_custo);
       const custoTotalItem = quantidade * precoCusto;
       const produtoLabel = produto?.descricao || produto?.nome || produto?.codigo || produto?.sku || `Produto ${produtoId}`;
 

@@ -22,6 +22,7 @@ type ItemPedidoDbRow = {
   produto_id?: number | null;
   quantidade?: number | string | null;
   preco_unitario?: number | string | null;
+  custo_unitario?: number | string | null;
   subtotal?: number | string | null;
   produtos?: {
     descricao?: string | null;
@@ -188,7 +189,7 @@ export class PedidoService {
 
     const itensResponse = await this.supabaseService.getClient()
       .from('itens_pedidos')
-      .select('id, pedido_id, produto_id, quantidade, preco_unitario, subtotal, produtos(descricao, nome, codigo, sku, precoCusto, preco_custo)')
+      .select('id, pedido_id, produto_id, quantidade, preco_unitario, custo_unitario, subtotal, produtos(descricao, nome, codigo, sku, precoCusto, preco_custo)')
       .in('pedido_id', pedidoIds)
       .order('id', { ascending: true });
 
@@ -238,7 +239,7 @@ export class PedidoService {
 
     const itensResponse = await this.supabaseService.getClient()
       .from('itens_pedidos')
-      .select('id, pedido_id, produto_id, quantidade, preco_unitario, subtotal, produtos(descricao, nome, codigo, sku, precoCusto, preco_custo)')
+      .select('id, pedido_id, produto_id, quantidade, preco_unitario, custo_unitario, subtotal, produtos(descricao, nome, codigo, sku, precoCusto, preco_custo)')
       .in('pedido_id', pedidoIds)
       .order('id', { ascending: true });
 
@@ -282,7 +283,7 @@ export class PedidoService {
 
     const itensResponse = await this.supabaseService.getClient()
       .from('itens_pedidos')
-      .select('id, pedido_id, produto_id, quantidade, preco_unitario, subtotal, produtos(descricao, nome, codigo, sku, precoCusto, preco_custo)')
+      .select('id, pedido_id, produto_id, quantidade, preco_unitario, custo_unitario, subtotal, produtos(descricao, nome, codigo, sku, precoCusto, preco_custo)')
       .eq('pedido_id', id)
       .order('id', { ascending: true });
 
@@ -406,7 +407,7 @@ export class PedidoService {
       const produto = this.getProduto(item.produtos);
       const quantidade = this.toNumber(item.quantidade);
       const valorUnitario = this.toNumber(item.preco_unitario);
-      const custoUnitario = this.toNumber(produto?.precoCusto ?? produto?.preco_custo);
+      const custoUnitario = this.toNumber(item.custo_unitario ?? produto?.precoCusto ?? produto?.preco_custo);
       const valorTotal = this.toNumber(item.subtotal) || quantidade * valorUnitario;
       const custoTotal = quantidade * custoUnitario;
 
@@ -488,11 +489,39 @@ export class PedidoService {
       return { error: null };
     }
 
+    const produtoIds = Array.from(new Set(
+      itens
+        .map(item => item.produtoId)
+        .filter((produtoId): produtoId is number => Number.isFinite(produtoId))
+    ));
+
+    const custosPorProduto = new Map<number, number>();
+
+    if (produtoIds.length > 0) {
+      const produtosResponse = await this.supabaseService.getClient()
+        .from('produtos')
+        .select('id, preco_custo, precoCusto')
+        .in('id', produtoIds);
+
+      if (produtosResponse.error) {
+        return { error: produtosResponse.error };
+      }
+
+      ((produtosResponse.data || []) as Array<{ id?: number | null; preco_custo?: number | string | null; precoCusto?: number | string | null }>).forEach(produto => {
+        if (produto.id == null) {
+          return;
+        }
+
+        custosPorProduto.set(produto.id, this.toNumber(produto.precoCusto ?? produto.preco_custo));
+      });
+    }
+
     const payload = itens.map(item => ({
       pedido_id: pedidoId,
       produto_id: item.produtoId,
       quantidade: item.quantidade,
       preco_unitario: item.valorUnitario,
+      custo_unitario: this.toNumber(item.custoUnitario ?? custosPorProduto.get(item.produtoId)),
       subtotal: Number(item.quantidade || 0) * Number(item.valorUnitario || 0),
       user_id: userId
     }));

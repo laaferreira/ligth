@@ -463,7 +463,12 @@ export class PedidoDialogComponent implements OnInit {
     this.salvando = true;
     const dto: CriarPedido = {
       clienteId: this.clienteSelecionado.id,
-      itens: this.itensNovoPedido.map(i => ({ produtoId: i.produtoId, quantidade: i.quantidade, valorUnitario: i.valorUnitario }))
+      itens: this.itensNovoPedido.map(i => ({
+        produtoId: i.produtoId,
+        quantidade: i.quantidade,
+        valorUnitario: i.valorUnitario,
+        custoUnitario: i.custoUnitario
+      }))
     };
     const requisicao = this.data.modo === 'editar' && this.data.pedidoId
       ? this.pedidoService.atualizar(this.data.pedidoId, dto)

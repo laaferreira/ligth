@@ -26,7 +26,7 @@ export interface Pedido {
 
 export interface CriarPedido {
   clienteId: number;
-  itens: { produtoId: number; quantidade: number; valorUnitario: number }[];
+  itens: { produtoId: number; quantidade: number; valorUnitario: number; custoUnitario?: number }[];
 }
 
 export interface AtualizarPedido extends Partial<CriarPedido> {
