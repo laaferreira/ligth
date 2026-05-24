@@ -1,4 +1,4 @@
-# 🧪 Guia de Testes - LIGTH
+# 🧪 Guia de Testes - LIGHT
 
 **Última atualização**: 20/05/2026
 

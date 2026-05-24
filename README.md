@@ -1,4 +1,4 @@
-# LIGTH - Sistema de Gestão Integrada
+# LIGHT - Sistema de Gestão Integrada
 
 <div align="center">
 

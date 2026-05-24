@@ -1,4 +1,4 @@
-# Avaliação da Aplicação LIGTH
+# Avaliação da Aplicação LIGHT
 
 **Data**: 20 de Maio de 2026  
 **Versão**: 1.0  

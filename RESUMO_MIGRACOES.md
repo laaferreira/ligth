@@ -368,7 +368,7 @@ https://laaferreira.github.io/ligth/
 
 ## 🎉 Conclusão
 
-A aplicação LIGTH foi **completamente refatorada** com sucesso:
+A aplicação LIGHT foi **completamente refatorada** com sucesso:
 
 ✅ Backend Spring Boot removido  
 ✅ Migração para Supabase 100% completa  

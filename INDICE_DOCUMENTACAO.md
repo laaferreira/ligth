@@ -1,4 +1,4 @@
-# 📚 Índice de Documentação - LIGTH v1.0
+# 📚 Índice de Documentação - LIGHT v1.0
 
 **Data**: 20 de Maio de 2026  
 **Versão**: 1.0 (Supabase + Gestão de Usuários)  
