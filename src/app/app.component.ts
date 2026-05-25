@@ -319,7 +319,7 @@ import { UserManagementService } from './core/services/user-management.service';
 export class AppComponent {
   currentRoute = '';
   userRole: string | null = null;
-  private readonly vendedorRotasPermitidas = new Set(['/clientes', '/pedidos']);
+  private readonly vendedorRotasPermitidas = new Set(['/clientes', '/pedidos', '/produtos']);
 
   constructor(
     private router: Router,

@@ -54,6 +54,7 @@ export class ProdutosComponent implements OnInit {
   valorPotencialEstoqueVenda = 0;
   userRole: UserRole | null = null;
   usuarioAtual: AppUser | null = null;
+  carregandoUsuario = true;
 
   get displayedColumns(): string[] {
     if (this.userRole === 'vendedor') {
@@ -86,6 +87,7 @@ export class ProdutosComponent implements OnInit {
   private async carregarUsuarioAtual(): Promise<void> {
     this.usuarioAtual = await this.userManagementService.obterUsuarioAtualComRole();
     this.userRole = this.usuarioAtual?.role || null;
+    this.carregandoUsuario = false;
   }
 
   carregar(): void {

@@ -1,5 +1,6 @@
 @use '../clientes/clientes.component' as clientes;
 
+.loading-usuario { min-height: 200px; }
 .header-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
 .header-actions button { min-height: 44px; }
 .top-summary-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 18px; }

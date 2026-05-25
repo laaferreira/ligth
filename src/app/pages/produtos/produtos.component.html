@@ -1,5 +1,8 @@
 <div class="page-wrapper">
   <main class="main-content">
+    @if (carregandoUsuario) {
+      <div class="loading-usuario"></div>
+    } @else {
     <section class="page-hero">
       <div>
         <p class="hero-kicker">Catálogo e estoque</p>
@@ -191,5 +194,6 @@
         </mat-card-content>
       </mat-card>
     }
+    } <!-- end @else carregandoUsuario -->
   </main>
 </div>
