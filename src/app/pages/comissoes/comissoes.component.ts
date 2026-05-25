@@ -93,6 +93,9 @@ class ComissoesDateAdapter extends NativeDateAdapter {
 export class ComissoesComponent implements OnInit {
   readonly displayedColumns = ['numero', 'dataFinalizacao', 'clienteNome', 'valorTotal', 'custoTotal', 'lucroTotal'];
 
+  private readonly brandLogoPath = 'assets/mega-luz-logo.png';
+  private brandLogoDataUrlPromise: Promise<string> | null = null;
+
   readonly form = this.fb.group({
     usuarioId: ['', Validators.required],
     dataInicio: [null as Date | null, Validators.required],
@@ -203,7 +206,7 @@ export class ComissoesComponent implements OnInit {
   }
 
   get valorTotalComissao(): number {
-    return this.arredondar(this.lucroTotal * (this.percentualComissao / 100));
+    return this.arredondar(this.totalPedidos * (this.percentualComissao / 100));
   }
 
   get lucroAposComissao(): number {
@@ -219,45 +222,95 @@ export class ComissoesComponent implements OnInit {
       return;
     }
 
+    this.imprimirPDFAsync();
+  }
+
+  private async imprimirPDFAsync(): Promise<void> {
+    if (!this.usuarioSelecionado) return;
+
     const { dataInicio, dataFim } = this.form.getRawValue();
-    const doc = new jsPDF();
+    const doc = new jsPDF('p', 'mm', 'a4');
+    const pw = doc.internal.pageSize.getWidth();
+    let headerEndY = 28;
+
+    try {
+      const brandLogo = await this.getBrandLogoDataUrl();
+      await new Promise<void>((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          const sx = Math.round(img.naturalWidth * 0.03);
+          const sw = Math.round(img.naturalWidth * 0.94);
+          const sh = Math.round(img.naturalHeight * 0.62);
+          const canvas = document.createElement('canvas');
+          canvas.width = sw;
+          canvas.height = sh;
+          const ctx = canvas.getContext('2d')!;
+          ctx.drawImage(img, sx, 0, sw, sh, 0, 0, sw, sh);
+          const croppedUrl = canvas.toDataURL('image/png');
+          const dispW = 208;
+          const dispH = Math.round(dispW * sh / sw);
+          doc.addImage(croppedUrl, 'PNG', 1, 0, dispW, dispH);
+          doc.setDrawColor(210, 210, 210);
+          doc.setLineWidth(0.3);
+          doc.line(10, dispH + 1, 200, dispH + 1);
+          headerEndY = dispH + 5;
+          resolve();
+        };
+        img.onerror = () => resolve();
+        img.src = brandLogo;
+      });
+    } catch {
+      doc.setTextColor(27, 43, 84); doc.setFontSize(22); doc.setFont('helvetica', 'bold');
+      doc.text('MEGA LUZ COMERCIAL', 14, 20);
+      headerEndY = 28;
+    }
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(18);
-    doc.text('Relatório de Comissões', 14, 18);
+    doc.setFontSize(14);
+    doc.setTextColor(0, 0, 0);
+    doc.text('Relatório de Comissões', 14, headerEndY + 8);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    doc.text(`Vendedor: ${this.usuarioSelecionado.nome}`, 14, 28);
-    doc.text(`Período: ${this.formatarData(dataInicio)} a ${this.formatarData(dataFim)}`, 14, 34);
-    doc.text(`Comissão: ${this.percentualComissao.toFixed(2)}%`, 14, 40);
+    doc.text(`Vendedor: ${this.usuarioSelecionado.nome}`, 14, headerEndY + 16);
+    doc.text(`Período: ${this.formatarData(dataInicio)} a ${this.formatarData(dataFim)}`, 14, headerEndY + 22);
+    doc.text(`Comissão: ${this.percentualComissao.toFixed(2)}%`, 14, headerEndY + 28);
 
     autoTable(doc, {
-      startY: 48,
-      head: [['Pedido', 'Finalização', 'Cliente', 'Valor total', 'Custo total', 'Lucro total']],
+      startY: headerEndY + 36,
+      head: [['Pedido', 'Finalização', 'Cliente', 'Valor total']],
       body: this.pedidos.map(pedido => [
         pedido.numero || '-',
         this.formatarData(pedido.dataFinalizacao || ''),
         pedido.clienteNome || '-',
-        this.formatarMoeda(Number(pedido.valorTotal || 0)),
-        this.formatarMoeda(Number(pedido.custoTotal || 0)),
-        this.formatarMoeda(Number(pedido.lucroTotal || 0))
+        this.formatarMoeda(Number(pedido.valorTotal || 0))
       ]),
       styles: { fontSize: 9 },
       headStyles: { fillColor: [91, 45, 142] },
       margin: { left: 14, right: 14 }
     });
 
-    const finalY = (doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY || 58;
+    const finalY = (doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY || (headerEndY + 36);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
     doc.text(`Valor total dos pedidos: ${this.formatarMoeda(this.totalPedidos)}`, 14, finalY + 12);
-    doc.text(`Custo total: ${this.formatarMoeda(this.custoTotal)}`, 14, finalY + 19);
-    doc.text(`Lucro total: ${this.formatarMoeda(this.lucroTotal)}`, 14, finalY + 26);
-    doc.text(`Comissão total: ${this.formatarMoeda(this.valorTotalComissao)}`, 14, finalY + 33);
-    doc.text(`Lucro após comissão: ${this.formatarMoeda(this.lucroAposComissao)}`, 14, finalY + 40);
+    doc.text(`Comissão total (${this.percentualComissao.toFixed(2)}%): ${this.formatarMoeda(this.valorTotalComissao)}`, 14, finalY + 19);
 
     doc.save(`comissoes-${this.usuarioSelecionado.nome.replace(/\s+/g, '-').toLowerCase()}.pdf`);
+  }
+
+  private getBrandLogoDataUrl(): Promise<string> {
+    if (!this.brandLogoDataUrlPromise) {
+      this.brandLogoDataUrlPromise = fetch(this.brandLogoPath)
+        .then(r => { if (!r.ok) throw new Error('logo'); return r.blob(); })
+        .then(blob => new Promise<string>((res, rej) => {
+          const reader = new FileReader();
+          reader.onload = () => res(String(reader.result || ''));
+          reader.onerror = () => rej(new Error('logo read error'));
+          reader.readAsDataURL(blob);
+        }));
+    }
+    return this.brandLogoDataUrlPromise;
   }
 
   private formatarData(data: string | Date | null | undefined): string {

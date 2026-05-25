@@ -89,7 +89,7 @@ class PedidosDateAdapter extends NativeDateAdapter {
 })
 export class PedidosComponent implements OnInit {
   private readonly importBatchMaxLines = 300;
-  private readonly brandLogoPath = 'assets/light-brand.png';
+  private readonly brandLogoPath = 'assets/mega-luz-logo.png';
   private brandLogoDataUrlPromise: Promise<string> | null = null;
   todosPedidos: Pedido[] = [];
   pedidos: Pedido[] = [];
@@ -532,23 +532,49 @@ export class PedidosComponent implements OnInit {
 
   gerarPDF(pedido: Pedido): void {
     this.pedidoService.buscarPorId(pedido.id!).subscribe(async p => {
-      const doc = new jsPDF();
+      const doc = new jsPDF('p', 'mm', 'a4');
       const pw = doc.internal.pageSize.getWidth();
+      let headerEndY = 28;
+
       try {
         const brandLogo = await this.getBrandLogoDataUrl();
-        doc.addImage(brandLogo, 'PNG', 14, 10, 28, 28);
+        await new Promise<void>((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            // Crop: remove side margins (~3% each) and bottom ~38% empty white space
+            const sx = Math.round(img.naturalWidth * 0.03);
+            const sw = Math.round(img.naturalWidth * 0.94);
+            const sh = Math.round(img.naturalHeight * 0.62);
+            const canvas = document.createElement('canvas');
+            canvas.width = sw;
+            canvas.height = sh;
+            const ctx = canvas.getContext('2d')!;
+            ctx.drawImage(img, sx, 0, sw, sh, 0, 0, sw, sh);
+            const croppedUrl = canvas.toDataURL('image/png');
+            // At 208mm wide, height = 208 * (sh/sw) — keeps exact aspect ratio
+            const dispW = 208;
+            const dispH = Math.round(dispW * sh / sw);
+            doc.addImage(croppedUrl, 'PNG', 1, 0, dispW, dispH);
+            // Light separator line below header
+            doc.setDrawColor(210, 210, 210);
+            doc.setLineWidth(0.3);
+            doc.line(10, dispH + 1, 200, dispH + 1);
+            headerEndY = dispH + 5;
+            resolve();
+          };
+          img.onerror = () => resolve();
+          img.src = brandLogo;
+        });
       } catch {
-        doc.setFillColor(255, 197, 22);
-        doc.circle(28, 24, 12, 'F');
+        doc.setTextColor(27, 43, 84); doc.setFontSize(22); doc.setFont('helvetica', 'bold');
+        doc.text('MEGA LUZ COMERCIAL', 14, 20);
+        headerEndY = 28;
       }
-      doc.setTextColor(91, 45, 142); doc.setFontSize(22); doc.setFont('helvetica', 'bold');
-      doc.text('LIGHT COMERCIAL', 50, 24);
-      doc.setTextColor(107, 91, 123); doc.setFontSize(10); doc.setFont('helvetica', 'normal');
-      doc.text('Sistema de pedidos', 50, 31);
+
       doc.setTextColor(0, 0, 0);
       doc.setFontSize(12); doc.setFont('helvetica', 'bold');
-      doc.text(p.clienteNome || '', pw / 2, 45, { align: 'center' });
-      let nextY = 52;
+      doc.text(p.clienteNome || '', pw / 2, headerEndY + 7, { align: 'center' });
+      let nextY = headerEndY + 14;
       if (p.clienteCpfCnpj) {
         doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(60, 60, 60);
         doc.text(`CNPJ/CPF: ${p.clienteCpfCnpj}`, pw / 2, nextY, { align: 'center' });
