@@ -17,6 +17,13 @@ export interface Pedido {
   dataFinalizacao?: string;
   clienteId: number;
   clienteNome?: string;
+  clienteCpfCnpj?: string;
+  clienteEndereco?: string;
+  prazoPagamentoId?: number | null;
+  prazoPagamentoDescricao?: string | null;
+  formaPagamentoId?: number | null;
+  formaPagamentoDescricao?: string | null;
+  notaFiscal?: boolean;
   itens?: ItemPedido[];
   valorTotal?: number;
   custoTotal?: number;
@@ -26,11 +33,17 @@ export interface Pedido {
 
 export interface CriarPedido {
   clienteId: number;
+  prazoPagamentoId?: number | null;
+  formaPagamentoId?: number | null;
+  notaFiscal?: boolean;
   itens: { produtoId: number; quantidade: number; valorUnitario: number; custoUnitario?: number }[];
 }
 
 export interface AtualizarPedido extends Partial<CriarPedido> {
   dataFinalizacao?: string | null;
+  prazoPagamentoId?: number | null;
+  formaPagamentoId?: number | null;
+  notaFiscal?: boolean;
 }
 
 export interface ImportarPedidoLinha {

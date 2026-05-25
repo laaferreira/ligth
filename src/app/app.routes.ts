@@ -49,6 +49,16 @@ export const routes: Routes = [
     canActivate: [authGuard, vendedorRestricaoGuard, gerenciaUsuariosGuard]
   },
   {
+    path: 'formas-pagamento',
+    loadComponent: () => import('./pages/formas-pagamento/formas-pagamento.component').then(m => m.FormasPagamentoComponent),
+    canActivate: [authGuard, vendedorRestricaoGuard, gerenciaUsuariosGuard]
+  },
+  {
+    path: 'formas-de-pagamento',
+    loadComponent: () => import('./pages/formas-de-pagamento/formas-de-pagamento.component').then(m => m.FormasDePagamentoComponent),
+    canActivate: [authGuard, vendedorRestricaoGuard, gerenciaUsuariosGuard]
+  },
+  {
     path: 'comissoes',
     loadComponent: () => import('./pages/comissoes/comissoes.component').then(m => m.ComissoesComponent),
     canActivate: [authGuard, vendedorRestricaoGuard, gerenciaUsuariosGuard]

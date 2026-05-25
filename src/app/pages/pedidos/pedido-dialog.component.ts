@@ -6,7 +6,9 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
@@ -14,8 +16,11 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { PedidoService } from '../../core/services/pedido.service';
 import { ConsultaService } from '../../core/services/consulta.service';
 import { EstoqueService } from '../../core/services/estoque.service';
+import { FormaPagamentoService } from '../../core/services/forma-pagamento.service';
+import { FormasDePagamentoService } from '../../core/services/formas-de-pagamento.service';
 import { AutocompleteItem, ProdutoAutocompleteItem } from '../../core/models/consulta.model';
 import { AtualizarPedido, CriarPedido, Pedido } from '../../core/models/pedido.model';
+import { FormaPagamento } from '../../core/models/forma-pagamento.model';
 import { ErrorPresenterService } from '../../core/errors/error-presenter.service';
 import { UserRole } from '../../core/models/user.model';
 
@@ -39,6 +44,8 @@ type PedidoDialogData = {
     MatFormFieldModule,
     MatInputModule,
     MatAutocompleteModule,
+    MatSelectModule,
+    MatSlideToggleModule,
     MatButtonModule,
     MatIconModule,
     MatTableModule,
@@ -69,6 +76,26 @@ type PedidoDialogData = {
           </mat-autocomplete>
         </mat-form-field>
 
+        <mat-form-field appearance="outline">
+          <mat-label>Forma de Pagamento</mat-label>
+          <mat-select [formControl]="formaPagamentoControl">
+            <mat-option [value]="null">-- Nenhuma --</mat-option>
+            @for (fp of formasDePagamento; track fp.id) {
+              <mat-option [value]="fp.id">{{ fp.descricao }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Prazo para Pagamento</mat-label>
+          <mat-select [formControl]="prazoPagamentoControl">
+            <mat-option [value]="null">-- Nenhum --</mat-option>
+            @for (fp of prazosPagamento; track fp.id) {
+              <mat-option [value]="fp.id">{{ fp.descricao }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
         @if (podeEditarDataFinalizacao) {
           <mat-form-field appearance="outline">
             <mat-label>Data de finalização</mat-label>
@@ -76,6 +103,12 @@ type PedidoDialogData = {
             <mat-hint>Disponível para gerente e administrador.</mat-hint>
           </mat-form-field>
         }
+
+        <div class="nota-fiscal-row">
+          <mat-slide-toggle [formControl]="notaFiscalControl" color="primary">
+            Emitir Nota Fiscal
+          </mat-slide-toggle>
+        </div>
 
         @if (!modoSomenteFinalizacao) {
         <div class="add-item-row">
@@ -239,12 +272,25 @@ type PedidoDialogData = {
       .dialog-actions button { width: 100%; }
       .total-row { justify-content: flex-start; padding-left: 0; padding-right: 0; }
     }
+    .nota-fiscal-row {
+      display: flex;
+      align-items: center;
+      padding: 8px 4px 16px;
+    }
   `]
 })
 export class PedidoDialogComponent implements OnInit {
   clienteControl = new FormControl('');
   clientesFiltrados: AutocompleteItem[] = [];
   clienteSelecionado: AutocompleteItem | null = null;
+
+  formaPagamentoControl = new FormControl<number | null>(null);
+  formasDePagamento: FormaPagamento[] = [];
+
+  prazoPagamentoControl = new FormControl<number | null>(null);
+  prazosPagamento: FormaPagamento[] = [];
+
+  notaFiscalControl = new FormControl<boolean>(false);
 
   produtoControl = new FormControl('');
   produtosFiltrados: ProdutoAutocompleteItem[] = [];
@@ -293,6 +339,8 @@ export class PedidoDialogComponent implements OnInit {
     private pedidoService: PedidoService,
     private consultaService: ConsultaService,
     private estoqueService: EstoqueService,
+    private formaPagamentoService: FormaPagamentoService,
+    private formasDePagamentoService: FormasDePagamentoService,
     private fb: FormBuilder,
     private snackBar: MatSnackBar,
     private errorPresenter: ErrorPresenterService,
@@ -307,6 +355,16 @@ export class PedidoDialogComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.formaPagamentoService.listar(true).subscribe({
+      next: fps => this.prazosPagamento = fps,
+      error: () => {}
+    });
+
+    this.formasDePagamentoService.listar(true).subscribe({
+      next: fps => this.formasDePagamento = fps,
+      error: () => {}
+    });
+
     this.vlrControl.valueChanges.subscribe(valor => {
       if (this.atualizandoCamposPreco) {
         return;
@@ -357,6 +415,9 @@ export class PedidoDialogComponent implements OnInit {
         this.clienteSelecionado = { id: pedido.clienteId, label: pedido.clienteNome || '' };
         this.clienteControl.setValue(this.clienteSelecionado as never, { emitEvent: false });
         this.dataFinalizacaoControl.setValue(this.formatarDataInput(pedido.dataFinalizacao), { emitEvent: false });
+        this.formaPagamentoControl.setValue(pedido.formaPagamentoId ?? null, { emitEvent: false });
+        this.prazoPagamentoControl.setValue(pedido.prazoPagamentoId ?? null, { emitEvent: false });
+        this.notaFiscalControl.setValue(pedido.notaFiscal ?? false, { emitEvent: false });
         this.itensNovoPedido = (pedido.itens || []).map(i => ({
           produtoId: i.produtoId,
           produtoLabel: `${i.produtoCodigo} - ${i.produtoDescricao}`,
@@ -535,6 +596,9 @@ export class PedidoDialogComponent implements OnInit {
     this.salvando = true;
     const dto: CriarPedido = {
       clienteId: this.clienteSelecionado.id,
+      formaPagamentoId: this.formaPagamentoControl.value ?? null,
+      prazoPagamentoId: this.prazoPagamentoControl.value ?? null,
+      notaFiscal: this.notaFiscalControl.value ?? false,
       itens: this.itensNovoPedido.map(i => ({
         produtoId: i.produtoId,
         quantidade: i.quantidade,

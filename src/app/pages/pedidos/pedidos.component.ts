@@ -546,17 +546,29 @@ export class PedidosComponent implements OnInit {
       doc.setTextColor(107, 91, 123); doc.setFontSize(10); doc.setFont('helvetica', 'normal');
       doc.text('Sistema de pedidos', 50, 31);
       doc.setTextColor(0, 0, 0);
-      doc.setFontSize(12); doc.setFont('helvetica', 'normal');
+      doc.setFontSize(12); doc.setFont('helvetica', 'bold');
       doc.text(p.clienteNome || '', pw / 2, 45, { align: 'center' });
-      doc.setFontSize(10); doc.setTextColor(100, 100, 100);
-      doc.text(`Pedido: ${p.numero}`, pw / 2, 52, { align: 'center' });
+      let nextY = 52;
+      if (p.clienteCpfCnpj) {
+        doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(60, 60, 60);
+        doc.text(`CNPJ/CPF: ${p.clienteCpfCnpj}`, pw / 2, nextY, { align: 'center' });
+        nextY += 7;
+      }
+      if (p.clienteEndereco) {
+        doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(60, 60, 60);
+        doc.text(p.clienteEndereco, pw / 2, nextY, { align: 'center', maxWidth: pw - 28 });
+        nextY += 7;
+      }
+      doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(100, 100, 100);
+      doc.text(`Pedido: ${p.numero}`, pw / 2, nextY, { align: 'center' });
+      nextY += 10;
       doc.setTextColor(0, 0, 0); doc.setFontSize(14); doc.setFont('helvetica', 'bold');
-      doc.text(`${p.itens?.length || 0} itens`, 14, 65);
+      doc.text(`${p.itens?.length || 0} itens`, 14, nextY + 3);
       const rows = (p.itens || []).map(i => [i.quantidade,
         `${i.produtoCodigo} - ${i.produtoDescricao}`,
         `R$ ${i.valorUnitario.toFixed(2).replace('.', ',')}`,
         `R$ ${i.valorTotal!.toFixed(2).replace('.', ',')}`]);
-      autoTable(doc, { startY: 70, head: [['Qtd', 'Descricao', 'Vlr.Unit.', 'Vlr.Total']], body: rows, theme: 'plain',
+      autoTable(doc, { startY: nextY + 8, head: [['Qtd', 'Descricao', 'Vlr.Unit.', 'Vlr.Total']], body: rows, theme: 'plain',
         headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', fontSize: 9, lineWidth: { bottom: 0.5 }, lineColor: [0, 0, 0] },
         bodyStyles: { fontSize: 9, textColor: [30, 30, 30] },
         columnStyles: { 0: { halign: 'center', cellWidth: 15 }, 1: { cellWidth: 'auto' }, 2: { halign: 'right', cellWidth: 30 }, 3: { halign: 'right', cellWidth: 30 } },
@@ -566,6 +578,12 @@ export class PedidosComponent implements OnInit {
       doc.setFontSize(18); doc.setFont('helvetica', 'bold');
       doc.text(`Total a Pagar: R$ ${(p.valorTotal || 0).toFixed(2).replace('.', ',')}`, pw - 14, fy + 10, { align: 'right' });
       const fty = doc.internal.pageSize.getHeight() - 30;
+      doc.setDrawColor(0, 0, 0); doc.setLineWidth(0.4);
+      doc.line(14, fty - 22, 130, fty - 22);
+      doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(0, 0, 0);
+      doc.text('Assinatura do Cliente', 14, fty - 16);
+      doc.setFontSize(8); doc.setTextColor(80, 80, 80);
+      doc.text('Recebi o pedido acima em plena conformidade.', 14, fty - 10);
       doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(80, 80, 80);
       doc.text(new Date().toLocaleDateString('pt-BR') + ' as ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + ' horas', pw / 2, fty + 10, { align: 'center' });
       doc.save(`pedido-${p.numero}.pdf`);

@@ -1,0 +1,2 @@
+ALTER TABLE public.pedidos
+  ADD COLUMN IF NOT EXISTS nota_fiscal BOOLEAN NOT NULL DEFAULT false;

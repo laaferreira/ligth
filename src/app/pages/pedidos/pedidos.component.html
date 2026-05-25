@@ -154,16 +154,20 @@
             <td mat-cell *matCellDef="let r">
               @if (r.status === 'EM_ABERTO') {
                 <button mat-icon-button color="primary" (click)="editar(r)" matTooltip="Editar pedido"><mat-icon>edit</mat-icon></button>
-                <button mat-icon-button color="primary" (click)="confirmar(r)" matTooltip="Confirmar pedido"><mat-icon>check_circle</mat-icon></button>
               }
-              @if (podeEditarDataFinalizacao(r)) {
-                <button mat-icon-button color="primary" (click)="editar(r)" matTooltip="Editar data de finalização"><mat-icon>event</mat-icon></button>
-              }
-              @if (r.status === 'CONFIRMADO') {
-                <button mat-icon-button color="primary" (click)="finalizar(r)" matTooltip="Finalizar pedido"><mat-icon>done_all</mat-icon></button>
-              }
-              @if (r.status === 'EM_ABERTO' || r.status === 'CONFIRMADO') {
-                <button mat-icon-button color="warn" (click)="cancelarPedido(r)" matTooltip="Cancelar pedido"><mat-icon>cancel</mat-icon></button>
+              @if (!isVendedor) {
+                @if (r.status === 'EM_ABERTO') {
+                  <button mat-icon-button color="primary" (click)="confirmar(r)" matTooltip="Confirmar pedido"><mat-icon>check_circle</mat-icon></button>
+                }
+                @if (podeEditarDataFinalizacao(r)) {
+                  <button mat-icon-button color="primary" (click)="editar(r)" matTooltip="Editar data de finalização"><mat-icon>event</mat-icon></button>
+                }
+                @if (r.status === 'CONFIRMADO') {
+                  <button mat-icon-button color="primary" (click)="finalizar(r)" matTooltip="Finalizar pedido"><mat-icon>done_all</mat-icon></button>
+                }
+                @if (r.status === 'EM_ABERTO' || r.status === 'CONFIRMADO') {
+                  <button mat-icon-button color="warn" (click)="cancelarPedido(r)" matTooltip="Cancelar pedido"><mat-icon>cancel</mat-icon></button>
+                }
               }
               <button mat-icon-button color="primary" (click)="gerarPDF(r)" matTooltip="Gerar PDF do pedido"><mat-icon>picture_as_pdf</mat-icon></button>
             </td>
@@ -198,28 +202,32 @@
                       <mat-icon>edit</mat-icon>
                       <span>Editar</span>
                     </button>
-                    <button mat-menu-item (click)="confirmar(r)" matTooltip="Confirmar pedido">
-                      <mat-icon>check_circle</mat-icon>
-                      <span>Confirmar</span>
-                    </button>
                   }
-                  @if (podeEditarDataFinalizacao(r)) {
-                    <button mat-menu-item (click)="editar(r)" matTooltip="Editar data de finalização">
-                      <mat-icon>event</mat-icon>
-                      <span>Editar finalização</span>
-                    </button>
-                  }
-                  @if (r.status === 'CONFIRMADO') {
-                    <button mat-menu-item (click)="finalizar(r)" matTooltip="Finalizar pedido">
-                      <mat-icon>done_all</mat-icon>
-                      <span>Finalizar</span>
-                    </button>
-                  }
-                  @if (r.status === 'EM_ABERTO' || r.status === 'CONFIRMADO') {
-                    <button mat-menu-item (click)="cancelarPedido(r)" matTooltip="Cancelar pedido">
-                      <mat-icon>cancel</mat-icon>
-                      <span>Cancelar</span>
-                    </button>
+                  @if (!isVendedor) {
+                    @if (r.status === 'EM_ABERTO') {
+                      <button mat-menu-item (click)="confirmar(r)" matTooltip="Confirmar pedido">
+                        <mat-icon>check_circle</mat-icon>
+                        <span>Confirmar</span>
+                      </button>
+                    }
+                    @if (podeEditarDataFinalizacao(r)) {
+                      <button mat-menu-item (click)="editar(r)" matTooltip="Editar data de finalização">
+                        <mat-icon>event</mat-icon>
+                        <span>Editar finalização</span>
+                      </button>
+                    }
+                    @if (r.status === 'CONFIRMADO') {
+                      <button mat-menu-item (click)="finalizar(r)" matTooltip="Finalizar pedido">
+                        <mat-icon>done_all</mat-icon>
+                        <span>Finalizar</span>
+                      </button>
+                    }
+                    @if (r.status === 'EM_ABERTO' || r.status === 'CONFIRMADO') {
+                      <button mat-menu-item (click)="cancelarPedido(r)" matTooltip="Cancelar pedido">
+                        <mat-icon>cancel</mat-icon>
+                        <span>Cancelar</span>
+                      </button>
+                    }
                   }
                   <button mat-menu-item (click)="gerarPDF(r)" matTooltip="Gerar PDF do pedido">
                     <mat-icon>picture_as_pdf</mat-icon>
@@ -237,14 +245,16 @@
               }
             </div>
             <div class="mobile-card-actions">
-              @if (podeEditarDataFinalizacao(r)) {
-                <button mat-stroked-button color="primary" (click)="editar(r)" matTooltip="Editar data de finalização"><mat-icon>event</mat-icon> Finalização</button>
-              }
-              @if (r.status === 'EM_ABERTO') {
-                <button mat-stroked-button color="primary" (click)="confirmar(r)" matTooltip="Confirmar pedido"><mat-icon>check_circle</mat-icon> Confirmar</button>
-              }
-              @if (r.status === 'CONFIRMADO') {
-                <button mat-stroked-button color="primary" (click)="finalizar(r)" matTooltip="Finalizar pedido"><mat-icon>done_all</mat-icon> Finalizar</button>
+              @if (!isVendedor) {
+                @if (podeEditarDataFinalizacao(r)) {
+                  <button mat-stroked-button color="primary" (click)="editar(r)" matTooltip="Editar data de finalização"><mat-icon>event</mat-icon> Finalização</button>
+                }
+                @if (r.status === 'EM_ABERTO') {
+                  <button mat-stroked-button color="primary" (click)="confirmar(r)" matTooltip="Confirmar pedido"><mat-icon>check_circle</mat-icon> Confirmar</button>
+                }
+                @if (r.status === 'CONFIRMADO') {
+                  <button mat-stroked-button color="primary" (click)="finalizar(r)" matTooltip="Finalizar pedido"><mat-icon>done_all</mat-icon> Finalizar</button>
+                }
               }
               <button mat-stroked-button color="primary" (click)="gerarPDF(r)" matTooltip="Gerar PDF do pedido"><mat-icon>picture_as_pdf</mat-icon> PDF</button>
             </div>

@@ -8,13 +8,18 @@ import { environment } from '@env/environment';
 type PedidoDbRow = {
   id?: number;
   cliente_id?: number | null;
+  prazo_pagamento_id?: number | null;
+  prazos_pagamento?: { descricao?: string | null } | Array<{ descricao?: string | null }> | null;
+  forma_pagamento_id?: number | null;
+  formas_pagamento?: { descricao?: string | null } | Array<{ descricao?: string | null }> | null;
   status?: string | null;
   valor_total?: number | string | null;
   data?: string | null;
   data_finalizacao?: string | null;
   observacao?: string | null;
+  nota_fiscal?: boolean | null;
   user_id?: string | null;
-  clientes?: { nome?: string | null } | Array<{ nome?: string | null }> | null;
+  clientes?: { nome?: string | null; cpf_cnpj?: string | null; logradouro?: string | null; numero?: string | null; complemento?: string | null; bairro?: string | null; cidade?: string | null; uf?: string | null } | Array<{ nome?: string | null; cpf_cnpj?: string | null; logradouro?: string | null; numero?: string | null; complemento?: string | null; bairro?: string | null; cidade?: string | null; uf?: string | null }> | null;
 };
 
 type ItemPedidoDbRow = {
@@ -181,7 +186,7 @@ export class PedidoService {
     const { userId, role } = await this.getCurrentUserContext();
     let query = this.supabaseService.getClient()
       .from(this.table)
-      .select('id, cliente_id, status, valor_total, data, data_finalizacao, observacao, user_id, clientes(nome)')
+      .select('id, cliente_id, prazo_pagamento_id, forma_pagamento_id, status, valor_total, data, data_finalizacao, observacao, nota_fiscal, user_id, clientes(nome, cpf_cnpj, logradouro, numero, complemento, bairro, cidade, uf), prazos_pagamento(descricao), formas_pagamento(descricao)')
       .order('id', { ascending: false });
 
     if (role === 'vendedor') {
@@ -227,7 +232,7 @@ export class PedidoService {
   private async listarFinalizadosPorUsuarioPeriodoComItens(userId: string, dataInicio: string, dataFim: string) {
     const pedidosResponse = await this.supabaseService.getClient()
       .from(this.table)
-      .select('id, cliente_id, status, valor_total, data, data_finalizacao, observacao, user_id, clientes(nome)')
+      .select('id, cliente_id, prazo_pagamento_id, forma_pagamento_id, status, valor_total, data, data_finalizacao, observacao, nota_fiscal, user_id, clientes(nome, cpf_cnpj, logradouro, numero, complemento, bairro, cidade, uf), prazos_pagamento(descricao), formas_pagamento(descricao)')
       .eq('user_id', userId)
       .in('status', ['finalizado', 'FINALIZADO'])
       .gte('data_finalizacao', dataInicio)
@@ -274,7 +279,7 @@ export class PedidoService {
     const { userId, role, margemVendaOuro } = await this.getCurrentUserContext();
     let pedidoQuery = this.supabaseService.getClient()
       .from(this.table)
-      .select('id, cliente_id, status, valor_total, data, data_finalizacao, observacao, user_id, clientes(nome)')
+      .select('id, cliente_id, prazo_pagamento_id, forma_pagamento_id, status, valor_total, data, data_finalizacao, observacao, nota_fiscal, user_id, clientes(nome, cpf_cnpj, logradouro, numero, complemento, bairro, cidade, uf), prazos_pagamento(descricao), formas_pagamento(descricao)')
       .eq('id', id);
 
     if (role === 'vendedor') {
@@ -309,7 +314,7 @@ export class PedidoService {
     const { userId, role } = await this.getCurrentUserContext();
     let query = this.supabaseService.getClient()
       .from(this.table)
-      .select('id, cliente_id, status, valor_total, data, data_finalizacao, observacao, user_id, clientes(nome)');
+      .select('id, cliente_id, prazo_pagamento_id, forma_pagamento_id, status, valor_total, data, data_finalizacao, observacao, nota_fiscal, user_id, clientes(nome, cpf_cnpj, logradouro, numero, complemento, bairro, cidade, uf), prazos_pagamento(descricao), formas_pagamento(descricao)');
 
     Object.entries(filtros).forEach(([campo, valor]) => {
       query = query.eq(this.toDbField(campo), valor);
@@ -442,10 +447,17 @@ export class PedidoService {
       dataFinalizacao: row.data_finalizacao || undefined,
       clienteId: row.cliente_id ?? 0,
       clienteNome: this.getClienteNome(row.clientes),
+      clienteCpfCnpj: this.getClienteField(row.clientes, 'cpf_cnpj') || undefined,
+      clienteEndereco: this.buildClienteEndereco(row.clientes),
+      formaPagamentoId: row.forma_pagamento_id ?? null,
+      formaPagamentoDescricao: this.getJoinDescricao(row.formas_pagamento),
+      prazoPagamentoId: row.prazo_pagamento_id ?? null,
+      prazoPagamentoDescricao: this.getFormaPagamentoDescricao(row.prazos_pagamento),
       valorTotal,
       custoTotal,
       lucroTotal: valorTotal - custoTotal,
       status: this.normalizeStatus(row.status),
+      notaFiscal: row.nota_fiscal ?? false,
       itens: itensPedido
     };
   }
@@ -466,6 +478,18 @@ export class PedidoService {
 
     if (pedido.dataFinalizacao !== undefined) {
       db['data_finalizacao'] = pedido.dataFinalizacao || null;
+    }
+
+    if (pedido.prazoPagamentoId !== undefined) {
+      db['prazo_pagamento_id'] = pedido.prazoPagamentoId ?? null;
+    }
+
+    if (pedido.formaPagamentoId !== undefined) {
+      db['forma_pagamento_id'] = pedido.formaPagamentoId ?? null;
+    }
+
+    if (pedido.notaFiscal !== undefined) {
+      db['nota_fiscal'] = pedido.notaFiscal;
     }
 
     return db;
@@ -571,6 +595,47 @@ export class PedidoService {
     }
 
     return cliente?.nome || undefined;
+  }
+
+  private getClienteField(
+    cliente: PedidoDbRow['clientes'],
+    field: 'cpf_cnpj' | 'logradouro' | 'numero' | 'complemento' | 'bairro' | 'cidade' | 'uf'
+  ): string | null {
+    const c = Array.isArray(cliente) ? cliente[0] : cliente;
+    return c?.[field] || null;
+  }
+
+  private buildClienteEndereco(cliente: PedidoDbRow['clientes']): string | undefined {
+    const c = Array.isArray(cliente) ? cliente[0] : cliente;
+    if (!c) return undefined;
+    const partes = [
+      c.logradouro,
+      c.numero ? `nº ${c.numero}` : null,
+      c.complemento || null,
+      c.bairro,
+      c.cidade && c.uf ? `${c.cidade} - ${c.uf}` : (c.cidade || c.uf || null)
+    ].filter(Boolean);
+    return partes.length ? partes.join(', ') : undefined;
+  }
+
+  private getFormaPagamentoDescricao(
+    fp: PedidoDbRow['prazos_pagamento']
+  ): string | null {
+    if (Array.isArray(fp)) {
+      return fp[0]?.descricao || null;
+    }
+
+    return fp?.descricao || null;
+  }
+
+  private getJoinDescricao(
+    fp: PedidoDbRow['formas_pagamento']
+  ): string | null {
+    if (Array.isArray(fp)) {
+      return fp[0]?.descricao || null;
+    }
+
+    return fp?.descricao || null;
   }
 
   private getProduto(

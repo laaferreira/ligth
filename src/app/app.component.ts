@@ -77,6 +77,12 @@ import { UserManagementService } from './core/services/user-management.service';
               <button mat-button (click)="navegar('/comissoes')" [disabled]="estaAtiva('/comissoes')">
                 <mat-icon>percent</mat-icon> Comissões
               </button>
+              <button mat-button (click)="navegar('/formas-pagamento')" [disabled]="estaAtiva('/formas-pagamento')">
+                <mat-icon>payment</mat-icon> Prazos Pagto
+              </button>
+              <button mat-button (click)="navegar('/formas-de-pagamento')" [disabled]="estaAtiva('/formas-de-pagamento')">
+                <mat-icon>credit_card</mat-icon> Formas de Pgto
+              </button>
             }
           </div>
 
@@ -135,6 +141,14 @@ import { UserManagementService } from './core/services/user-management.service';
               <button mat-menu-item (click)="navegar('/comissoes')">
                 <mat-icon>percent</mat-icon>
                 <span>Comissões</span>
+              </button>
+              <button mat-menu-item (click)="navegar('/formas-pagamento')">
+                <mat-icon>payment</mat-icon>
+                <span>Prazos Pagto</span>
+              </button>
+              <button mat-menu-item (click)="navegar('/formas-de-pagamento')">
+                <mat-icon>credit_card</mat-icon>
+                <span>Formas de Pgto</span>
               </button>
             }
           </mat-menu>
