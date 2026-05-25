@@ -32,13 +32,17 @@ export class ClienteService {
 
   constructor(private supabaseService: SupabaseService) {}
 
-  listar(): Observable<Cliente[]> {
-    return from(
-      this.supabaseService.getClient()
-        .from(this.table)
-        .select('*')
-        .order('id', { ascending: true })
-    ).pipe(
+  listar(responsavelId?: string | null): Observable<Cliente[]> {
+    let query = this.supabaseService.getClient()
+      .from(this.table)
+      .select('*')
+      .order('id', { ascending: true });
+
+    if (responsavelId) {
+      query = query.eq('responsavel_id', responsavelId);
+    }
+
+    return from(query).pipe(
       map(response => {
         if (response.error) throw response.error;
         return ((response.data || []) as ClienteDbRow[]).map(row => this.fromDb(row));

@@ -24,7 +24,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { Pedido, ImportarPedidoLinha, ImportarPedidoErro, ImportarPedidoResumoErro } from '../../core/models/pedido.model';
 import { ErrorPresenterService } from '../../core/errors/error-presenter.service';
 import { UserManagementService } from '../../core/services/user-management.service';
-import { UserRole } from '../../core/models/user.model';
+import { AppUser, UserRole } from '../../core/models/user.model';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { PedidoDialogComponent } from './pedido-dialog.component';
@@ -93,6 +93,7 @@ export class PedidosComponent implements OnInit {
   private brandLogoDataUrlPromise: Promise<string> | null = null;
   todosPedidos: Pedido[] = [];
   pedidos: Pedido[] = [];
+  usuarioAtual: AppUser | null = null;
   userRole: UserRole | null = null;
   podeImportarXls = false;
   importando = false;
@@ -139,6 +140,7 @@ export class PedidosComponent implements OnInit {
 
   private carregarUsuarioAtual(): void {
     this.userManagementService.obterUsuarioAtualComRole().then(usuario => {
+      this.usuarioAtual = usuario;
       this.userRole = usuario?.role || null;
       this.podeImportarXls = usuario?.role === 'administrador';
     });
@@ -604,7 +606,15 @@ export class PedidosComponent implements OnInit {
       maxHeight: isMobile ? '100dvh' : '92vh',
       autoFocus: false,
       disableClose: true,
-      data: { modo, pedidoId, userRole: this.userRole }
+      data: {
+        modo,
+        pedidoId,
+        userRole: this.userRole,
+        margemVendaOuro: this.usuarioAtual?.margemVendaOuro,
+        margemVendaPrata: this.usuarioAtual?.margemVendaPrata,
+        margemVendaBronze: this.usuarioAtual?.margemVendaBronze,
+        responsavelId: this.userRole === 'vendedor' ? (this.usuarioAtual?.id || null) : null
+      }
     }).afterClosed().subscribe(recarregar => {
       if (recarregar) {
         this.carregar();

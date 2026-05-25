@@ -6,6 +6,9 @@ export interface AppUser {
   nome: string;
   role: UserRole;
   comissao: number;
+  margemVendaOuro: number;
+  margemVendaPrata: number;
+  margemVendaBronze: number;
   created_at: string;
   created_by: string; // ID do usuário que criou
   is_active: boolean;
@@ -16,6 +19,9 @@ export interface CreateUserRequest {
   nome: string;
   role: UserRole;
   comissao: number;
+  margemVendaOuro: number;
+  margemVendaPrata: number;
+  margemVendaBronze: number;
   password: string;
 }
 
@@ -27,5 +33,8 @@ export interface UpdateUserRequest {
   nome?: string;
   role?: UserRole;
   comissao?: number;
+  margemVendaOuro?: number;
+  margemVendaPrata?: number;
+  margemVendaBronze?: number;
   is_active?: boolean;
 }

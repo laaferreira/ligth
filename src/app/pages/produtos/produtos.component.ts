@@ -20,7 +20,9 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { ProdutoService } from '../../core/services/produto.service';
 import { PedidoService } from '../../core/services/pedido.service';
 import { AuthService } from '../../core/services/auth.service';
+import { UserManagementService } from '../../core/services/user-management.service';
 import { Produto } from '../../core/models/produto.model';
+import { AppUser, UserRole } from '../../core/models/user.model';
 import { ProdutoDialogComponent } from './produto-dialog.component';
 import { Fornecedor } from '../../core/models/fornecedor.model';
 import { FornecedorService } from '../../core/services/fornecedor.service';
@@ -50,21 +52,40 @@ export class ProdutosComponent implements OnInit {
   custoTotalEstoque = 0;
   valorPrevistoFaturamento = 0;
   valorPotencialEstoqueVenda = 0;
-  displayedColumns = ['descricao', 'fornecedor', 'precoCusto', 'precoVenda', 'quantidadeEstoque', 'acoes'];
+  userRole: UserRole | null = null;
+  usuarioAtual: AppUser | null = null;
+
+  get displayedColumns(): string[] {
+    if (this.userRole === 'vendedor') {
+      return ['codigoDescricao', 'precoOuro', 'precoPrata', 'precoBronze'];
+    }
+    return ['descricao', 'fornecedor', 'precoCusto', 'precoVenda', 'quantidadeEstoque', 'acoes'];
+  }
+
+  get isVendedor(): boolean {
+    return this.userRole === 'vendedor';
+  }
 
   constructor(
     private produtoService: ProdutoService,
     private pedidoService: PedidoService,
     private fornecedorService: FornecedorService,
     private authService: AuthService,
+    private userManagementService: UserManagementService,
     private dialog: MatDialog,
     private router: Router,
     private snackBar: MatSnackBar
   ) {}
 
   ngOnInit(): void {
+    this.carregarUsuarioAtual();
     this.carregar();
     this.carregarFornecedores();
+  }
+
+  private async carregarUsuarioAtual(): Promise<void> {
+    this.usuarioAtual = await this.userManagementService.obterUsuarioAtualComRole();
+    this.userRole = this.usuarioAtual?.role || null;
   }
 
   carregar(): void {
@@ -167,10 +188,46 @@ export class ProdutosComponent implements OnInit {
     }
   }
 
-  novo(): void { this.abrirDialogoProduto('criar'); }
+  novo(): void {
+    if (this.userRole === 'vendedor') {
+      this.snackBar.open('Vendedores não podem criar produtos.', 'OK', { duration: 4000 });
+      return;
+    }
+    this.abrirDialogoProduto('criar');
+  }
 
   editar(p: Produto): void {
+    if (this.userRole === 'vendedor') {
+      this.snackBar.open('Vendedores não podem editar produtos.', 'OK', { duration: 4000 });
+      return;
+    }
     this.abrirDialogoProduto('editar', p);
+  }
+
+  precoOuro(produto: Produto): number {
+    const custo = this.parseNumeric(produto.precoCusto);
+    const margem = this.usuarioAtual?.margemVendaOuro ?? 35;
+    return this.roundToTwo(custo * (1 + margem / 100));
+  }
+
+  precoPrata(produto: Produto): number {
+    const custo = this.parseNumeric(produto.precoCusto);
+    const margem = this.usuarioAtual?.margemVendaPrata ?? 50;
+    return this.roundToTwo(custo * (1 + margem / 100));
+  }
+
+  precoBronze(produto: Produto): number {
+    const custo = this.parseNumeric(produto.precoCusto);
+    const margem = this.usuarioAtual?.margemVendaBronze ?? 100;
+    return this.roundToTwo(custo * (1 + margem / 100));
+  }
+
+  produtoCodigoDescricao(produto: Produto): string {
+    return `${produto.codigo} - ${produto.descricao}`;
+  }
+
+  private roundToTwo(num: number): number {
+    return Math.round(num * 100) / 100;
   }
 
   estoqueBaixo(p: Produto): boolean { return p.ativo && p.quantidadeEstoque <= p.estoqueMinimo; }

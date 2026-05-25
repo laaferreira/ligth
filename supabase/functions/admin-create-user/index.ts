@@ -12,6 +12,9 @@ type CreateUserPayload = {
   nome?: string;
   role?: UserRole;
   comissao?: number;
+  margemVendaOuro?: number;
+  margemVendaPrata?: number;
+  margemVendaBronze?: number;
   password?: string;
 };
 
@@ -21,6 +24,9 @@ type AppUser = {
   nome: string;
   role: UserRole;
   comissao: number;
+  margemVendaOuro: number;
+  margemVendaPrata: number;
+  margemVendaBronze: number;
   created_at: string;
   created_by: string;
   is_active: boolean;
@@ -112,6 +118,9 @@ Deno.serve(async (request) => {
   const nome = (payload.nome ?? '').trim();
   const role = payload.role;
   const comissao = Number(payload.comissao ?? 0);
+  const margemVendaOuro = Number(payload.margemVendaOuro ?? 35);
+  const margemVendaPrata = Number(payload.margemVendaPrata ?? 50);
+  const margemVendaBronze = Number(payload.margemVendaBronze ?? 100);
   const password = payload.password ?? '';
 
   if (!emailRegex.test(email)) {
@@ -128,6 +137,18 @@ Deno.serve(async (request) => {
 
   if (!Number.isFinite(comissao) || comissao < 0 || comissao > 100) {
     return jsonResponse({ error: 'A comissão deve estar entre 0 e 100.' }, 400);
+  }
+
+  if (!Number.isFinite(margemVendaOuro) || margemVendaOuro < 0 || margemVendaOuro > 1000) {
+    return jsonResponse({ error: 'A margem de venda Ouro deve estar entre 0 e 1000.' }, 400);
+  }
+
+  if (!Number.isFinite(margemVendaPrata) || margemVendaPrata < 0 || margemVendaPrata > 1000) {
+    return jsonResponse({ error: 'A margem de venda Prata deve estar entre 0 e 1000.' }, 400);
+  }
+
+  if (!Number.isFinite(margemVendaBronze) || margemVendaBronze < 0 || margemVendaBronze > 1000) {
+    return jsonResponse({ error: 'A margem de venda Bronze deve estar entre 0 e 1000.' }, 400);
   }
 
   if (password.length < 6) {
@@ -172,6 +193,9 @@ Deno.serve(async (request) => {
     nome,
     role,
     comissao,
+    margem_venda_ouro: margemVendaOuro,
+    margem_venda_prata: margemVendaPrata,
+    margem_venda_bronze: margemVendaBronze,
     created_by: requestingUserId,
     is_active: true
   };

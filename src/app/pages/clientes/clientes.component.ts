@@ -43,6 +43,8 @@ export class ClientesComponent implements OnInit {
   resumoImportacao = '';
   responsaveis: AppUser[] = [];
   responsavelPadraoId: string | null = null;
+  private usuarioAtualId: string | null = null;
+  private userRole: string | null = null;
   paginaAtual = 0;
   itensPorPagina = 10;
   readonly opcoesItensPorPagina = [10, 25, 50];
@@ -57,11 +59,11 @@ export class ClientesComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.carregar();
     this.carregarResponsaveis();
   }
   carregar(): void {
-    this.clienteService.listar().subscribe(d => {
+    const responsavelFiltro = this.userRole === 'vendedor' ? this.usuarioAtualId : null;
+    this.clienteService.listar(responsavelFiltro).subscribe(d => {
       this.clientes = d;
       this.paginaAtual = 0;
     });
@@ -261,7 +263,10 @@ export class ClientesComponent implements OnInit {
         this.responsaveis = usuarios;
         this.userManagementService.obterUsuarioAtualComRole().then(usuarioAtual => {
           this.podeImportarXls = usuarioAtual?.role === 'administrador';
+          this.usuarioAtualId = usuarioAtual?.id || null;
+          this.userRole = usuarioAtual?.role || null;
           this.responsavelPadraoId = usuarioAtual?.id || usuarios[0]?.id || null;
+          this.carregar();
         });
       },
       error: () => {

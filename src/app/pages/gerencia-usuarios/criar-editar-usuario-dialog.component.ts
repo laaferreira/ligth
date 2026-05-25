@@ -74,6 +74,36 @@ import { AppUser, UserRole } from '../../core/models/user.model';
           </mat-error>
         </mat-form-field>
 
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Margem de Venda Ouro (%)</mat-label>
+          <input matInput type="number" min="0" max="1000" step="0.01" formControlName="margemVendaOuro" required>
+          <mat-hint>Preço Ouro mostrado ao vendedor no pedido.</mat-hint>
+          <mat-error *ngIf="form.get('margemVendaOuro')?.hasError('required')">Margem Ouro é obrigatória</mat-error>
+          <mat-error *ngIf="form.get('margemVendaOuro')?.hasError('min') || form.get('margemVendaOuro')?.hasError('max')">
+            A margem Ouro deve estar entre 0 e 1000.
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Margem de Venda Prata (%)</mat-label>
+          <input matInput type="number" min="0" max="1000" step="0.01" formControlName="margemVendaPrata" required>
+          <mat-hint>Preço Prata mostrado ao vendedor no pedido.</mat-hint>
+          <mat-error *ngIf="form.get('margemVendaPrata')?.hasError('required')">Margem Prata é obrigatória</mat-error>
+          <mat-error *ngIf="form.get('margemVendaPrata')?.hasError('min') || form.get('margemVendaPrata')?.hasError('max')">
+            A margem Prata deve estar entre 0 e 1000.
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Margem de Venda Bronze (%)</mat-label>
+          <input matInput type="number" min="0" max="1000" step="0.01" formControlName="margemVendaBronze" required>
+          <mat-hint>Preço Bronze mostrado ao vendedor no pedido.</mat-hint>
+          <mat-error *ngIf="form.get('margemVendaBronze')?.hasError('required')">Margem Bronze é obrigatória</mat-error>
+          <mat-error *ngIf="form.get('margemVendaBronze')?.hasError('min') || form.get('margemVendaBronze')?.hasError('max')">
+            A margem Bronze deve estar entre 0 e 1000.
+          </mat-error>
+        </mat-form-field>
+
         <mat-form-field appearance="outline" class="full-width" *ngIf="data.modo === 'criar'">
           <mat-label>Senha</mat-label>
           <input matInput type="password" formControlName="password" required autocomplete="new-password">
@@ -210,6 +240,9 @@ export class CriarEditarUsuarioDialogComponent {
       nome: [isEditar ? this.data.usuario?.nome : '', Validators.required],
       role: [isEditar ? this.data.usuario?.role : '', Validators.required],
       comissao: [isEditar ? this.data.usuario?.comissao : 0, [Validators.required, Validators.min(0), Validators.max(100)]],
+      margemVendaOuro: [isEditar ? this.data.usuario?.margemVendaOuro : 35, [Validators.required, Validators.min(0), Validators.max(1000)]],
+      margemVendaPrata: [isEditar ? this.data.usuario?.margemVendaPrata : 50, [Validators.required, Validators.min(0), Validators.max(1000)]],
+      margemVendaBronze: [isEditar ? this.data.usuario?.margemVendaBronze : 100, [Validators.required, Validators.min(0), Validators.max(1000)]],
       password: [
         '',
         this.data.modo === 'criar' ? [Validators.required, Validators.minLength(6)] : []
@@ -263,7 +296,10 @@ export class CriarEditarUsuarioDialogComponent {
     const atualizacoes = {
       nome: formValue.nome,
       role: formValue.role,
-      comissao: formValue.comissao
+      comissao: formValue.comissao,
+      margemVendaOuro: formValue.margemVendaOuro,
+      margemVendaPrata: formValue.margemVendaPrata,
+      margemVendaBronze: formValue.margemVendaBronze
     };
 
     this.saving = true;

@@ -23,6 +23,10 @@ type PedidoDialogData = {
   modo: 'criar' | 'editar';
   pedidoId?: number;
   userRole?: UserRole | null;
+  margemVendaOuro?: number | null;
+  margemVendaPrata?: number | null;
+  margemVendaBronze?: number | null;
+  responsavelId?: string | null;
 };
 
 @Component({
@@ -336,7 +340,7 @@ export class PedidoDialogComponent implements OnInit {
     this.clienteControl.valueChanges.pipe(
       debounceTime(300),
       filter(v => typeof v === 'string' && v.length >= 2),
-      switchMap(v => this.consultaService.buscarClientes(v as string))
+      switchMap(v => this.consultaService.buscarClientes(v as string, this.data.responsavelId))
     ).subscribe(c => this.clientesFiltrados = c);
 
     this.produtoControl.valueChanges.pipe(
@@ -427,15 +431,15 @@ export class PedidoDialogComponent implements OnInit {
   get precoCusto(): number | null { return this.produtoSelecionado?.precoCusto ?? null; }
 
   get precoOuro(): number {
-    return this.calcularPrecoPorMarkup(35);
+    return this.calcularPrecoPorMarkup(this.data.margemVendaOuro ?? 35);
   }
 
   get precoPrata(): number {
-    return this.calcularPrecoPorMarkup(50);
+    return this.calcularPrecoPorMarkup(this.data.margemVendaPrata ?? 50);
   }
 
   get precoBronze(): number {
-    return this.calcularPrecoPorMarkup(100);
+    return this.calcularPrecoPorMarkup(this.data.margemVendaBronze ?? 100);
   }
 
   get estoqueAtualInfo(): number {

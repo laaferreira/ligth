@@ -271,7 +271,7 @@ export class PedidoService {
   }
 
   private async buscarPorIdComControleAcesso(id: number) {
-    const { userId, role } = await this.getCurrentUserContext();
+    const { userId, role, margemVendaOuro } = await this.getCurrentUserContext();
     let pedidoQuery = this.supabaseService.getClient()
       .from(this.table)
       .select('id, cliente_id, status, valor_total, data, data_finalizacao, observacao, user_id, clientes(nome)')
@@ -323,7 +323,7 @@ export class PedidoService {
   }
 
   private async criarComUsuario(pedido: CriarPedido) {
-    const { userId, role } = await this.getCurrentUserContext();
+    const { userId, role, margemVendaOuro } = await this.getCurrentUserContext();
     const client = this.supabaseService.getClient();
     const pedidoInsert = await client
       .from(this.table)
@@ -340,7 +340,7 @@ export class PedidoService {
       return { data: null, error: new Error('Pedido criado sem identificador.') };
     }
 
-    const itensInsert = await this.persistirItensPedido(pedidoId, pedido.itens, userId, role);
+    const itensInsert = await this.persistirItensPedido(pedidoId, pedido.itens, userId, role, margemVendaOuro);
     if (itensInsert.error) {
       await client.from(this.table).delete().eq('id', pedidoId);
       return { data: null, error: itensInsert.error };
@@ -351,7 +351,7 @@ export class PedidoService {
   }
 
   private async atualizarComItens(id: number, pedido: AtualizarPedido) {
-    const { userId, role } = await this.getCurrentUserContext();
+    const { userId, role, margemVendaOuro } = await this.getCurrentUserContext();
     const client = this.supabaseService.getClient();
     const camposPedido = this.toDb(pedido);
 
@@ -378,7 +378,7 @@ export class PedidoService {
         return { data: null, error: deleteResponse.error };
       }
 
-      const itensInsert = await this.persistirItensPedido(id, pedido.itens, userId, role);
+      const itensInsert = await this.persistirItensPedido(id, pedido.itens, userId, role, margemVendaOuro);
       if (itensInsert.error) {
         return { data: null, error: itensInsert.error };
       }
@@ -388,7 +388,7 @@ export class PedidoService {
     return resultado as { data: Pedido | null; error: any };
   }
 
-  private async getCurrentUserContext(): Promise<{ userId: string; role: string | null }> {
+  private async getCurrentUserContext(): Promise<{ userId: string; role: string | null; margemVendaOuro: number }> {
     const { data: authData, error: authError } = await this.supabaseService.getAuth().getUser();
     if (authError || !authData.user) {
       throw authError || new Error('Usuário autenticado não encontrado.');
@@ -397,13 +397,16 @@ export class PedidoService {
     const userId = authData.user.id;
     const { data: userData } = await this.supabaseService.getClient()
       .from('app_users')
-      .select('role')
+      .select('role, margemVendaOuro, margem_venda_ouro')
       .eq('id', userId)
       .maybeSingle();
 
+    const userRow = userData as { role?: string; margemVendaOuro?: number | string | null; margem_venda_ouro?: number | string | null } | null;
+
     return {
       userId,
-      role: (userData as { role?: string } | null)?.role || null
+      role: userRow?.role || null,
+      margemVendaOuro: this.toNumber(userRow?.margemVendaOuro ?? userRow?.margem_venda_ouro ?? 35)
     };
   }
 
@@ -489,7 +492,8 @@ export class PedidoService {
     pedidoId: number,
     itens: CriarPedido['itens'],
     userId: string,
-    role: string | null
+    role: string | null,
+    margemVendaOuro: number
   ) {
     if (!itens.length) {
       return { error: null };
@@ -531,14 +535,14 @@ export class PedidoService {
             return false;
           }
 
-          const precoMinimo = this.roundToTwo(custoBase * (1 + this.markupMinimoVendedor / 100));
+          const precoMinimo = this.roundToTwo(custoBase * (1 + margemVendaOuro / 100));
           return valorUnitario + 0.0001 < precoMinimo;
         })
       : undefined;
 
     if (itensAbaixoPrecoOuro) {
       return {
-        error: new Error(`Vendedores não podem criar pedidos com valor unitário abaixo do Preço Ouro (${this.markupMinimoVendedor}% acima do custo médio).`)
+        error: new Error(`Vendedores não podem criar pedidos com valor unitário abaixo do Preço Ouro (${margemVendaOuro}% acima do custo médio).`)
       };
     }
 

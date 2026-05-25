@@ -13,14 +13,18 @@ export class ConsultaService {
 
   constructor(private supabaseService: SupabaseService) {}
 
-  buscarClientes(termo: string): Observable<AutocompleteItem[]> {
-    return from(
-      this.supabaseService.getClient()
-        .from(this.clientesTable)
-        .select('id, nome')
-        .ilike('nome', `%${termo}%`)
-        .limit(10)
-    ).pipe(
+  buscarClientes(termo: string, responsavelId?: string | null): Observable<AutocompleteItem[]> {
+    let query = this.supabaseService.getClient()
+      .from(this.clientesTable)
+      .select('id, nome')
+      .ilike('nome', `%${termo}%`)
+      .limit(10);
+
+    if (responsavelId) {
+      query = query.eq('responsavel_id', responsavelId);
+    }
+
+    return from(query).pipe(
       map(response => {
         if (response.error) throw response.error;
         return (response.data || []).map(item => ({

@@ -21,17 +21,53 @@ export class UserManagementService {
   }
 
   private normalizarComissao(comissao: number): number {
-    if (!Number.isFinite(comissao)) {
-      throw new Error('Informe uma comissão válida.');
+    return this.normalizarPercentual(comissao, 'comissão', 100);
+  }
+
+  private normalizarMargemVenda(margem: number, faixa: 'ouro' | 'prata' | 'bronze'): number {
+    return this.normalizarPercentual(margem, `margem de venda ${faixa}`, 1000);
+  }
+
+  private normalizarPercentual(valor: number, label: string, maximo: number): number {
+    if (!Number.isFinite(valor)) {
+      throw new Error(`Informe ${label} válida.`);
     }
 
-    const valorNormalizado = Number(comissao);
+    const valorNormalizado = Number(valor);
 
-    if (valorNormalizado < 0 || valorNormalizado > 100) {
-      throw new Error('A comissão deve estar entre 0 e 100.');
+    if (valorNormalizado < 0 || valorNormalizado > maximo) {
+      throw new Error(`A ${label} deve estar entre 0 e ${maximo}.`);
     }
 
     return valorNormalizado;
+  }
+
+  private fromDb(row: any): AppUser {
+    return {
+      id: row.id,
+      email: row.email,
+      nome: row.nome,
+      role: row.role,
+      comissao: Number(row.comissao ?? 0),
+      margemVendaOuro: Number(row.margemVendaOuro ?? row.margem_venda_ouro ?? 35),
+      margemVendaPrata: Number(row.margemVendaPrata ?? row.margem_venda_prata ?? 50),
+      margemVendaBronze: Number(row.margemVendaBronze ?? row.margem_venda_bronze ?? 100),
+      created_at: row.created_at,
+      created_by: row.created_by,
+      is_active: !!row.is_active
+    };
+  }
+
+  private toDb(payload: UpdateUserRequest): Record<string, unknown> {
+    return {
+      ...(payload.nome !== undefined ? { nome: payload.nome } : {}),
+      ...(payload.role !== undefined ? { role: payload.role } : {}),
+      ...(payload.comissao !== undefined ? { comissao: payload.comissao } : {}),
+      ...(payload.margemVendaOuro !== undefined ? { margem_venda_ouro: payload.margemVendaOuro } : {}),
+      ...(payload.margemVendaPrata !== undefined ? { margem_venda_prata: payload.margemVendaPrata } : {}),
+      ...(payload.margemVendaBronze !== undefined ? { margem_venda_bronze: payload.margemVendaBronze } : {}),
+      ...(payload.is_active !== undefined ? { is_active: payload.is_active } : {})
+    };
   }
 
   /**
@@ -63,6 +99,9 @@ export class UserManagementService {
     }
 
     const comissaoNormalizada = this.normalizarComissao(dados.comissao);
+    const margemVendaOuroNormalizada = this.normalizarMargemVenda(dados.margemVendaOuro, 'ouro');
+    const margemVendaPrataNormalizada = this.normalizarMargemVenda(dados.margemVendaPrata, 'prata');
+    const margemVendaBronzeNormalizada = this.normalizarMargemVenda(dados.margemVendaBronze, 'bronze');
 
     try {
       const response = await this.supabaseService.invokeFunction<CreateUserRequest, CreateUserFunctionResponse>(
@@ -72,6 +111,9 @@ export class UserManagementService {
           nome: dados.nome.trim(),
           role: dados.role,
           comissao: comissaoNormalizada,
+          margemVendaOuro: margemVendaOuroNormalizada,
+          margemVendaPrata: margemVendaPrataNormalizada,
+          margemVendaBronze: margemVendaBronzeNormalizada,
           password: dados.password
         }
       );
@@ -80,7 +122,7 @@ export class UserManagementService {
         throw new Error('A Edge Function não retornou o usuário criado.');
       }
 
-      return response.user;
+      return this.fromDb(response.user);
     } catch (error: any) {
       console.error('[criarUsuario] Erro na Edge Function:', error);
 
@@ -107,7 +149,7 @@ export class UserManagementService {
     ).pipe(
       map(response => {
         if (response.error) throw response.error;
-        return (response.data || []) as AppUser[];
+        return ((response.data || []) as any[]).map(row => this.fromDb(row));
       })
     );
   }
@@ -125,7 +167,7 @@ export class UserManagementService {
     ).pipe(
       map(response => {
         if (response.error) throw response.error;
-        return response.data as AppUser;
+        return this.fromDb(response.data);
       })
     );
   }
@@ -163,16 +205,28 @@ export class UserManagementService {
       payload.comissao = this.normalizarComissao(dados.comissao);
     }
 
+    if (dados.margemVendaOuro !== undefined) {
+      payload.margemVendaOuro = this.normalizarMargemVenda(dados.margemVendaOuro, 'ouro');
+    }
+
+    if (dados.margemVendaPrata !== undefined) {
+      payload.margemVendaPrata = this.normalizarMargemVenda(dados.margemVendaPrata, 'prata');
+    }
+
+    if (dados.margemVendaBronze !== undefined) {
+      payload.margemVendaBronze = this.normalizarMargemVenda(dados.margemVendaBronze, 'bronze');
+    }
+
     const { data, error } = await this.supabaseService
       .getClient()
       .from(this.table)
-      .update(payload)
+      .update(this.toDb(payload))
       .eq('id', id)
       .select()
       .single();
 
     if (error) throw error;
-    return data as AppUser;
+    return this.fromDb(data);
   }
 
   /**
@@ -189,7 +243,7 @@ export class UserManagementService {
     ).pipe(
       map(response => {
         if (response.error) throw response.error;
-        return response.data as AppUser;
+        return this.fromDb(response.data);
       })
     );
   }
@@ -208,7 +262,7 @@ export class UserManagementService {
     ).pipe(
       map(response => {
         if (response.error) throw response.error;
-        return response.data as AppUser;
+        return this.fromDb(response.data);
       })
     );
   }
@@ -228,6 +282,6 @@ export class UserManagementService {
       .single();
 
     if (error) return null;
-    return userData as AppUser;
+    return this.fromDb(userData);
   }
 }
