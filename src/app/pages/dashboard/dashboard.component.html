@@ -84,6 +84,39 @@
         </mat-card>
       </div>
 
+      <!-- Filtro de período -->
+      <section class="filtro-periodo">
+        <div class="filtro-row">
+          <mat-form-field appearance="outline" class="filtro-field">
+            <mat-label>Mês</mat-label>
+            <mat-select [(ngModel)]="filterMes">
+              @for (m of meses; track m.value) {
+                <mat-option [value]="m.value">{{ m.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="filtro-field">
+            <mat-label>Ano</mat-label>
+            <mat-select [(ngModel)]="filterAno">
+              @for (a of anos; track a) {
+                <mat-option [value]="a">{{ a }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <button mat-flat-button color="primary" (click)="aplicarFiltro()">
+            <mat-icon>filter_alt</mat-icon> Filtrar
+          </button>
+          @if (filtroAtivo) {
+            <button mat-stroked-button (click)="limparFiltro()">
+              <mat-icon>clear</mat-icon> Limpar
+            </button>
+          }
+        </div>
+        @if (filtroAtivo) {
+          <p class="filtro-info">Exibindo gráficos de <strong>{{ filtroLabel }}</strong></p>
+        }
+      </section>
+
       <!-- Charts Row 1 -->
       <div class="charts-grid">
         <mat-card class="chart-card wide">

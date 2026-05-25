@@ -26,6 +26,7 @@ type PedidoDashboardRow = {
   status?: string | null;
   valor_total?: number | string | null;
   data?: string | null;
+  data_finalizacao?: string | null;
 };
 
 type ItemPedidoDashboardRow = {
@@ -62,46 +63,39 @@ type ClienteDashboardRow = {
 export class DashboardService {
   constructor(private supabaseService: SupabaseService) {}
 
-  getDashboard(): Observable<Dashboard> {
-    return from(this.fetchDashboardData()).pipe(
+  getDashboard(filtroMes?: number, filtroAno?: number): Observable<Dashboard> {
+    return from(this.fetchDashboardData(filtroMes, filtroAno)).pipe(
       map(data => data as Dashboard)
     );
   }
 
-  private async fetchDashboardData(): Promise<Dashboard> {
+  private async fetchDashboardData(filtroMes?: number, filtroAno?: number): Promise<Dashboard> {
     const client = this.supabaseService.getClient();
 
-    const [
-      clientesCountResponse,
-      produtosCountResponse,
-      pedidosCountResponse,
-      clientesResponse,
-      produtosResponse,
-      pedidosResponse,
-      itensResponse
-    ] = await Promise.all([
+    const [clientesCountResponse, produtosCountResponse, pedidosCountResponse] = await Promise.all([
       client.from('clientes').select('id', { count: 'exact', head: true }),
       client.from('produtos').select('id', { count: 'exact', head: true }),
       client.from('pedidos').select('id', { count: 'exact', head: true }),
-      client.from('clientes').select('id, nome'),
-      client.from('produtos').select('*'),
-      client.from('pedidos').select('id, cliente_id, status, valor_total, data'),
-      client.from('itens_pedidos').select('pedido_id, produto_id, quantidade, preco_unitario, custo_unitario, subtotal')
     ]);
-
-    if (clientesResponse.error) throw clientesResponse.error;
-    if (produtosResponse.error) throw produtosResponse.error;
-    if (pedidosResponse.error) throw pedidosResponse.error;
-    if (itensResponse.error) throw itensResponse.error;
 
     const totalClientes = clientesCountResponse.count || 0;
     const totalProdutos = produtosCountResponse.count || 0;
     const totalPedidos = pedidosCountResponse.count || 0;
 
-    const clientes = (clientesResponse.data || []) as ClienteDashboardRow[];
-    const produtos = (produtosResponse.data || []) as ProdutoDashboardRow[];
-    const pedidos = (pedidosResponse.data || []) as PedidoDashboardRow[];
-    const itensPedidos = (itensResponse.data || []) as ItemPedidoDashboardRow[];
+    const [clientes, produtos, pedidos, itensPedidos] = await Promise.all([
+      this.fetchAllPages<ClienteDashboardRow>((from, to) =>
+        client.from('clientes').select('id, nome').range(from, to)
+      ),
+      this.fetchAllPages<ProdutoDashboardRow>((from, to) =>
+        client.from('produtos').select('*').range(from, to)
+      ),
+      this.fetchAllPages<PedidoDashboardRow>((from, to) =>
+        client.from('pedidos').select('id, cliente_id, status, valor_total, data, data_finalizacao').range(from, to)
+      ),
+      this.fetchAllPages<ItemPedidoDashboardRow>((from, to) =>
+        client.from('itens_pedidos').select('pedido_id, produto_id, quantidade, preco_unitario, custo_unitario, subtotal').range(from, to)
+      ),
+    ]);
 
     const clientesPorId = new Map<number, ClienteDashboardRow>();
     clientes.forEach(cliente => {
@@ -123,6 +117,21 @@ export class DashboardService {
         pedidosPorId.set(pedido.id, pedido);
       }
     });
+
+    const filtroAtivo = filtroMes != null && filtroAno != null;
+    const pedidosParaGraficos = filtroAtivo
+      ? pedidos.filter(p => {
+          const rawDate = p.data_finalizacao ?? p.data;
+          if (!rawDate) return false;
+          const d = new Date(rawDate);
+          if (isNaN(d.getTime())) return false;
+          return d.getMonth() + 1 === filtroMes && d.getFullYear() === filtroAno;
+        })
+      : pedidos;
+    const pedidosGraficoIds = new Set(pedidosParaGraficos.map(p => p.id).filter((id): id is number => id != null));
+    const itensParaGraficos = filtroAtivo
+      ? itensPedidos.filter(i => i.pedido_id != null && pedidosGraficoIds.has(i.pedido_id as number))
+      : itensPedidos;
 
     const pedidosAbertos = pedidos.filter(pedido => {
       const status = this.normalizeStatus(pedido.status);
@@ -160,7 +169,7 @@ export class DashboardService {
     }, 0);
 
     const pedidosPorStatusMap = new Map<string, number>();
-    pedidos.forEach(pedido => {
+    pedidosParaGraficos.forEach(pedido => {
       const status = this.normalizeStatus(pedido.status) || 'SEM_STATUS';
       pedidosPorStatusMap.set(status, (pedidosPorStatusMap.get(status) || 0) + 1);
     });
@@ -170,7 +179,7 @@ export class DashboardService {
     const clientesMaisCompraramMap = new Map<number, { label: string; valor: number; quantidade: number }>();
     const faturamentoPorMesMap = new Map<string, { faturamento: number; lucro: number }>();
 
-    itensPedidos.forEach(item => {
+    itensParaGraficos.forEach(item => {
       const pedidoId = item.pedido_id ?? 0;
       const pedido = pedidosPorId.get(pedidoId);
       if (!pedido) {
@@ -204,7 +213,7 @@ export class DashboardService {
       clientesMaisCompraramMap.set(clienteId, clienteAtual);
 
       if (status === 'FINALIZADO') {
-        const monthKey = this.toMonthKey(pedido.data);
+        const monthKey = this.toMonthKey(pedido.data_finalizacao ?? pedido.data);
         const monthAtual = faturamentoPorMesMap.get(monthKey) || { faturamento: 0, lucro: 0 };
         monthAtual.faturamento += subtotal;
         monthAtual.lucro += subtotal - custoTotalItem;
@@ -220,7 +229,9 @@ export class DashboardService {
       .sort((a, b) => b.valor - a.valor || b.quantidade - a.quantidade)
       .slice(0, 8);
 
-    const faturamentoPorMes = this.buildLastSixMonths(faturamentoPorMesMap);
+    const faturamentoPorMes = (filtroMes != null && filtroAno != null)
+      ? this.buildMonthsEndingAt(faturamentoPorMesMap, filtroAno, filtroMes)
+      : this.buildLastSixMonths(faturamentoPorMesMap);
 
     const estoqueCritico = produtos
       .map(produto => {
@@ -299,6 +310,25 @@ export class DashboardService {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
   }
 
+  private async fetchAllPages<T>(
+    queryFn: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>
+  ): Promise<T[]> {
+    const PAGE_SIZE = 1000;
+    const all: T[] = [];
+    let start = 0;
+
+    while (true) {
+      const { data, error } = await queryFn(start, start + PAGE_SIZE - 1);
+      if (error) throw error;
+      const rows = (data ?? []) as T[];
+      all.push(...rows);
+      if (rows.length < PAGE_SIZE) break;
+      start += PAGE_SIZE;
+    }
+
+    return all;
+  }
+
   private buildLastSixMonths(faturamentoPorMesMap: Map<string, { faturamento: number; lucro: number }>) {
     const formatter = new Intl.DateTimeFormat('pt-BR', { month: 'short', year: '2-digit' });
     const resultado: { mes: string; faturamento: number; lucro: number }[] = [];
@@ -306,6 +336,25 @@ export class DashboardService {
 
     for (let index = 5; index >= 0; index -= 1) {
       const reference = new Date(now.getFullYear(), now.getMonth() - index, 1);
+      const key = `${reference.getFullYear()}-${String(reference.getMonth() + 1).padStart(2, '0')}`;
+      const valor = faturamentoPorMesMap.get(key) || { faturamento: 0, lucro: 0 };
+
+      resultado.push({
+        mes: formatter.format(reference).replace('.', ''),
+        faturamento: valor.faturamento,
+        lucro: valor.lucro
+      });
+    }
+
+    return resultado;
+  }
+
+  private buildMonthsEndingAt(faturamentoPorMesMap: Map<string, { faturamento: number; lucro: number }>, ano: number, mes: number) {
+    const formatter = new Intl.DateTimeFormat('pt-BR', { month: 'short', year: '2-digit' });
+    const resultado: { mes: string; faturamento: number; lucro: number }[] = [];
+
+    for (let i = 5; i >= 0; i--) {
+      const reference = new Date(ano, mes - 1 - i, 1);
       const key = `${reference.getFullYear()}-${String(reference.getMonth() + 1).padStart(2, '0')}`;
       const valor = faturamentoPorMesMap.get(key) || { faturamento: 0, lucro: 0 };
 

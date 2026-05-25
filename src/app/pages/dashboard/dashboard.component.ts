@@ -1,11 +1,14 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatSelectModule } from '@angular/material/select';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { NgChartsModule } from 'ng2-charts';
@@ -21,8 +24,9 @@ Chart.register(...registerables);
   selector: 'app-dashboard',
   standalone: true,
   imports: [
-    CommonModule, MatToolbarModule, MatCardModule, MatIconModule,
-    MatButtonModule, MatMenuModule, MatTableModule, MatTooltipModule, NgChartsModule
+    CommonModule, FormsModule, MatToolbarModule, MatCardModule, MatIconModule,
+    MatButtonModule, MatMenuModule, MatSelectModule, MatFormFieldModule,
+    MatTableModule, MatTooltipModule, NgChartsModule
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
@@ -39,18 +43,35 @@ export class DashboardComponent implements OnInit {
 
   estoqueCols = ['codigo', 'descricao', 'estoque', 'minimo'];
 
+  filterMes: number | null = null;
+  filterAno: number | null = null;
+  filtroAtivo = false;
+  filtroLabel = '';
+
+  readonly meses = [
+    { value: 1, label: 'Janeiro' }, { value: 2, label: 'Fevereiro' },
+    { value: 3, label: 'Março' }, { value: 4, label: 'Abril' },
+    { value: 5, label: 'Maio' }, { value: 6, label: 'Junho' },
+    { value: 7, label: 'Julho' }, { value: 8, label: 'Agosto' },
+    { value: 9, label: 'Setembro' }, { value: 10, label: 'Outubro' },
+    { value: 11, label: 'Novembro' }, { value: 12, label: 'Dezembro' }
+  ];
+
+  readonly anos: number[] = (() => {
+    const currentYear = new Date().getFullYear();
+    return [currentYear - 2, currentYear - 1, currentYear, currentYear + 1];
+  })();
+
   constructor(
     private dashboardService: DashboardService,
     private authService: AuthService,
     private userManagementService: UserManagementService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
-    this.dashboardService.getDashboard().subscribe(d => {
-      this.data = d;
-      this.buildCharts(d);
-    });
+    this.loadDashboard();
     this.userManagementService.obterUsuarioAtualComRole().then(u => {
       this.userRole = u?.role || null;
     }).catch(() => {});
@@ -110,6 +131,35 @@ export class DashboardComponent implements OnInit {
   statusLabel(s: string): string {
     const m: Record<string, string> = { EM_ABERTO: 'Em Aberto', CONFIRMADO: 'Confirmado', CANCELADO: 'Cancelado', FINALIZADO: 'Finalizado' };
     return m[s] || s;
+  }
+
+  loadDashboard(mes?: number, ano?: number): void {
+    this.dashboardService.getDashboard(mes, ano).subscribe(d => {
+      this.data = d;
+      this.faturamentoChart = null;
+      this.produtosChart = null;
+      this.clientesChart = null;
+      this.statusChart = null;
+      this.cdr.detectChanges(); // destrói os canvas sincronamente
+      this.buildCharts(d);     // recria com novos dados
+    });
+  }
+
+  aplicarFiltro(): void {
+    if (this.filterMes != null && this.filterAno != null) {
+      this.filtroAtivo = true;
+      const mesSelecionado = this.meses.find(m => m.value === this.filterMes);
+      this.filtroLabel = `${mesSelecionado?.label} de ${this.filterAno}`;
+      this.loadDashboard(this.filterMes, this.filterAno);
+    }
+  }
+
+  limparFiltro(): void {
+    this.filterMes = null;
+    this.filterAno = null;
+    this.filtroAtivo = false;
+    this.filtroLabel = '';
+    this.loadDashboard();
   }
 
   navegarConsulta(): void { this.router.navigate(['/consulta']); }
