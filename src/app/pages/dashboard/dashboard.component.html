@@ -149,6 +149,18 @@
         </mat-card>
       </div>
 
+      <!-- Charts Row 3 - Faturamento por Vendedor -->
+      <div class="charts-grid">
+        <mat-card class="chart-card wide">
+          <h3><mat-icon>person</mat-icon> {{ vendedoresChartTitle }}</h3>
+          @if (vendedoresChart) {
+            <canvas baseChart [type]="vendedoresChart.type" [data]="vendedoresChart.data" [options]="vendedoresChart.options"></canvas>
+          } @else {
+            <p style="color:#888;text-align:center;padding:24px 0">Nenhum pedido finalizado no período selecionado.</p>
+          }
+        </mat-card>
+      </div>
+
       <!-- Estoque Critico -->
       @if (data.estoqueCritico.length > 0) {
         <mat-card class="chart-card">

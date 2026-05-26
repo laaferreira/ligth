@@ -18,6 +18,7 @@ export interface Dashboard {
   faturamentoPorMes: { mes: string; faturamento: number; lucro: number }[];
   estoqueCritico: { codigo: string; descricao: string; estoque: number; minimo: number }[];
   pedidosPorStatus: { status: string; quantidade: number }[];
+  faturamentoPorUsuario: { label: string; valor: number }[];
 }
 
 type PedidoDashboardRow = {
@@ -27,6 +28,7 @@ type PedidoDashboardRow = {
   valor_total?: number | string | null;
   data?: string | null;
   data_finalizacao?: string | null;
+  user_id?: string | null;
 };
 
 type ItemPedidoDashboardRow = {
@@ -59,6 +61,11 @@ type ClienteDashboardRow = {
   nome?: string | null;
 };
 
+type AppUserDashboardRow = {
+  id?: string | null;
+  nome?: string | null;
+};
+
 @Injectable({ providedIn: 'root' })
 export class DashboardService {
   constructor(private supabaseService: SupabaseService) {}
@@ -82,7 +89,7 @@ export class DashboardService {
     const totalProdutos = produtosCountResponse.count || 0;
     const totalPedidos = pedidosCountResponse.count || 0;
 
-    const [clientes, produtos, pedidos, itensPedidos] = await Promise.all([
+    const [clientes, produtos, pedidos, itensPedidos, appUsers] = await Promise.all([
       this.fetchAllPages<ClienteDashboardRow>((from, to) =>
         client.from('clientes').select('id, nome').range(from, to)
       ),
@@ -90,10 +97,13 @@ export class DashboardService {
         client.from('produtos').select('*').range(from, to)
       ),
       this.fetchAllPages<PedidoDashboardRow>((from, to) =>
-        client.from('pedidos').select('id, cliente_id, status, valor_total, data, data_finalizacao').range(from, to)
+        client.from('pedidos').select('id, cliente_id, status, valor_total, data, data_finalizacao, user_id').range(from, to)
       ),
       this.fetchAllPages<ItemPedidoDashboardRow>((from, to) =>
         client.from('itens_pedidos').select('pedido_id, produto_id, quantidade, preco_unitario, custo_unitario, subtotal').range(from, to)
+      ),
+      this.fetchAllPages<AppUserDashboardRow>((from, to) =>
+        client.from('app_users').select('id, nome').range(from, to)
       ),
     ]);
 
@@ -115,6 +125,13 @@ export class DashboardService {
     pedidos.forEach(pedido => {
       if (pedido.id != null) {
         pedidosPorId.set(pedido.id, pedido);
+      }
+    });
+
+    const usuariosPorId = new Map<string, AppUserDashboardRow>();
+    appUsers.forEach(u => {
+      if (u.id != null) {
+        usuariosPorId.set(u.id, u);
       }
     });
 
@@ -173,6 +190,25 @@ export class DashboardService {
       if (d.getMonth() + 1 !== mesRef || d.getFullYear() !== anoRef) return sum;
       return sum + this.parseNumeric(pedido.valor_total);
     }, 0);
+
+    const faturamentoPorUsuarioMap = new Map<string, { label: string; valor: number }>();
+    pedidos.forEach(pedido => {
+      const status = this.normalizeStatus(pedido.status);
+      if (status !== 'FINALIZADO') return;
+      const rawDate = pedido.data_finalizacao ?? pedido.data;
+      if (!rawDate) return;
+      const d = new Date(rawDate);
+      if (isNaN(d.getTime())) return;
+      if (d.getMonth() + 1 !== mesRef || d.getFullYear() !== anoRef) return;
+      const userId = pedido.user_id ?? 'sem-usuario';
+      const usuario = usuariosPorId.get(userId);
+      const label = usuario?.nome ?? 'Sem vendedor';
+      const atual = faturamentoPorUsuarioMap.get(userId) ?? { label, valor: 0 };
+      atual.valor += this.parseNumeric(pedido.valor_total);
+      faturamentoPorUsuarioMap.set(userId, atual);
+    });
+    const faturamentoPorUsuario = Array.from(faturamentoPorUsuarioMap.values())
+      .sort((a, b) => b.valor - a.valor);
 
     const pedidosPorStatusMap = new Map<string, number>();
     pedidosParaGraficos.forEach(pedido => {
@@ -271,7 +307,8 @@ export class DashboardService {
       clientesMaisCompraram,
       faturamentoPorMes,
       estoqueCritico,
-      pedidosPorStatus
+      pedidosPorStatus,
+      faturamentoPorUsuario
     };
   }
 

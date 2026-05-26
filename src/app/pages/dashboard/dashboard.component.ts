@@ -40,6 +40,7 @@ export class DashboardComponent implements OnInit {
   produtosChart: ChartConfiguration<'bar'> | null = null;
   clientesChart: ChartConfiguration<'bar'> | null = null;
   statusChart: ChartConfiguration<'doughnut'> | null = null;
+  vendedoresChart: ChartConfiguration<'bar'> | null = null;
 
   estoqueCols = ['codigo', 'descricao', 'estoque', 'minimo'];
 
@@ -126,6 +127,27 @@ export class DashboardComponent implements OnInit {
       },
       options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
     };
+
+    // Faturamento por vendedor no mês
+    if (d.faturamentoPorUsuario.length > 0) {
+      const barColors = ['#5b2d8e','#c9a84c','#7b4bab','#2e7d32','#e65100','#1565c0','#c62828','#00796b'];
+      this.vendedoresChart = {
+        type: 'bar',
+        data: {
+          labels: d.faturamentoPorUsuario.map(u => u.label),
+          datasets: [{
+            label: 'Valor Total (R$)',
+            data: d.faturamentoPorUsuario.map(u => u.valor),
+            backgroundColor: d.faturamentoPorUsuario.map((_, i) => barColors[i % barColors.length])
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } }
+        }
+      };
+    }
   }
 
   statusLabel(s: string): string {
@@ -137,6 +159,12 @@ export class DashboardComponent implements OnInit {
     return this.filtroAtivo ? `Faturamento ${this.filtroLabel}` : 'Faturamento do Mês';
   }
 
+  get vendedoresChartTitle(): string {
+    return this.filtroAtivo
+      ? `Faturamento por Vendedor — ${this.filtroLabel}`
+      : 'Faturamento por Vendedor — Mês Atual';
+  }
+
   loadDashboard(mes?: number, ano?: number): void {
     this.dashboardService.getDashboard(mes, ano).subscribe(d => {
       this.data = d;
@@ -144,6 +172,7 @@ export class DashboardComponent implements OnInit {
       this.produtosChart = null;
       this.clientesChart = null;
       this.statusChart = null;
+      this.vendedoresChart = null;
       this.cdr.detectChanges(); // destrói os canvas sincronamente
       this.buildCharts(d);     // recria com novos dados
     });
