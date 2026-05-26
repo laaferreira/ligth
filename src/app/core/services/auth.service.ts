@@ -2,17 +2,13 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, from, map, catchError, of } from 'rxjs';
 import { SupabaseService } from './supabase.service';
 import { Router } from '@angular/router';
+import { environment } from '@env/environment';
 
 export interface LoginRequest {
   email: string;
   password: string;
 }
 
-export interface SignupRequest {
-  email: string;
-  password: string;
-  fullName: string;
-}
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -72,34 +68,7 @@ export class AuthService {
         return response.data;
       }),
       catchError(error => {
-        console.error('Login error:', error);
-        throw error;
-      })
-    );
-  }
-
-  signup(data: SignupRequest): Observable<any> {
-    const email = this.normalizarEmail(data.email);
-
-    return from(
-      this.supabaseService.getAuth().signUp({
-        email,
-        password: data.password,
-        options: {
-          data: {
-            full_name: data.fullName
-          }
-        }
-      })
-    ).pipe(
-      map(response => {
-        if (response.error) {
-          throw response.error;
-        }
-        return response.data;
-      }),
-      catchError(error => {
-        console.error('Signup error:', error);
+        if (!environment.production) { console.error('Login error:', error); }
         throw error;
       })
     );

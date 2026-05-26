@@ -1,6 +1,7 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { UserManagementService } from '../services/user-management.service';
+import { environment } from '@env/environment';
 
 export const gerenciaUsuariosGuard: CanActivateFn = async (route, state) => {
   const userManagementService = inject(UserManagementService);
@@ -10,8 +11,7 @@ export const gerenciaUsuariosGuard: CanActivateFn = async (route, state) => {
     const usuarioAtual = await userManagementService.obterUsuarioAtualComRole();
 
     if (!usuarioAtual) {
-      // Usuário autenticado mas sem registro em app_users
-      console.warn('[gerenciaUsuariosGuard] Usuário não encontrado em app_users. Verifique se foi inserido na tabela.');
+      if (!environment.production) { console.warn('[gerenciaUsuariosGuard] Usuário não encontrado em app_users.'); }
       router.navigate(['/dashboard']);
       return false;
     }
@@ -24,7 +24,7 @@ export const gerenciaUsuariosGuard: CanActivateFn = async (route, state) => {
 
     return true;
   } catch (error) {
-    console.error('[gerenciaUsuariosGuard] Erro ao verificar permissão:', error);
+    if (!environment.production) { console.error('[gerenciaUsuariosGuard] Erro ao verificar permissão:', error); }
     router.navigate(['/login']);
     return false;
   }
