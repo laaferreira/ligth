@@ -4,6 +4,7 @@
 .top-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
 .filtro-texto { flex: 1; min-width: 180px; }
 .filtro-status { width: 160px; }
+.filtro-usuario { width: 190px; }
 .filtro-data { width: 150px; }
 .btn-limpar-filtro { height: 40px; }
 .filtro-count { font-size: 13px; color: #6b5b7b; white-space: nowrap; }
@@ -110,7 +111,7 @@
   .add-item-row { flex-direction: column; .field-produto, .field-sm { width: 100%; } }
   .top-actions { flex-direction: column; }
   .top-actions button { width: 100%; }
-  .filtros-container { flex-direction: column; .filtro-texto, .filtro-status, .filtro-data { width: 100%; } }
+  .filtros-container { flex-direction: column; .filtro-texto, .filtro-status, .filtro-usuario, .filtro-data { width: 100%; } }
   .card-header {
     position: sticky;
     top: 64px;

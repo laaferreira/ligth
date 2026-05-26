@@ -90,6 +90,17 @@
             <mat-option value="CANCELADO">Cancelado</mat-option>
           </mat-select>
         </mat-form-field>
+        @if (podeVerFiltroUsuario) {
+          <mat-form-field appearance="outline" class="filtro-usuario">
+            <mat-label>Vendedor</mat-label>
+            <mat-select [value]="filtroUsuarioId" (selectionChange)="onFiltroUsuarioChange($event.value)">
+              <mat-option value="">Todos</mat-option>
+              @for (u of usuarios; track u.id) {
+                <mat-option [value]="u.id">{{ u.nome }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        }
         <mat-form-field appearance="outline" class="filtro-data">
           <mat-label>De</mat-label>
           <input matInput [matDatepicker]="pickerDataDe" [value]="filtroDataDe" (dateChange)="filtroDataDe=$event.value; aplicarFiltros()" placeholder="dd/mm/yyyy">
@@ -102,12 +113,16 @@
           <mat-datepicker-toggle matIconSuffix [for]="pickerDataAte"></mat-datepicker-toggle>
           <mat-datepicker #pickerDataAte></mat-datepicker>
         </mat-form-field>
-        @if (filtroTexto || filtroStatus || filtroDataDe || filtroDataAte) {
+        @if (filtroTexto || filtroStatus || filtroDataDe || filtroDataAte || filtroUsuarioId) {
           <button mat-stroked-button (click)="limparFiltros()" class="btn-limpar-filtro" matTooltip="Limpar filtros aplicados">
             <mat-icon>clear</mat-icon> Limpar
           </button>
         }
-        <span class="filtro-count">{{pedidos.length}} de {{todosPedidos.length}}</span>
+        <span class="filtro-count">{{pedidos.length}} de {{todosPedidos.length}}
+          @if (podeVerFiltroUsuario && !filtroUsuarioId) {
+            <small style="opacity:.7">(últimos 200)</small>
+          }
+        </span>
       </div>
       </mat-card-content>
     </mat-card>

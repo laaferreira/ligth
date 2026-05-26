@@ -56,8 +56,8 @@ export class PedidoService {
 
   constructor(private supabaseService: SupabaseService) {}
 
-  listar(): Observable<Pedido[]> {
-    return from(this.listarComControleAcesso()).pipe(
+  listar(options?: { userId?: string; limite?: number }): Observable<Pedido[]> {
+    return from(this.listarComControleAcesso(options)).pipe(
       map(response => {
         if (response.error) throw response.error;
         return (response.data || []) as Pedido[];
@@ -182,7 +182,7 @@ export class PedidoService {
     );
   }
 
-  private async listarComControleAcesso() {
+  private async listarComControleAcesso(options?: { userId?: string; limite?: number }) {
     const { userId, role } = await this.getCurrentUserContext();
     let query = this.supabaseService.getClient()
       .from(this.table)
@@ -191,6 +191,10 @@ export class PedidoService {
 
     if (role === 'vendedor') {
       query = query.eq('user_id', userId);
+    } else if (options?.userId) {
+      query = query.eq('user_id', options.userId);
+    } else if (options?.limite) {
+      query = query.limit(options.limite);
     }
 
     const pedidosResponse = await query;

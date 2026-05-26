@@ -107,6 +107,8 @@ export class PedidosComponent implements OnInit {
   filtroStatus = '';
   filtroDataDe: Date | null = null;
   filtroDataAte: Date | null = null;
+  filtroUsuarioId = '';
+  usuarios: AppUser[] = [];
   paginaAtual = 0;
   itensPorPagina = 10;
   readonly opcoesItensPorPagina = [10, 25, 50];
@@ -123,6 +125,10 @@ export class PedidosComponent implements OnInit {
     return this.userRole === 'vendedor';
   }
 
+  get podeVerFiltroUsuario(): boolean {
+    return this.userRole === 'administrador' || this.userRole === 'gerente';
+  }
+
   constructor(
     private pedidoService: PedidoService,
     private authService: AuthService,
@@ -135,7 +141,6 @@ export class PedidosComponent implements OnInit {
 
   ngOnInit(): void {
     this.carregarUsuarioAtual();
-    this.carregar();
   }
 
   private carregarUsuarioAtual(): void {
@@ -143,11 +148,20 @@ export class PedidosComponent implements OnInit {
       this.usuarioAtual = usuario;
       this.userRole = usuario?.role || null;
       this.podeImportarXls = usuario?.role === 'administrador';
+      if (this.podeVerFiltroUsuario) {
+        this.userManagementService.listarUsuarios().subscribe(users => {
+          this.usuarios = users.sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'));
+        });
+      }
+      this.carregar();
     });
   }
 
   carregar(): void {
-    this.pedidoService.listar().subscribe(d => {
+    const opcoes = this.podeVerFiltroUsuario
+      ? (this.filtroUsuarioId ? { userId: this.filtroUsuarioId } : { limite: 200 })
+      : undefined;
+    this.pedidoService.listar(opcoes).subscribe(d => {
       this.todosPedidos = d;
       this.aplicarFiltros();
     });
@@ -186,12 +200,18 @@ export class PedidosComponent implements OnInit {
     this.paginaAtual = 0;
   }
 
+  onFiltroUsuarioChange(userId: string): void {
+    this.filtroUsuarioId = userId;
+    this.carregar();
+  }
+
   limparFiltros(): void {
     this.filtroTexto = '';
     this.filtroStatus = '';
     this.filtroDataDe = null;
     this.filtroDataAte = null;
-    this.aplicarFiltros();
+    this.filtroUsuarioId = '';
+    this.carregar();
   }
 
   async importarArquivo(event: Event): Promise<void> {
