@@ -89,7 +89,7 @@ class PedidosDateAdapter extends NativeDateAdapter {
 })
 export class PedidosComponent implements OnInit {
   private readonly importBatchMaxLines = 300;
-  private readonly brandLogoPath = 'assets/mega-luz-logo.png';
+  private readonly brandLogoPath = 'assets/light-brand.png';
   private brandLogoDataUrlPromise: Promise<string> | null = null;
   todosPedidos: Pedido[] = [];
   pedidos: Pedido[] = [];
@@ -537,39 +537,25 @@ export class PedidosComponent implements OnInit {
       let headerEndY = 28;
 
       try {
-        const brandLogo = await this.getBrandLogoDataUrl();
+        const brandIcon = await this.getBrandLogoDataUrl();
         await new Promise<void>((resolve) => {
           const img = new Image();
           img.onload = () => {
-            // Crop: remove side margins (~3% each) and bottom ~38% empty white space
-            const sx = Math.round(img.naturalWidth * 0.03);
-            const sw = Math.round(img.naturalWidth * 0.94);
-            const sh = Math.round(img.naturalHeight * 0.62);
-            const canvas = document.createElement('canvas');
-            canvas.width = sw;
-            canvas.height = sh;
-            const ctx = canvas.getContext('2d')!;
-            ctx.drawImage(img, sx, 0, sw, sh, 0, 0, sw, sh);
-            const croppedUrl = canvas.toDataURL('image/png');
-            // At 208mm wide, height = 208 * (sh/sw) — keeps exact aspect ratio
-            const dispW = 208;
-            const dispH = Math.round(dispW * sh / sw);
-            doc.addImage(croppedUrl, 'PNG', 1, 0, dispW, dispH);
-            // Light separator line below header
-            doc.setDrawColor(210, 210, 210);
-            doc.setLineWidth(0.3);
-            doc.line(10, dispH + 1, 200, dispH + 1);
-            headerEndY = dispH + 5;
+            doc.addImage(brandIcon, 'PNG', 10, 4, 14, 14);
             resolve();
           };
           img.onerror = () => resolve();
-          img.src = brandLogo;
+          img.src = brandIcon;
         });
-      } catch {
-        doc.setTextColor(27, 43, 84); doc.setFontSize(22); doc.setFont('helvetica', 'bold');
-        doc.text('MEGA LUZ COMERCIAL', 14, 20);
-        headerEndY = 28;
-      }
+      } catch { /* ícone opcional */ }
+      doc.setTextColor(27, 43, 84);
+      doc.setFontSize(18);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Mega Luz Comercial', pw / 2, 13, { align: 'center' });
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.3);
+      doc.line(10, 22, pw - 10, 22);
+      headerEndY = 27;
 
       doc.setTextColor(0, 0, 0);
       doc.setFontSize(12); doc.setFont('helvetica', 'bold');
@@ -588,6 +574,20 @@ export class PedidosComponent implements OnInit {
       doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(100, 100, 100);
       doc.text(`Pedido: ${p.numero}`, pw / 2, nextY, { align: 'center' });
       nextY += 10;
+
+      // Informações de pagamento e NF
+      doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(60, 60, 60);
+      if (p.formaPagamentoDescricao) {
+        doc.text(`Forma de Pagamento: ${p.formaPagamentoDescricao}`, 14, nextY);
+        nextY += 6;
+      }
+      if (p.prazoPagamentoDescricao) {
+        doc.text(`Prazo / Parcelas: ${p.prazoPagamentoDescricao}`, 14, nextY);
+        nextY += 6;
+      }
+      doc.text(`Nota Fiscal: ${p.notaFiscal ? 'Sim' : 'Não'}`, 14, nextY);
+      nextY += 10;
+
       doc.setTextColor(0, 0, 0); doc.setFontSize(14); doc.setFont('helvetica', 'bold');
       doc.text(`${p.itens?.length || 0} itens`, 14, nextY + 3);
       const rows = (p.itens || []).map(i => [i.quantidade,

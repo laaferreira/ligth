@@ -9,7 +9,7 @@
         </div>
         <div class="hero-highlights">
           <div class="hero-highlight">
-            <span class="highlight-label">Faturamento</span>
+            <span class="highlight-label">{{ faturamentoLabel }}</span>
             <strong>{{data.faturamentoTotal | currency:'BRL'}}</strong>
           </div>
           <div class="hero-highlight">
@@ -75,7 +75,7 @@
         <mat-card class="kpi-card">
           <mat-icon class="kpi-icon" style="color:#2e7d32">attach_money</mat-icon>
           <div class="kpi-value">{{data.faturamentoTotal | currency:'BRL'}}</div>
-          <div class="kpi-label">Faturamento</div>
+          <div class="kpi-label">{{ faturamentoLabel }}</div>
         </mat-card>
         <mat-card class="kpi-card" [class.alerta]="data.produtosEstoqueBaixo > 0">
           <mat-icon class="kpi-icon" style="color:#c62828">warning</mat-icon>

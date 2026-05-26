@@ -93,7 +93,7 @@ class ComissoesDateAdapter extends NativeDateAdapter {
 export class ComissoesComponent implements OnInit {
   readonly displayedColumns = ['numero', 'dataFinalizacao', 'clienteNome', 'valorTotal', 'custoTotal', 'lucroTotal'];
 
-  private readonly brandLogoPath = 'assets/mega-luz-logo.png';
+  private readonly brandLogoPath = 'assets/light-brand.png';
   private brandLogoDataUrlPromise: Promise<string> | null = null;
 
   readonly form = this.fb.group({
@@ -234,36 +234,25 @@ export class ComissoesComponent implements OnInit {
     let headerEndY = 28;
 
     try {
-      const brandLogo = await this.getBrandLogoDataUrl();
+      const brandIcon = await this.getBrandLogoDataUrl();
       await new Promise<void>((resolve) => {
         const img = new Image();
         img.onload = () => {
-          const sx = Math.round(img.naturalWidth * 0.03);
-          const sw = Math.round(img.naturalWidth * 0.94);
-          const sh = Math.round(img.naturalHeight * 0.62);
-          const canvas = document.createElement('canvas');
-          canvas.width = sw;
-          canvas.height = sh;
-          const ctx = canvas.getContext('2d')!;
-          ctx.drawImage(img, sx, 0, sw, sh, 0, 0, sw, sh);
-          const croppedUrl = canvas.toDataURL('image/png');
-          const dispW = 208;
-          const dispH = Math.round(dispW * sh / sw);
-          doc.addImage(croppedUrl, 'PNG', 1, 0, dispW, dispH);
-          doc.setDrawColor(210, 210, 210);
-          doc.setLineWidth(0.3);
-          doc.line(10, dispH + 1, 200, dispH + 1);
-          headerEndY = dispH + 5;
+          doc.addImage(brandIcon, 'PNG', 10, 4, 14, 14);
           resolve();
         };
         img.onerror = () => resolve();
-        img.src = brandLogo;
+        img.src = brandIcon;
       });
-    } catch {
-      doc.setTextColor(27, 43, 84); doc.setFontSize(22); doc.setFont('helvetica', 'bold');
-      doc.text('MEGA LUZ COMERCIAL', 14, 20);
-      headerEndY = 28;
-    }
+    } catch { /* ícone opcional */ }
+    doc.setTextColor(27, 43, 84);
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Mega Luz Comercial', pw / 2, 13, { align: 'center' });
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.3);
+    doc.line(10, 22, pw - 10, 22);
+    headerEndY = 27;
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);

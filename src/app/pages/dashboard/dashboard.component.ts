@@ -133,6 +133,10 @@ export class DashboardComponent implements OnInit {
     return m[s] || s;
   }
 
+  get faturamentoLabel(): string {
+    return this.filtroAtivo ? `Faturamento ${this.filtroLabel}` : 'Faturamento do Mês';
+  }
+
   loadDashboard(mes?: number, ano?: number): void {
     this.dashboardService.getDashboard(mes, ano).subscribe(d => {
       this.data = d;

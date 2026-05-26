@@ -159,12 +159,18 @@ export class DashboardService {
       return sum + this.parseNumeric(pedido.valor_total);
     }, 0);
 
+    const agora = new Date();
+    const mesRef = filtroAtivo ? filtroMes! : agora.getMonth() + 1;
+    const anoRef = filtroAtivo ? filtroAno! : agora.getFullYear();
+
     const faturamentoTotal = pedidos.reduce((sum, pedido) => {
       const status = this.normalizeStatus(pedido.status);
-      if (status !== 'FINALIZADO') {
-        return sum;
-      }
-
+      if (status !== 'FINALIZADO') return sum;
+      const rawDate = pedido.data_finalizacao ?? pedido.data;
+      if (!rawDate) return sum;
+      const d = new Date(rawDate);
+      if (isNaN(d.getTime())) return sum;
+      if (d.getMonth() + 1 !== mesRef || d.getFullYear() !== anoRef) return sum;
       return sum + this.parseNumeric(pedido.valor_total);
     }, 0);
 
