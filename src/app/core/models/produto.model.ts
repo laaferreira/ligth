@@ -7,6 +7,8 @@ export interface Produto {
   categoria: string;
   precoCusto: number;
   precoVenda: number;
+  precoCustoVendedor?: number | null;
+  precoVendaVendedor?: number | null;
   quantidadeEstoque: number;
   estoqueMaximo: number;
   estoqueMinimo: number;

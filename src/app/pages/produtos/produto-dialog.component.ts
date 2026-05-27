@@ -85,6 +85,17 @@ type ProdutoDialogData = {
 
         <div class="form-row two-columns">
           <mat-form-field appearance="outline">
+            <mat-label>Preço custo vendedor</mat-label>
+            <input matInput type="number" inputmode="decimal" formControlName="precoCustoVendedor">
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Preço venda vendedor</mat-label>
+            <input matInput type="number" inputmode="decimal" formControlName="precoVendaVendedor">
+          </mat-form-field>
+        </div>
+
+        <div class="form-row two-columns">
+          <mat-form-field appearance="outline">
             <mat-label>Qtd Estoque</mat-label>
             <input matInput type="number" inputmode="numeric" formControlName="quantidadeEstoque">
           </mat-form-field>
@@ -224,6 +235,8 @@ export class ProdutoDialogComponent {
       categoria: [data.produto?.categoria || '', Validators.maxLength(100)],
       precoCusto: [data.produto?.precoCusto ?? 0],
       precoVenda: [data.produto?.precoVenda ?? 0],
+      precoCustoVendedor: [data.produto?.precoCustoVendedor ?? null],
+      precoVendaVendedor: [data.produto?.precoVendaVendedor ?? null],
       quantidadeEstoque: [data.produto?.quantidadeEstoque ?? 0],
       estoqueMaximo: [data.produto?.estoqueMaximo ?? 0],
       estoqueMinimo: [data.produto?.estoqueMinimo ?? 5],
@@ -253,6 +266,8 @@ export class ProdutoDialogComponent {
       fornecedorNome: valor.fornecedorId ? (fornecedor?.nome || this.data.produto?.fornecedorNome || '') : '',
       precoCusto: Number(valor.precoCusto || 0),
       precoVenda: Number(valor.precoVenda || 0),
+      precoCustoVendedor: valor.precoCustoVendedor != null ? Number(valor.precoCustoVendedor) : null,
+      precoVendaVendedor: valor.precoVendaVendedor != null ? Number(valor.precoVendaVendedor) : null,
       quantidadeEstoque: Number(valor.quantidadeEstoque || 0),
       estoqueMaximo: Number(valor.estoqueMaximo || 0),
       estoqueMinimo: Number(valor.estoqueMinimo || 0)

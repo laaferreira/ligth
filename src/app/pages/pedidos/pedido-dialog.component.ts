@@ -773,7 +773,7 @@ export class PedidoDialogComponent implements OnInit {
   }
 
   private calcularPrecoPorMarkup(percentual: number): number {
-    const custo = this.precoCusto ?? 0;
+    const custo = this.produtoSelecionado?.precoCustoVendedor ?? this.precoCusto ?? 0;
     return this.roundToTwo(custo * (1 + percentual / 100));
   }
 

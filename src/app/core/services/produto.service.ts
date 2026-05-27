@@ -15,6 +15,8 @@ type ProdutoDbRow = {
   preco_custo?: number | null;
   precoVenda?: number | null;
   preco_venda?: number | null;
+  preco_custo_vendedor?: number | null;
+  preco_venda_vendedor?: number | null;
   quantidadeEstoque?: number | null;
   quantidade?: number | null;
   disponivel?: number | null;
@@ -125,6 +127,8 @@ export class ProdutoService {
       categoria: row.categoria || '',
       precoCusto: row.precoCusto ?? row.preco_custo ?? 0,
       precoVenda: row.precoVenda ?? row.preco_venda ?? 0,
+      precoCustoVendedor: row.preco_custo_vendedor ?? null,
+      precoVendaVendedor: row.preco_venda_vendedor ?? null,
       quantidadeEstoque,
       estoqueMaximo: row.estoqueMaximo ?? 0,
       estoqueMinimo: row.estoqueMinimo ?? 0,
@@ -149,6 +153,8 @@ export class ProdutoService {
       preco_custo: precoCusto,
       precoVenda,
       preco_venda: precoVenda,
+      preco_custo_vendedor: produto.precoCustoVendedor ?? null,
+      preco_venda_vendedor: produto.precoVendaVendedor ?? null,
       quantidadeEstoque,
       quantidade: quantidadeEstoque,
       estoqueMaximo: produto.estoqueMaximo ?? 0,

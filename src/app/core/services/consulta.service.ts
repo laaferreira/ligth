@@ -57,7 +57,7 @@ export class ConsultaService {
     return from(
       this.supabaseService.getClient()
         .from(this.produtosTable)
-        .select('id, nome, descricao, codigo, sku, preco_venda, precoVenda, preco_custo, precoCusto, quantidadeEstoque, quantidade')
+        .select('id, nome, descricao, codigo, sku, preco_venda, precoVenda, preco_custo, precoCusto, preco_custo_vendedor, quantidadeEstoque, quantidade')
         .or(`descricao.ilike.%${termo}%,codigo.ilike.%${termo}%,nome.ilike.%${termo}%,sku.ilike.%${termo}%`)
         .limit(10)
     ).pipe(
@@ -68,6 +68,7 @@ export class ConsultaService {
           label: this.formatarProdutoLabel(item),
           valor: item.preco_venda,
           precoCusto: item.precoCusto ?? item.preco_custo ?? 0,
+          precoCustoVendedor: item.preco_custo_vendedor ?? null,
           quantidadeEstoque: Number(item.quantidadeEstoque ?? item.quantidade ?? 0)
         } as ProdutoAutocompleteItem));
       })

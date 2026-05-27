@@ -8,6 +8,7 @@ export interface ProdutoAutocompleteItem {
   label: string;
   valor?: number;
   precoCusto: number;
+  precoCustoVendedor?: number | null;
   quantidadeEstoque: number;
 }
 

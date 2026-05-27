@@ -207,19 +207,19 @@ export class ProdutosComponent implements OnInit {
   }
 
   precoOuro(produto: Produto): number {
-    const custo = this.parseNumeric(produto.precoCusto);
+    const custo = this.parseNumeric(produto.precoCustoVendedor ?? produto.precoCusto);
     const margem = this.usuarioAtual?.margemVendaOuro ?? 35;
     return this.roundToTwo(custo * (1 + margem / 100));
   }
 
   precoPrata(produto: Produto): number {
-    const custo = this.parseNumeric(produto.precoCusto);
+    const custo = this.parseNumeric(produto.precoCustoVendedor ?? produto.precoCusto);
     const margem = this.usuarioAtual?.margemVendaPrata ?? 50;
     return this.roundToTwo(custo * (1 + margem / 100));
   }
 
   precoBronze(produto: Produto): number {
-    const custo = this.parseNumeric(produto.precoCusto);
+    const custo = this.parseNumeric(produto.precoCustoVendedor ?? produto.precoCusto);
     const margem = this.usuarioAtual?.margemVendaBronze ?? 100;
     return this.roundToTwo(custo * (1 + margem / 100));
   }
