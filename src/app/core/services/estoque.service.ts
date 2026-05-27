@@ -12,15 +12,15 @@ export class EstoqueService {
 
   constructor(private supabaseService: SupabaseService) {}
 
-  entrada(produtoId: number, quantidade: number, precoCompra: number | null, observacao: string): Observable<any> {
-    return from(this.registrarMovimentacao('entrada', produtoId, quantidade, precoCompra, observacao));
+  entrada(produtoId: number, quantidade: number, precoCompra: number | null, observacao: string, dataMovimento?: string): Observable<any> {
+    return from(this.registrarMovimentacao('entrada', produtoId, quantidade, precoCompra, observacao, dataMovimento));
   }
 
-  saida(produtoId: number, quantidade: number, observacao: string): Observable<any> {
-    return from(this.registrarMovimentacao('saida', produtoId, quantidade, null, observacao));
+  saida(produtoId: number, quantidade: number, observacao: string, dataMovimento?: string): Observable<any> {
+    return from(this.registrarMovimentacao('saida', produtoId, quantidade, null, observacao, dataMovimento));
   }
 
-  private async registrarMovimentacao(tipo: string, produtoId: number, quantidade: number, precoCompra: number | null, observacao: string) {
+  private async registrarMovimentacao(tipo: string, produtoId: number, quantidade: number, precoCompra: number | null, observacao: string, dataMovimento?: string) {
     const { data: authData, error: authError } = await this.supabaseService.getAuth().getUser();
     if (authError || !authData.user) {
       throw authError || new Error('Usuário autenticado não encontrado.');
@@ -37,13 +37,17 @@ export class EstoqueService {
     const delta = tipo === 'saida' ? -quantidade : quantidade;
     const estoqueAtualCalc = estoqueAnterior + delta;
 
+    const dataIso = dataMovimento
+      ? new Date(dataMovimento + 'T12:00:00').toISOString()
+      : new Date().toISOString();
+
     const movimentacao = {
       produto_id: produtoId,
       quantidade: delta,
       preco_compra: precoCompra,
       observacao,
       tipo,
-      data: new Date().toISOString(),
+      data: dataIso,
       user_id: authData.user.id,
       estoque_anterior: estoqueAnterior,
       estoque_atual: estoqueAtualCalc
@@ -118,6 +122,7 @@ export class EstoqueService {
       produtoDescricao,
       tipo: String(row.tipo ?? '').toUpperCase(),
       quantidade: Math.abs(qtd),
+      precoCompra: row.preco_compra != null ? Number(row.preco_compra) : null,
       estoqueAnterior: row.estoque_anterior != null ? Number(row.estoque_anterior) : (row.estoqueAnterior != null ? Number(row.estoqueAnterior) : 0),
       estoqueAtual: row.estoque_atual != null ? Number(row.estoque_atual) : (row.estoqueAtual != null ? Number(row.estoqueAtual) : 0),
       observacao: row.observacao || '',

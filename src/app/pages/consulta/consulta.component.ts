@@ -16,6 +16,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { debounceTime, distinctUntilChanged, filter, switchMap } from 'rxjs';
 import { ConsultaService } from '../../core/services/consulta.service';
 import { AuthService } from '../../core/services/auth.service';
+import { UserManagementService } from '../../core/services/user-management.service';
 import { AutocompleteItem, HistoricoPedido } from '../../core/models/consulta.model';
 
 @Component({
@@ -45,6 +46,7 @@ export class ConsultaComponent implements OnInit {
 
   loading = false;
   pesquisaRealizada = false;
+  responsavelId: string | null = null;
 
   @ViewChild('produtoInput') produtoInput!: ElementRef<HTMLInputElement>;
   @ViewChild(MatAutocompleteTrigger) produtoTrigger!: MatAutocompleteTrigger;
@@ -52,15 +54,25 @@ export class ConsultaComponent implements OnInit {
   constructor(
     private consultaService: ConsultaService,
     private authService: AuthService,
+    private userManagementService: UserManagementService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
+    this.userManagementService.obterUsuarioAtualComRole().then(usuario => {
+      if (usuario?.role === 'vendedor') {
+        this.responsavelId = usuario.id;
+      }
+      this.inicializarFiltros();
+    });
+  }
+
+  private inicializarFiltros(): void {
     this.clienteControl.valueChanges.pipe(
       debounceTime(300),
       distinctUntilChanged(),
       filter(value => typeof value === 'string' && value.length >= 2),
-      switchMap(value => this.consultaService.buscarClientes(value as string))
+      switchMap(value => this.consultaService.buscarClientes(value as string, this.responsavelId))
     ).subscribe(clientes => this.clientesFiltrados = clientes);
 
     this.produtoControl.valueChanges.pipe(

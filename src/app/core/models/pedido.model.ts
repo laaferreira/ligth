@@ -90,6 +90,7 @@ export interface Movimentacao {
   produtoDescricao: string;
   tipo: string;
   quantidade: number;
+  precoCompra: number | null;
   estoqueAnterior: number;
   estoqueAtual: number;
   observacao: string;

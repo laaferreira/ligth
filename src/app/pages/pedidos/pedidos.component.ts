@@ -483,6 +483,35 @@ export class PedidosComponent implements OnInit {
     return p.status === 'FINALIZADO' && (this.userRole === 'administrador' || this.userRole === 'gerente');
   }
 
+  confirmarOrcamento(p: Pedido): void {
+    this.pedidoService.confirmarOrcamento(p.id!).subscribe({
+      next: () => { this.snackBar.open('Orçamento confirmado! Pedido em aberto.', 'OK', { duration: 3000 }); this.carregar(); },
+      error: (e) => this.errorPresenter.handle(e, {
+        context: 'Pedidos.ConfirmarOrcamento',
+        source: 'supabase',
+        code: 'ORDER_CONFIRM_ORCAMENTO_FAILED',
+        title: 'Falha ao confirmar orçamento',
+        fallbackMessage: 'Erro ao confirmar orçamento.',
+        duration: 5000
+      })
+    });
+  }
+
+  cancelarOrcamento(p: Pedido): void {
+    if (!confirm(`Cancelar orçamento ${p.numero}?`)) return;
+    this.pedidoService.cancelar(p.id!).subscribe({
+      next: () => { this.snackBar.open('Orçamento cancelado!', 'OK', { duration: 3000 }); this.carregar(); },
+      error: (e) => this.errorPresenter.handle(e, {
+        context: 'Pedidos.CancelarOrcamento',
+        source: 'supabase',
+        code: 'ORDER_CANCEL_ORCAMENTO_FAILED',
+        title: 'Falha ao cancelar orçamento',
+        fallbackMessage: 'Erro ao cancelar orçamento.',
+        duration: 5000
+      })
+    });
+  }
+
   confirmar(p: Pedido): void {
     this.pedidoService.confirmar(p.id!).subscribe({
       next: () => { this.snackBar.open('Pedido confirmado! Estoque atualizado.', 'OK', { duration: 3000 }); this.carregar(); },
@@ -527,12 +556,12 @@ export class PedidosComponent implements OnInit {
   }
 
   statusLabel(s?: string): string {
-    const map: Record<string, string> = { EM_ABERTO: 'Em Aberto', CONFIRMADO: 'Confirmado', CANCELADO: 'Cancelado', FINALIZADO: 'Finalizado' };
+    const map: Record<string, string> = { ORCAMENTO: 'Orçamento', EM_ABERTO: 'Em Aberto', CONFIRMADO: 'Confirmado', CANCELADO: 'Cancelado', FINALIZADO: 'Finalizado' };
     return s ? (map[s] || s) : '-';
   }
 
   statusClass(s?: string): string {
-    const map: Record<string, string> = { EM_ABERTO: 'badge-aberto', CONFIRMADO: 'badge-confirmado', CANCELADO: 'badge-cancelado', FINALIZADO: 'badge-finalizado' };
+    const map: Record<string, string> = { ORCAMENTO: 'badge-orcamento', EM_ABERTO: 'badge-aberto', CONFIRMADO: 'badge-confirmado', CANCELADO: 'badge-cancelado', FINALIZADO: 'badge-finalizado' };
     return s ? (map[s] || '') : '';
   }
 
@@ -581,18 +610,29 @@ export class PedidosComponent implements OnInit {
       doc.setFontSize(12); doc.setFont('helvetica', 'bold');
       doc.text(p.clienteNome || '', pw / 2, headerEndY + 7, { align: 'center' });
       let nextY = headerEndY + 14;
-      if (p.clienteCpfCnpj) {
-        doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(60, 60, 60);
-        doc.text(`CNPJ/CPF: ${p.clienteCpfCnpj}`, pw / 2, nextY, { align: 'center' });
-        nextY += 7;
-      }
       if (p.clienteEndereco) {
         doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(60, 60, 60);
         doc.text(p.clienteEndereco, pw / 2, nextY, { align: 'center', maxWidth: pw - 28 });
         nextY += 7;
       }
+      if (p.clienteCpfCnpj) {
+        doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(60, 60, 60);
+        doc.text(`CNPJ/CPF: ${p.clienteCpfCnpj}`, pw / 2, nextY, { align: 'center' });
+        nextY += 7;
+      }
       doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(100, 100, 100);
-      doc.text(`Pedido: ${p.numero}`, pw / 2, nextY, { align: 'center' });
+      const docLabel = p.status === 'ORCAMENTO' ? `Orçamento: ${p.numero}` : `Pedido: ${p.numero}`;
+      doc.text(docLabel, pw / 2, nextY, { align: 'center' });
+      if (p.status === 'ORCAMENTO') {
+        nextY += 6;
+        doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.setTextColor(180, 100, 0);
+        doc.text('[ DOCUMENTO NÃO CONFIRMADO - ORÇAMENTO ]', pw / 2, nextY, { align: 'center' });
+      }
+      if (p.status === 'CANCELADO') {
+        nextY += 6;
+        doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.setTextColor(198, 40, 40);
+        doc.text('[ PEDIDO CANCELADO ]', pw / 2, nextY, { align: 'center' });
+      }
       nextY += 10;
 
       // Informações de pagamento e NF

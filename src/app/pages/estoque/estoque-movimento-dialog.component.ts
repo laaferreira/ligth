@@ -67,6 +67,11 @@ import { AutocompleteItem, ProdutoAutocompleteItem } from '../../core/models/con
         </div>
 
         <div class="field-group full-width">
+          <label class="field-label">Data da Compra</label>
+          <input class="field-input" type="date" [formControl]="dataCompraControl">
+        </div>
+
+        <div class="field-group full-width">
           <label class="field-label">Observação</label>
           <input class="field-input" [formControl]="obsControl">
         </div>
@@ -176,6 +181,7 @@ export class EstoqueMovimentoDialogComponent implements OnInit {
 
   get qtdMovControl(): FormControl { return this.movForm.get('quantidade') as FormControl; }
   get precoCompraControl(): FormControl { return this.movForm.get('precoCompra') as FormControl; }
+  get dataCompraControl(): FormControl { return this.movForm.get('dataCompra') as FormControl; }
   get obsControl(): FormControl { return this.movForm.get('observacao') as FormControl; }
 
   constructor(
@@ -185,9 +191,12 @@ export class EstoqueMovimentoDialogComponent implements OnInit {
     private snackBar: MatSnackBar,
     public dialogRef: MatDialogRef<EstoqueMovimentoDialogComponent>
   ) {
+    const hoje = new Date();
+    const hojeStr = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
     this.movForm = this.fb.group({
       quantidade: [1, [Validators.required, Validators.min(1)]],
       precoCompra: [null],
+      dataCompra: [hojeStr, Validators.required],
       observacao: ['']
     });
   }
@@ -216,10 +225,10 @@ export class EstoqueMovimentoDialogComponent implements OnInit {
 
     this.salvando = true;
     this.tipoAcao = tipo;
-    const { quantidade, precoCompra, observacao } = this.movForm.value;
+    const { quantidade, precoCompra, observacao, dataCompra } = this.movForm.value;
     const obs$ = tipo === 'entrada'
-      ? this.estoqueService.entrada(this.produtoSelecionado.id, quantidade, precoCompra, observacao)
-      : this.estoqueService.saida(this.produtoSelecionado.id, quantidade, observacao);
+      ? this.estoqueService.entrada(this.produtoSelecionado.id, quantidade, precoCompra, observacao, dataCompra)
+      : this.estoqueService.saida(this.produtoSelecionado.id, quantidade, observacao, dataCompra);
 
     obs$.subscribe({
       next: () => {

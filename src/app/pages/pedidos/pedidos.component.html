@@ -84,6 +84,7 @@
           <mat-label>Status</mat-label>
           <mat-select [value]="filtroStatus" (selectionChange)="filtroStatus=$event.value; aplicarFiltros()">
             <mat-option value="">Todos</mat-option>
+            <mat-option value="ORCAMENTO">Orçamento</mat-option>
             <mat-option value="EM_ABERTO">Em Aberto</mat-option>
             <mat-option value="CONFIRMADO">Confirmado</mat-option>
             <mat-option value="FINALIZADO">Finalizado</mat-option>
@@ -167,12 +168,15 @@
           </ng-container>
           <ng-container matColumnDef="acoes"><th mat-header-cell *matHeaderCellDef>Acoes</th>
             <td mat-cell *matCellDef="let r">
-              @if (r.status === 'EM_ABERTO') {
-                <button mat-icon-button color="primary" (click)="editar(r)" matTooltip="Editar pedido"><mat-icon>edit</mat-icon></button>
+              @if (r.status === 'ORCAMENTO') {
+                <button mat-icon-button color="primary" (click)="editar(r)" matTooltip="Editar orçamento"><mat-icon>edit</mat-icon></button>
+                <button mat-icon-button color="primary" (click)="confirmarOrcamento(r)" matTooltip="Confirmar orçamento"><mat-icon>check_circle</mat-icon></button>
+                <button mat-icon-button color="warn" (click)="cancelarOrcamento(r)" matTooltip="Cancelar orçamento"><mat-icon>cancel</mat-icon></button>
               }
               @if (!isVendedor) {
                 @if (r.status === 'EM_ABERTO') {
-                  <button mat-icon-button color="primary" (click)="confirmar(r)" matTooltip="Confirmar pedido"><mat-icon>check_circle</mat-icon></button>
+                  <button mat-icon-button color="primary" (click)="editar(r)" matTooltip="Editar pedido"><mat-icon>edit</mat-icon></button>
+                  <button mat-icon-button color="primary" (click)="confirmar(r)" matTooltip="Confirmar pedido"><mat-icon>done_outline</mat-icon></button>
                 }
                 @if (podeEditarDataFinalizacao(r)) {
                   <button mat-icon-button color="primary" (click)="editar(r)" matTooltip="Editar data de finalização"><mat-icon>event</mat-icon></button>
@@ -212,16 +216,28 @@
                   <mat-icon>more_vert</mat-icon>
                 </button>
                 <mat-menu #pedidoMenu="matMenu">
-                  @if (r.status === 'EM_ABERTO') {
-                    <button mat-menu-item (click)="editar(r)" matTooltip="Editar pedido">
+                  @if (r.status === 'ORCAMENTO') {
+                    <button mat-menu-item (click)="editar(r)">
                       <mat-icon>edit</mat-icon>
-                      <span>Editar</span>
+                      <span>Editar orçamento</span>
+                    </button>
+                    <button mat-menu-item (click)="confirmarOrcamento(r)">
+                      <mat-icon>check_circle</mat-icon>
+                      <span>Confirmar orçamento</span>
+                    </button>
+                    <button mat-menu-item (click)="cancelarOrcamento(r)">
+                      <mat-icon>cancel</mat-icon>
+                      <span>Cancelar orçamento</span>
                     </button>
                   }
                   @if (!isVendedor) {
                     @if (r.status === 'EM_ABERTO') {
+                      <button mat-menu-item (click)="editar(r)" matTooltip="Editar pedido">
+                        <mat-icon>edit</mat-icon>
+                        <span>Editar</span>
+                      </button>
                       <button mat-menu-item (click)="confirmar(r)" matTooltip="Confirmar pedido">
-                        <mat-icon>check_circle</mat-icon>
+                        <mat-icon>done_outline</mat-icon>
                         <span>Confirmar</span>
                       </button>
                     }
@@ -260,12 +276,15 @@
               }
             </div>
             <div class="mobile-card-actions">
+              @if (r.status === 'ORCAMENTO') {
+                <button mat-stroked-button color="primary" (click)="confirmarOrcamento(r)"><mat-icon>check_circle</mat-icon> Confirmar</button>
+              }
               @if (!isVendedor) {
                 @if (podeEditarDataFinalizacao(r)) {
                   <button mat-stroked-button color="primary" (click)="editar(r)" matTooltip="Editar data de finalização"><mat-icon>event</mat-icon> Finalização</button>
                 }
                 @if (r.status === 'EM_ABERTO') {
-                  <button mat-stroked-button color="primary" (click)="confirmar(r)" matTooltip="Confirmar pedido"><mat-icon>check_circle</mat-icon> Confirmar</button>
+                  <button mat-stroked-button color="primary" (click)="confirmar(r)" matTooltip="Confirmar pedido"><mat-icon>done_outline</mat-icon> Confirmar</button>
                 }
                 @if (r.status === 'CONFIRMADO') {
                   <button mat-stroked-button color="primary" (click)="finalizar(r)" matTooltip="Finalizar pedido"><mat-icon>done_all</mat-icon> Finalizar</button>

@@ -19,7 +19,7 @@ type PedidoDbRow = {
   observacao?: string | null;
   nota_fiscal?: boolean | null;
   user_id?: string | null;
-  clientes?: { nome?: string | null; cpf_cnpj?: string | null; logradouro?: string | null; numero?: string | null; complemento?: string | null; bairro?: string | null; cidade?: string | null; uf?: string | null } | Array<{ nome?: string | null; cpf_cnpj?: string | null; logradouro?: string | null; numero?: string | null; complemento?: string | null; bairro?: string | null; cidade?: string | null; uf?: string | null }> | null;
+  clientes?: { nome?: string | null; cpf_cnpj?: string | null; endereco?: string | null } | Array<{ nome?: string | null; cpf_cnpj?: string | null; endereco?: string | null }> | null;
 };
 
 type ItemPedidoDbRow = {
@@ -110,6 +110,22 @@ export class PedidoService {
     );
   }
 
+  confirmarOrcamento(id: number): Observable<Pedido> {
+    return from(
+      this.supabaseService.getClient()
+        .from(this.table)
+        .update({ status: 'em_aberto' } as any)
+        .eq('id', id)
+        .select()
+        .single()
+    ).pipe(
+      map(response => {
+        if (response.error) throw response.error;
+        return response.data as Pedido;
+      })
+    );
+  }
+
   confirmar(id: number): Observable<Pedido> {
     return from(
       this.supabaseService.getClient()
@@ -186,7 +202,7 @@ export class PedidoService {
     const { userId, role } = await this.getCurrentUserContext();
     let query = this.supabaseService.getClient()
       .from(this.table)
-      .select('id, cliente_id, prazo_pagamento_id, forma_pagamento_id, status, valor_total, data, data_finalizacao, observacao, nota_fiscal, user_id, clientes(nome, cpf_cnpj, logradouro, numero, complemento, bairro, cidade, uf), prazos_pagamento(descricao), formas_pagamento(descricao)')
+      .select('id, cliente_id, prazo_pagamento_id, forma_pagamento_id, status, valor_total, data, data_finalizacao, observacao, nota_fiscal, user_id, clientes(nome, cpf_cnpj, endereco), prazos_pagamento(descricao), formas_pagamento(descricao)')
       .order('id', { ascending: false });
 
     if (role === 'vendedor') {
@@ -236,7 +252,7 @@ export class PedidoService {
   private async listarFinalizadosPorUsuarioPeriodoComItens(userId: string, dataInicio: string, dataFim: string) {
     const pedidosResponse = await this.supabaseService.getClient()
       .from(this.table)
-      .select('id, cliente_id, prazo_pagamento_id, forma_pagamento_id, status, valor_total, data, data_finalizacao, observacao, nota_fiscal, user_id, clientes(nome, cpf_cnpj, logradouro, numero, complemento, bairro, cidade, uf), prazos_pagamento(descricao), formas_pagamento(descricao)')
+      .select('id, cliente_id, prazo_pagamento_id, forma_pagamento_id, status, valor_total, data, data_finalizacao, observacao, nota_fiscal, user_id, clientes(nome, cpf_cnpj, endereco), prazos_pagamento(descricao), formas_pagamento(descricao)')
       .eq('user_id', userId)
       .in('status', ['finalizado', 'FINALIZADO'])
       .gte('data_finalizacao', dataInicio)
@@ -283,7 +299,7 @@ export class PedidoService {
     const { userId, role, margemVendaOuro } = await this.getCurrentUserContext();
     let pedidoQuery = this.supabaseService.getClient()
       .from(this.table)
-      .select('id, cliente_id, prazo_pagamento_id, forma_pagamento_id, status, valor_total, data, data_finalizacao, observacao, nota_fiscal, user_id, clientes(nome, cpf_cnpj, logradouro, numero, complemento, bairro, cidade, uf), prazos_pagamento(descricao), formas_pagamento(descricao)')
+      .select('id, cliente_id, prazo_pagamento_id, forma_pagamento_id, status, valor_total, data, data_finalizacao, observacao, nota_fiscal, user_id, clientes(nome, cpf_cnpj, endereco), prazos_pagamento(descricao), formas_pagamento(descricao)')
       .eq('id', id);
 
     if (role === 'vendedor') {
@@ -318,7 +334,7 @@ export class PedidoService {
     const { userId, role } = await this.getCurrentUserContext();
     let query = this.supabaseService.getClient()
       .from(this.table)
-      .select('id, cliente_id, prazo_pagamento_id, forma_pagamento_id, status, valor_total, data, data_finalizacao, observacao, nota_fiscal, user_id, clientes(nome, cpf_cnpj, logradouro, numero, complemento, bairro, cidade, uf), prazos_pagamento(descricao), formas_pagamento(descricao)');
+      .select('id, cliente_id, prazo_pagamento_id, forma_pagamento_id, status, valor_total, data, data_finalizacao, observacao, nota_fiscal, user_id, clientes(nome, cpf_cnpj, endereco), prazos_pagamento(descricao), formas_pagamento(descricao)');
 
     Object.entries(filtros).forEach(([campo, valor]) => {
       query = query.eq(this.toDbField(campo), valor);
@@ -336,7 +352,7 @@ export class PedidoService {
     const client = this.supabaseService.getClient();
     const pedidoInsert = await client
       .from(this.table)
-      .insert([{ ...this.toDb(pedido), user_id: userId }])
+      .insert([{ ...this.toDb(pedido), user_id: userId, status: 'orcamento' }])
       .select()
       .single();
 
@@ -508,9 +524,11 @@ export class PedidoService {
 
     const aliases: Record<string, string> = {
       PENDENTE: 'EM_ABERTO',
+      EM_ABERTO: 'EM_ABERTO',
       CONFIRMADO: 'CONFIRMADO',
       CANCELADO: 'CANCELADO',
-      FINALIZADO: 'FINALIZADO'
+      FINALIZADO: 'FINALIZADO',
+      ORCAMENTO: 'ORCAMENTO'
     };
 
     return aliases[normalized] || normalized;
@@ -603,7 +621,7 @@ export class PedidoService {
 
   private getClienteField(
     cliente: PedidoDbRow['clientes'],
-    field: 'cpf_cnpj' | 'logradouro' | 'numero' | 'complemento' | 'bairro' | 'cidade' | 'uf'
+    field: 'cpf_cnpj' | 'endereco'
   ): string | null {
     const c = Array.isArray(cliente) ? cliente[0] : cliente;
     return c?.[field] || null;
@@ -611,15 +629,7 @@ export class PedidoService {
 
   private buildClienteEndereco(cliente: PedidoDbRow['clientes']): string | undefined {
     const c = Array.isArray(cliente) ? cliente[0] : cliente;
-    if (!c) return undefined;
-    const partes = [
-      c.logradouro,
-      c.numero ? `nº ${c.numero}` : null,
-      c.complemento || null,
-      c.bairro,
-      c.cidade && c.uf ? `${c.cidade} - ${c.uf}` : (c.cidade || c.uf || null)
-    ].filter(Boolean);
-    return partes.length ? partes.join(', ') : undefined;
+    return c?.endereco || undefined;
   }
 
   private getFormaPagamentoDescricao(

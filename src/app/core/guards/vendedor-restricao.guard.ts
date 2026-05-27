@@ -2,7 +2,7 @@ import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { UserManagementService } from '../services/user-management.service';
 
-const ROTAS_PERMITIDAS_VENDEDOR = new Set(['/clientes', '/pedidos', '/produtos']);
+const ROTAS_PERMITIDAS_VENDEDOR = new Set(['/clientes', '/pedidos', '/produtos', '/consulta']);
 
 export const vendedorRestricaoGuard: CanActivateFn = async (_route, state) => {
   const userManagementService = inject(UserManagementService);

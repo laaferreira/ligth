@@ -10,6 +10,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTabsModule } from '@angular/material/tabs';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { EstoqueService } from '../../core/services/estoque.service';
@@ -24,16 +26,19 @@ import { EstoqueMovimentoDialogComponent } from './estoque-movimento-dialog.comp
   imports: [
     CommonModule, ReactiveFormsModule,
     MatToolbarModule, MatCardModule, MatDialogModule, MatButtonModule, MatIconModule,
-    MatTableModule, MatMenuModule, MatTabsModule, MatSnackBarModule, MatPaginatorModule
+    MatTableModule, MatMenuModule, MatTabsModule, MatSnackBarModule, MatPaginatorModule,
+    MatFormFieldModule, MatInputModule
   ],
   templateUrl: './estoque.component.html',
   styleUrl: './estoque.component.scss'
 })
 export class EstoqueComponent implements OnInit {
   produtosBaixo: Produto[] = [];
+  todasMovimentacoes: Movimentacao[] = [];
   movimentacoes: Movimentacao[] = [];
+  filtroMovProduto = '';
   colsBaixo = ['codigo', 'descricao', 'quantidadeEstoque', 'estoqueMinimo'];
-  colsMov = ['data', 'produto', 'tipo', 'quantidade', 'anterior', 'atual', 'obs'];
+  colsMov = ['data', 'produto', 'tipo', 'quantidade', 'precoCompra', 'anterior', 'atual', 'obs'];
   paginaBaixoAtual = 0;
   itensPorPaginaBaixo = 10;
   paginaHistoricoAtual = 0;
@@ -66,15 +71,24 @@ export class EstoqueComponent implements OnInit {
     });
     this.estoqueService.historico().subscribe({
       next: d => {
-        this.movimentacoes = d;
-        this.paginaHistoricoAtual = 0;
+        this.todasMovimentacoes = d;
+        this.aplicarFiltroHistorico();
       },
       error: () => {
+        this.todasMovimentacoes = [];
         this.movimentacoes = [];
         this.paginaHistoricoAtual = 0;
         this.snackBar.open('Não foi possível carregar o histórico de estoque.', 'OK', { duration: 4000 });
       }
     });
+  }
+
+  aplicarFiltroHistorico(): void {
+    const termo = this.filtroMovProduto.trim().toLowerCase();
+    this.movimentacoes = termo
+      ? this.todasMovimentacoes.filter(m => m.produtoDescricao.toLowerCase().includes(termo))
+      : this.todasMovimentacoes;
+    this.paginaHistoricoAtual = 0;
   }
 
   abrirMovimentacao(): void {
