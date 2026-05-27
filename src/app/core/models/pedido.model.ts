@@ -29,6 +29,7 @@ export interface Pedido {
   custoTotal?: number;
   lucroTotal?: number;
   status?: string;
+  percentualDesconto?: number | null;
 }
 
 export interface CriarPedido {
@@ -36,6 +37,7 @@ export interface CriarPedido {
   prazoPagamentoId?: number | null;
   formaPagamentoId?: number | null;
   notaFiscal?: boolean;
+  percentualDesconto?: number | null;
   itens: { produtoId: number; quantidade: number; valorUnitario: number; custoUnitario?: number }[];
 }
 
@@ -44,6 +46,7 @@ export interface AtualizarPedido extends Partial<CriarPedido> {
   prazoPagamentoId?: number | null;
   formaPagamentoId?: number | null;
   notaFiscal?: boolean;
+  percentualDesconto?: number | null;
 }
 
 export interface ImportarPedidoLinha {

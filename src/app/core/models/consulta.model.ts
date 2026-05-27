@@ -6,6 +6,7 @@ export interface AutocompleteItem {
 export interface ProdutoAutocompleteItem {
   id: number;
   label: string;
+  valor?: number;
   precoCusto: number;
   quantidadeEstoque: number;
 }

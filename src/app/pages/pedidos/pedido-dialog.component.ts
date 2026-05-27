@@ -110,6 +110,15 @@ type PedidoDialogData = {
           </mat-slide-toggle>
         </div>
 
+        @if (descontoHabilitado) {
+          <mat-form-field appearance="outline">
+            <mat-label>Desconto (%)</mat-label>
+            <input matInput type="number" inputmode="decimal" [formControl]="descontoControl" min="0" max="100" step="0.01" placeholder="0.00">
+            <mat-icon matPrefix>percent</mat-icon>
+            <mat-hint>Aplicado sobre o total do pedido</mat-hint>
+          </mat-form-field>
+        }
+
         @if (!modoSomenteFinalizacao) {
         <div class="add-item-row">
           <mat-form-field appearance="outline" class="field-produto">
@@ -182,6 +191,9 @@ type PedidoDialogData = {
             @if (!isVendedor && precoCusto !== null) {
               <div class="info-row">
                 <div class="info-item"><span class="info-label">Custo Medio:</span><span class="info-value">{{precoCusto | currency:'BRL'}}</span></div>
+                @if (produtoSelecionado?.valor) {
+                  <div class="info-item"><span class="info-label">Valor de Venda:</span><span class="info-value margem-positiva">{{produtoSelecionado!.valor | currency:'BRL'}}</span></div>
+                }
                 @if (margemLucro !== null) {
                   <div class="info-item"><span class="info-label">Margem:</span>
                     <span class="info-value" [class.margem-positiva]="margemLucro >= 0" [class.margem-negativa]="margemLucro < 0">{{margemLucro | number:'1.1-1'}}%</span>
@@ -211,9 +223,19 @@ type PedidoDialogData = {
           </div>
           @if (!isVendedor) {
             <div class="total-row">
+              @if (descontoHabilitado && descontoValor > 0) {
+                <strong>Subtotal: {{totalBruto | currency:'BRL'}}</strong>
+                <strong class="margem-negativa">Desconto ({{descontoControl.value}}%): - {{descontoValor | currency:'BRL'}}</strong>
+              }
               <strong>Total: {{totalPedido | currency:'BRL'}}</strong>
               <strong>Custo total: {{custoTotalPedido | currency:'BRL'}}</strong>
               <strong [class.margem-positiva]="lucroTotalPedido >= 0" [class.margem-negativa]="lucroTotalPedido < 0">Lucro total: {{lucroTotalPedido | currency:'BRL'}}</strong>
+            </div>
+          }
+          @if (isVendedor && descontoHabilitado && descontoValor > 0) {
+            <div class="total-row">
+              <strong class="margem-negativa">Desconto ({{descontoControl.value}}%): - {{descontoValor | currency:'BRL'}}</strong>
+              <strong>Total: {{totalPedido | currency:'BRL'}}</strong>
             </div>
           }
         }
@@ -291,6 +313,7 @@ export class PedidoDialogComponent implements OnInit {
   prazosPagamento: FormaPagamento[] = [];
 
   notaFiscalControl = new FormControl<boolean>(false);
+  descontoControl = new FormControl<number | null>(null);
 
   produtoControl = new FormControl('');
   produtosFiltrados: ProdutoAutocompleteItem[] = [];
@@ -325,6 +348,17 @@ export class PedidoDialogComponent implements OnInit {
 
   get isVendedor(): boolean {
     return this.data.userRole === 'vendedor';
+  }
+
+  get descontoHabilitado(): boolean {
+    const fpId = this.formaPagamentoControl.value;
+    const prazoId = this.prazoPagamentoControl.value;
+    if (!fpId || !prazoId) return false;
+    const fp = this.formasDePagamento.find(f => f.id === fpId);
+    const prazo = this.prazosPagamento.find(p => p.id === prazoId);
+    const fpLabel = fp?.descricao?.trim().toLowerCase() ?? '';
+    const prazoLabel = prazo?.descricao?.trim() ?? '';
+    return fpLabel === 'à vista' && ['7', '7/14/21'].includes(prazoLabel);
   }
 
   get itensColumns(): string[] {
@@ -401,6 +435,14 @@ export class PedidoDialogComponent implements OnInit {
       switchMap(v => this.consultaService.buscarClientes(v as string, this.data.responsavelId))
     ).subscribe(c => this.clientesFiltrados = c);
 
+    // Desabilitar desconto se forma/prazo mudar para condicão não permitida
+    this.formaPagamentoControl.valueChanges.subscribe(() => {
+      if (!this.descontoHabilitado) this.descontoControl.setValue(null, { emitEvent: false });
+    });
+    this.prazoPagamentoControl.valueChanges.subscribe(() => {
+      if (!this.descontoHabilitado) this.descontoControl.setValue(null, { emitEvent: false });
+    });
+
     this.produtoControl.valueChanges.pipe(
       debounceTime(300),
       filter(v => typeof v === 'string' && v.length >= 2),
@@ -418,6 +460,7 @@ export class PedidoDialogComponent implements OnInit {
         this.formaPagamentoControl.setValue(pedido.formaPagamentoId ?? null, { emitEvent: false });
         this.prazoPagamentoControl.setValue(pedido.prazoPagamentoId ?? null, { emitEvent: false });
         this.notaFiscalControl.setValue(pedido.notaFiscal ?? false, { emitEvent: false });
+        this.descontoControl.setValue(pedido.percentualDesconto ?? null, { emitEvent: false });
         this.itensNovoPedido = (pedido.itens || []).map(i => ({
           produtoId: i.produtoId,
           produtoLabel: `${i.produtoCodigo} - ${i.produtoDescricao}`,
@@ -573,8 +616,19 @@ export class PedidoDialogComponent implements OnInit {
     this.itensNovoPedido = this.itensNovoPedido.filter((_, idx) => idx !== i);
   }
 
-  get totalPedido(): number {
+  get totalBruto(): number {
     return this.itensNovoPedido.reduce((s, i) => s + i.valorTotal, 0);
+  }
+
+  get descontoValor(): number {
+    if (!this.descontoHabilitado) return 0;
+    const pct = this.descontoControl.value;
+    if (!pct || pct <= 0) return 0;
+    return Math.round(this.totalBruto * pct / 100 * 100) / 100;
+  }
+
+  get totalPedido(): number {
+    return Math.round((this.totalBruto - this.descontoValor) * 100) / 100;
   }
 
   get custoTotalPedido(): number {
@@ -599,6 +653,7 @@ export class PedidoDialogComponent implements OnInit {
       formaPagamentoId: this.formaPagamentoControl.value ?? null,
       prazoPagamentoId: this.prazoPagamentoControl.value ?? null,
       notaFiscal: this.notaFiscalControl.value ?? false,
+      percentualDesconto: this.descontoHabilitado ? (this.descontoControl.value ?? null) : null,
       itens: this.itensNovoPedido.map(i => ({
         produtoId: i.produtoId,
         quantidade: i.quantidade,

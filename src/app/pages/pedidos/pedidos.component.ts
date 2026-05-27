@@ -662,7 +662,19 @@ export class PedidosComponent implements OnInit {
       const fy = (doc as any).lastAutoTable.finalY + 15;
       doc.setDrawColor(0, 0, 0); doc.line(14, fy - 5, pw - 14, fy - 5);
       doc.setFontSize(18); doc.setFont('helvetica', 'bold');
-      doc.text(`Total a Pagar: R$ ${(p.valorTotal || 0).toFixed(2).replace('.', ',')}`, pw - 14, fy + 10, { align: 'right' });
+
+      if (p.percentualDesconto && p.percentualDesconto > 0) {
+        const valorBruto = (p.itens || []).reduce((s, i) => s + (i.valorTotal || 0), 0);
+        const valorDesconto = Math.round(valorBruto * p.percentualDesconto / 100 * 100) / 100;
+        doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(60, 60, 60);
+        doc.text(`Subtotal: R$ ${valorBruto.toFixed(2).replace('.', ',')}`, pw - 14, fy + 2, { align: 'right' });
+        doc.setTextColor(21, 101, 192);
+        doc.text(`Desconto (${p.percentualDesconto}%): - R$ ${valorDesconto.toFixed(2).replace('.', ',')}`, pw - 14, fy + 9, { align: 'right' });
+        doc.setTextColor(0, 0, 0); doc.setFontSize(18); doc.setFont('helvetica', 'bold');
+        doc.text(`Total a Pagar: R$ ${(p.valorTotal || 0).toFixed(2).replace('.', ',')}`, pw - 14, fy + 20, { align: 'right' });
+      } else {
+        doc.text(`Total a Pagar: R$ ${(p.valorTotal || 0).toFixed(2).replace('.', ',')}`, pw - 14, fy + 10, { align: 'right' });
+      }
       const fty = doc.internal.pageSize.getHeight() - 30;
       doc.setDrawColor(0, 0, 0); doc.setLineWidth(0.4);
       doc.line(14, fty - 22, 130, fty - 22);
