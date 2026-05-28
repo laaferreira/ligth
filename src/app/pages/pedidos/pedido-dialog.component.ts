@@ -204,6 +204,32 @@ type PedidoDialogData = {
           </div>
         }
 
+        @if (!modoSomenteFinalizacao && produtoSelecionado && clienteSelecionado) {
+          @if (carregandoUltimaCompra) {
+            <div class="ultima-compra-panel carregando">
+              <mat-icon class="uc-icon">history</mat-icon>
+              <span>Verificando histórico...</span>
+            </div>
+          } @else if (ultimaCompra) {
+            <div class="ultima-compra-panel destaque">
+              <mat-icon class="uc-icon">history</mat-icon>
+              <div class="uc-content">
+                <span class="uc-label">Última compra deste produto</span>
+                <span class="uc-data">{{ultimaCompra.data | date:'dd/MM/yyyy'}}</span>
+              </div>
+              <div class="uc-values">
+                <span class="uc-qtd">{{ultimaCompra.quantidade}} un.</span>
+                <span class="uc-valor">{{ultimaCompra.valorUnitario | currency:'BRL'}}<small>/un</small></span>
+              </div>
+            </div>
+          } @else {
+            <div class="ultima-compra-panel sem-historico">
+              <mat-icon class="uc-icon">history_toggle_off</mat-icon>
+              <span>Cliente nunca comprou este produto</span>
+            </div>
+          }
+        }
+
         @if (itensNovoPedido.length > 0) {
           <div class="table-wrapper">
             <table mat-table [dataSource]="itensNovoPedido">
@@ -277,6 +303,19 @@ type PedidoDialogData = {
     .estoque-baixo { color: #c62828 !important; }
     .margem-positiva { color: #2e7d32; }
     .margem-negativa { color: #c62828; }
+    .ultima-compra-panel { display: flex; align-items: center; gap: 12px; border-radius: 12px; padding: 10px 14px; margin-bottom: 4px; font-size: 13px; }
+    .ultima-compra-panel.destaque { background: linear-gradient(135deg, #e3f2fd, #bbdefb); border-left: 3px solid #1565c0; }
+    .ultima-compra-panel.sem-historico { background: #f5f5f5; border-left: 3px solid #bbb; color: #888; }
+    .ultima-compra-panel.carregando { background: #f5f0fa; border-left: 3px solid #c9a84c; color: #6b5b7b; }
+    .uc-icon { font-size: 20px; width: 20px; height: 20px; flex-shrink: 0; color: #1565c0; }
+    .sem-historico .uc-icon, .carregando .uc-icon { color: #999; }
+    .uc-content { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+    .uc-label { font-weight: 600; color: #1565c0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .uc-data { font-weight: 700; font-size: 14px; color: #1f2430; }
+    .uc-values { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+    .uc-qtd { font-size: 12px; color: #555; }
+    .uc-valor { font-weight: 700; font-size: 15px; color: #1565c0; }
+    .uc-valor small { font-size: 11px; font-weight: 400; color: #555; }
     .table-wrapper { overflow-x: auto; border-radius: 10px; border: 1px solid #e0d4ec; }
     .table-wrapper table { width: 100%; }
     .total-row { display: flex; justify-content: flex-end; gap: 20px; flex-wrap: wrap; padding: 12px 16px; font-size: 16px; color: #2e7d32; }
@@ -320,6 +359,8 @@ export class PedidoDialogComponent implements OnInit {
   produtoSelecionado: ProdutoAutocompleteItem | null = null;
 
   estoqueInfo: { estoqueAtual: number; comprometido: number; estoqueFuturo: number } | null = null;
+  ultimaCompra: { data: string; valorUnitario: number; quantidade: number } | null = null;
+  carregandoUltimaCompra = false;
 
   itemForm: FormGroup;
   get qtdControl(): FormControl { return this.itemForm.get('quantidade') as FormControl; }
@@ -489,10 +530,14 @@ export class PedidoDialogComponent implements OnInit {
 
   onClienteSelected(item: AutocompleteItem): void {
     this.clienteSelecionado = item;
+    this.ultimaCompra = null;
+    if (this.produtoSelecionado) this.buscarUltimaCompra();
   }
 
   onProdutoSelected(item: ProdutoAutocompleteItem): void {
     this.produtoSelecionado = item;
+    this.ultimaCompra = null;
+    if (this.clienteSelecionado) this.buscarUltimaCompra();
     this.estoqueInfo = { estoqueAtual: item.quantidadeEstoque ?? 0, comprometido: 0, estoqueFuturo: item.quantidadeEstoque ?? 0 };
     this.estoqueService.estoqueProduto(item.id).subscribe({
       next: info => this.estoqueInfo = info,
@@ -530,6 +575,15 @@ export class PedidoDialogComponent implements OnInit {
         this.atualizandoCamposPreco = false;
       }
     }
+  }
+
+  private buscarUltimaCompra(): void {
+    if (!this.clienteSelecionado || !this.produtoSelecionado) return;
+    this.carregandoUltimaCompra = true;
+    this.consultaService.buscarUltimaCompra(this.clienteSelecionado.id, this.produtoSelecionado.id).subscribe({
+      next: r => { this.ultimaCompra = r; this.carregandoUltimaCompra = false; },
+      error: () => { this.ultimaCompra = null; this.carregandoUltimaCompra = false; }
+    });
   }
 
   get precoCusto(): number | null { return this.produtoSelecionado?.precoCusto ?? null; }

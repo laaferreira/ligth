@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable, from } from 'rxjs';
+import { Observable, from, switchMap } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { SupabaseService } from './supabase.service';
 import { AutocompleteItem, ProdutoAutocompleteItem, HistoricoPedido } from '../models/consulta.model';
@@ -80,6 +80,46 @@ export class ConsultaService {
     return from(this.buscarHistoricoData(clienteId, produtoIds)).pipe(
       map(response => {
         return response;
+      })
+    );
+  }
+
+  buscarUltimaCompra(clienteId: number, produtoId: number): Observable<{ data: string; valorUnitario: number; quantidade: number } | null> {
+    return from(
+      this.supabaseService.getClient()
+        .from(this.pedidosTable)
+        .select('id, data')
+        .eq('cliente_id', clienteId)
+        .not('status', 'eq', 'cancelado')
+        .order('data', { ascending: false })
+    ).pipe(
+      map(response => {
+        if (response.error) throw response.error;
+        return (response.data || []) as Array<{ id: number; data: string }>;
+      }),
+      switchMap(pedidos => {
+        if (!pedidos.length) return from(Promise.resolve(null));
+        return from(
+          this.supabaseService.getClient()
+            .from(this.itensPedidosTable)
+            .select('pedido_id, preco_unitario, quantidade')
+            .in('pedido_id', pedidos.map(p => p.id))
+            .eq('produto_id', produtoId)
+            .order('pedido_id', { ascending: false })
+            .limit(1)
+        ).pipe(
+          map(itensResp => {
+            if (itensResp.error || !itensResp.data?.length) return null;
+            const item = itensResp.data[0] as { pedido_id: number; preco_unitario: number; quantidade: number };
+            const pedido = pedidos.find(p => p.id === item.pedido_id);
+            if (!pedido) return null;
+            return {
+              data: pedido.data,
+              valorUnitario: Number(item.preco_unitario ?? 0),
+              quantidade: Number(item.quantidade ?? 0)
+            };
+          })
+        );
       })
     );
   }
