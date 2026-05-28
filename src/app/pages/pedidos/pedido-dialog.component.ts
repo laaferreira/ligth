@@ -191,8 +191,8 @@ type PedidoDialogData = {
             @if (!isVendedor && precoCusto !== null) {
               <div class="info-row">
                 <div class="info-item"><span class="info-label">Custo Medio:</span><span class="info-value">{{precoCusto | currency:'BRL'}}</span></div>
-                @if (produtoSelecionado?.valor) {
-                  <div class="info-item"><span class="info-label">Valor de Venda:</span><span class="info-value margem-positiva">{{produtoSelecionado!.valor | currency:'BRL'}}</span></div>
+                @if (produtoSelecionado && produtoSelecionado.valor) {
+                  <div class="info-item"><span class="info-label">Valor de Venda:</span><span class="info-value margem-positiva">{{produtoSelecionado.valor | currency:'BRL'}}</span></div>
                 }
                 @if (margemLucro !== null) {
                   <div class="info-item"><span class="info-label">Margem:</span>

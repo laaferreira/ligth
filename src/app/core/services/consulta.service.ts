@@ -40,7 +40,7 @@ export class ConsultaService {
       this.supabaseService.getClient()
         .from(this.produtosTable)
         .select('id, nome, descricao, codigo, sku')
-        .or(`descricao.ilike.%${termo}%,codigo.ilike.%${termo}%,nome.ilike.%${termo}%,sku.ilike.%${termo}%`)
+        .or(`descricao.ilike."%${termo}%",codigo.ilike."%${termo}%",nome.ilike."%${termo}%",sku.ilike."%${termo}%"`)
         .limit(10)
     ).pipe(
       map(response => {
@@ -57,8 +57,8 @@ export class ConsultaService {
     return from(
       this.supabaseService.getClient()
         .from(this.produtosTable)
-        .select('id, nome, descricao, codigo, sku, preco_venda, precoVenda, preco_custo, precoCusto, preco_custo_vendedor, quantidadeEstoque, quantidade')
-        .or(`descricao.ilike.%${termo}%,codigo.ilike.%${termo}%,nome.ilike.%${termo}%,sku.ilike.%${termo}%`)
+        .select('id, nome, descricao, codigo, sku, preco_venda, precoVenda, preco_custo, precoCusto, preco_custo_vendedor, preco_venda_vendedor, quantidadeEstoque, quantidade')
+        .or(`descricao.ilike."%${termo}%",codigo.ilike."%${termo}%",nome.ilike."%${termo}%",sku.ilike."%${termo}%"`)
         .limit(10)
     ).pipe(
       map(response => {
@@ -69,6 +69,7 @@ export class ConsultaService {
           valor: item.preco_venda,
           precoCusto: item.precoCusto ?? item.preco_custo ?? 0,
           precoCustoVendedor: item.preco_custo_vendedor ?? null,
+          precoVendaVendedor: item.preco_venda_vendedor ?? null,
           quantidadeEstoque: Number(item.quantidadeEstoque ?? item.quantidade ?? 0)
         } as ProdutoAutocompleteItem));
       })

@@ -423,16 +423,16 @@ export class PedidoService {
     const userId = authData.user.id;
     const { data: userData } = await this.supabaseService.getClient()
       .from('app_users')
-      .select('role, margemVendaOuro, margem_venda_ouro')
+      .select('role, margem_venda_ouro')
       .eq('id', userId)
       .maybeSingle();
 
-    const userRow = userData as { role?: string; margemVendaOuro?: number | string | null; margem_venda_ouro?: number | string | null } | null;
+    const userRow = userData as { role?: string; margem_venda_ouro?: number | string | null } | null;
 
     return {
       userId,
       role: userRow?.role || null,
-      margemVendaOuro: this.toNumber(userRow?.margemVendaOuro ?? userRow?.margem_venda_ouro ?? 35)
+      margemVendaOuro: this.toNumber(userRow?.margem_venda_ouro ?? 35)
     };
   }
 

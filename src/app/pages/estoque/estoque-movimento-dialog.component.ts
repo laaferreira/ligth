@@ -66,6 +66,24 @@ import { AutocompleteItem, ProdutoAutocompleteItem } from '../../core/models/con
           </div>
         </div>
 
+        <div class="form-row two-columns">
+          <div class="field-group">
+            <label class="field-label">Preço Venda</label>
+            <input class="field-input" type="number" inputmode="decimal" [formControl]="precoVendaControl" step="0.01" placeholder="R$">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Preço Custo Vendedor</label>
+            <input class="field-input" type="number" inputmode="decimal" [formControl]="precoCustoVendedorControl" step="0.01" placeholder="R$">
+          </div>
+        </div>
+
+        <div class="form-row two-columns">
+          <div class="field-group">
+            <label class="field-label">Preço Venda Vendedor</label>
+            <input class="field-input" type="number" inputmode="decimal" [formControl]="precoVendaVendedorControl" step="0.01" placeholder="R$">
+          </div>
+        </div>
+
         <div class="field-group full-width">
           <label class="field-label">Data da Compra</label>
           <input class="field-input" type="date" [formControl]="dataCompraControl">
@@ -181,6 +199,9 @@ export class EstoqueMovimentoDialogComponent implements OnInit {
 
   get qtdMovControl(): FormControl { return this.movForm.get('quantidade') as FormControl; }
   get precoCompraControl(): FormControl { return this.movForm.get('precoCompra') as FormControl; }
+  get precoVendaControl(): FormControl { return this.movForm.get('precoVenda') as FormControl; }
+  get precoCustoVendedorControl(): FormControl { return this.movForm.get('precoCustoVendedor') as FormControl; }
+  get precoVendaVendedorControl(): FormControl { return this.movForm.get('precoVendaVendedor') as FormControl; }
   get dataCompraControl(): FormControl { return this.movForm.get('dataCompra') as FormControl; }
   get obsControl(): FormControl { return this.movForm.get('observacao') as FormControl; }
 
@@ -196,6 +217,9 @@ export class EstoqueMovimentoDialogComponent implements OnInit {
     this.movForm = this.fb.group({
       quantidade: [1, [Validators.required, Validators.min(1)]],
       precoCompra: [null],
+      precoVenda: [null],
+      precoCustoVendedor: [null],
+      precoVendaVendedor: [null],
       dataCompra: [hojeStr, Validators.required],
       observacao: ['']
     });
@@ -218,6 +242,9 @@ export class EstoqueMovimentoDialogComponent implements OnInit {
   onProdutoSelected(item: ProdutoAutocompleteItem): void {
     this.produtoSelecionado = item;
     this.precoCompraControl.setValue(item.precoCusto || null);
+    this.precoVendaControl.setValue(item.valor ?? null);
+    this.precoCustoVendedorControl.setValue(item.precoCustoVendedor ?? null);
+    this.precoVendaVendedorControl.setValue(item.precoVendaVendedor ?? null);
   }
 
   registrar(tipo: 'entrada' | 'saida'): void {
@@ -225,9 +252,9 @@ export class EstoqueMovimentoDialogComponent implements OnInit {
 
     this.salvando = true;
     this.tipoAcao = tipo;
-    const { quantidade, precoCompra, observacao, dataCompra } = this.movForm.value;
+    const { quantidade, precoCompra, precoVenda, precoCustoVendedor, precoVendaVendedor, observacao, dataCompra } = this.movForm.value;
     const obs$ = tipo === 'entrada'
-      ? this.estoqueService.entrada(this.produtoSelecionado.id, quantidade, precoCompra, observacao, dataCompra)
+      ? this.estoqueService.entrada(this.produtoSelecionado.id, quantidade, precoCompra, observacao, dataCompra, precoVenda, precoVendaVendedor, precoCustoVendedor)
       : this.estoqueService.saida(this.produtoSelecionado.id, quantidade, observacao, dataCompra);
 
     obs$.subscribe({

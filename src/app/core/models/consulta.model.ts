@@ -9,6 +9,7 @@ export interface ProdutoAutocompleteItem {
   valor?: number;
   precoCusto: number;
   precoCustoVendedor?: number | null;
+  precoVendaVendedor?: number | null;
   quantidadeEstoque: number;
 }
 

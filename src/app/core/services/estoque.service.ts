@@ -12,15 +12,15 @@ export class EstoqueService {
 
   constructor(private supabaseService: SupabaseService) {}
 
-  entrada(produtoId: number, quantidade: number, precoCompra: number | null, observacao: string, dataMovimento?: string): Observable<any> {
-    return from(this.registrarMovimentacao('entrada', produtoId, quantidade, precoCompra, observacao, dataMovimento));
+  entrada(produtoId: number, quantidade: number, precoCompra: number | null, observacao: string, dataMovimento?: string, precoVenda?: number | null, precoVendaVendedor?: number | null, precoCustoVendedor?: number | null): Observable<any> {
+    return from(this.registrarMovimentacao('entrada', produtoId, quantidade, precoCompra, observacao, dataMovimento, precoVenda, precoVendaVendedor, precoCustoVendedor));
   }
 
   saida(produtoId: number, quantidade: number, observacao: string, dataMovimento?: string): Observable<any> {
     return from(this.registrarMovimentacao('saida', produtoId, quantidade, null, observacao, dataMovimento));
   }
 
-  private async registrarMovimentacao(tipo: string, produtoId: number, quantidade: number, precoCompra: number | null, observacao: string, dataMovimento?: string) {
+  private async registrarMovimentacao(tipo: string, produtoId: number, quantidade: number, precoCompra: number | null, observacao: string, dataMovimento?: string, precoVenda?: number | null, precoVendaVendedor?: number | null, precoCustoVendedor?: number | null) {
     const { data: authData, error: authError } = await this.supabaseService.getAuth().getUser();
     if (authError || !authData.user) {
       throw authError || new Error('Usuário autenticado não encontrado.');
@@ -63,9 +63,13 @@ export class EstoqueService {
 
     // Atualizar quantidade em produtos
     if (produtoAntes) {
+      const updatePayload: Record<string, any> = { quantidadeEstoque: estoqueAtualCalc, quantidade: estoqueAtualCalc };
+      if (precoVenda != null) { updatePayload['precoVenda'] = precoVenda; updatePayload['preco_venda'] = precoVenda; }
+      if (precoVendaVendedor != null) { updatePayload['preco_venda_vendedor'] = precoVendaVendedor; }
+      if (precoCustoVendedor != null) { updatePayload['preco_custo_vendedor'] = precoCustoVendedor; }
       await this.supabaseService.getClient()
         .from(this.produtosTable)
-        .update({ quantidadeEstoque: estoqueAtualCalc, quantidade: estoqueAtualCalc })
+        .update(updatePayload)
         .eq('id', produtoId);
     }
 
