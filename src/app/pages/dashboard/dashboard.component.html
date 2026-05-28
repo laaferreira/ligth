@@ -191,6 +191,28 @@
           </div>
         </mat-card>
       }
+
+      <!-- Backup -->
+      @if (userRole === 'administrador' || userRole === 'gerente') {
+        <mat-card class="chart-card backup-card">
+          <div class="backup-header">
+            <div>
+              <h3 style="margin:0"><mat-icon style="vertical-align:middle;color:#1565c0">cloud_download</mat-icon> Backup dos Dados</h3>
+              <p style="margin:6px 0 0;color:#666;font-size:0.9rem">Exporta todas as tabelas em CSV compactadas em um arquivo ZIP para reimportação.</p>
+            </div>
+            <button mat-flat-button color="primary" (click)="gerarBackup()" [disabled]="backupEmAndamento" class="backup-btn">
+              <mat-icon>{{ backupEmAndamento ? 'hourglass_empty' : 'backup' }}</mat-icon>
+              {{ backupEmAndamento ? 'Gerando...' : 'Gerar Backup' }}
+            </button>
+          </div>
+          @if (backupEmAndamento) {
+            <div class="backup-progress">
+              <p class="backup-status">{{ backupProgresso }}</p>
+              <mat-progress-bar mode="determinate" [value]="backupPercentual"></mat-progress-bar>
+            </div>
+          }
+        </mat-card>
+      }
     }
   </main>
 </div>

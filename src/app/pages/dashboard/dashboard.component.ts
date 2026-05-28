@@ -17,6 +17,9 @@ import { Chart, registerables } from 'chart.js';
 import { DashboardService, Dashboard } from '../../core/services/dashboard.service';
 import { AuthService } from '../../core/services/auth.service';
 import { UserManagementService } from '../../core/services/user-management.service';
+import { BackupService } from '../../core/services/backup.service';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 Chart.register(...registerables);
 
@@ -26,7 +29,7 @@ Chart.register(...registerables);
   imports: [
     CommonModule, FormsModule, MatToolbarModule, MatCardModule, MatIconModule,
     MatButtonModule, MatMenuModule, MatSelectModule, MatFormFieldModule,
-    MatTableModule, MatTooltipModule, NgChartsModule
+    MatTableModule, MatTooltipModule, NgChartsModule, MatSnackBarModule, MatProgressBarModule
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
@@ -42,8 +45,11 @@ export class DashboardComponent implements OnInit {
   statusChart: ChartConfiguration<'doughnut'> | null = null;
   vendedoresChart: ChartConfiguration<'bar'> | null = null;
 
-  estoqueCols = ['codigo', 'descricao', 'estoque', 'minimo'];
+  backupEmAndamento = false;
+  backupProgresso = '';
+  backupPercentual = 0;
 
+  estoqueCols = ['codigo', 'descricao', 'estoque', 'minimo'];
   filterMes: number | null = null;
   filterAno: number | null = null;
   filtroAtivo = false;
@@ -67,6 +73,8 @@ export class DashboardComponent implements OnInit {
     private dashboardService: DashboardService,
     private authService: AuthService,
     private userManagementService: UserManagementService,
+    private backupService: BackupService,
+    private snackBar: MatSnackBar,
     private router: Router,
     private cdr: ChangeDetectorRef
   ) {}
@@ -198,6 +206,28 @@ export class DashboardComponent implements OnInit {
   navegarConsulta(): void { this.router.navigate(['/consulta']); }
   navegarClientes(): void { this.router.navigate(['/clientes']); }
   navegarProdutos(): void { this.router.navigate(['/produtos']); }
+
+  async gerarBackup(): Promise<void> {
+    if (this.backupEmAndamento) return;
+    this.backupEmAndamento = true;
+    this.backupPercentual = 0;
+    this.backupProgresso = 'Iniciando...';
+    try {
+      const blob = await this.backupService.gerarBackupZip((tabela, atual, total) => {
+        this.backupProgresso = `Exportando ${tabela} (${atual}/${total})`;
+        this.backupPercentual = Math.round((atual / total) * 100);
+      });
+      const dataStr = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+      this.backupService.baixarArquivo(blob, `backup_${dataStr}.zip`);
+      this.snackBar.open('Backup gerado com sucesso!', 'OK', { duration: 4000 });
+    } catch {
+      this.snackBar.open('Erro ao gerar backup.', 'OK', { duration: 5000 });
+    } finally {
+      this.backupEmAndamento = false;
+      this.backupProgresso = '';
+      this.backupPercentual = 0;
+    }
+  }
   navegarPedidos(): void { this.router.navigate(['/pedidos']); }
   navegarEstoque(): void { this.router.navigate(['/estoque']); }
   navegarGerenciaUsuarios(): void { this.router.navigate(['/gerencia-usuarios']); }

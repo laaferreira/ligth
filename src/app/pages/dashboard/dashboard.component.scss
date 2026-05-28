@@ -160,6 +160,20 @@
   min-height: 280px;
 }
 
+.backup-card {
+  border-top-color: #1565c0 !important;
+  .backup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .backup-btn { min-height: 42px; }
+  .backup-progress { margin-top: 16px; }
+  .backup-status { margin: 0 0 8px; font-size: 0.9rem; color: #444; }
+}
+
 .table-wrapper {
   overflow-x: auto; border-radius: 10px; border: 1px solid #e0d4ec;
   table { width: 100%; }

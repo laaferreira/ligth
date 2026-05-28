@@ -15,6 +15,11 @@ export class AuthService {
   private loggedIn$ = new BehaviorSubject<boolean>(false);
   private currentUser$ = new BehaviorSubject<any>(null);
 
+  private readonly INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutos
+  private inactivityTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly ACTIVITY_EVENTS = ['mousemove', 'mousedown', 'keypress', 'touchstart', 'scroll', 'click'];
+  private boundResetTimer = this.resetInactivityTimer.bind(this);
+
   constructor(
     private supabaseService: SupabaseService,
     private router: Router
@@ -26,12 +31,34 @@ export class AuthService {
     const { data } = await this.supabaseService.getAuth().getSession();
     this.loggedIn$.next(!!data?.session);
     this.currentUser$.next(data?.session?.user || null);
+    if (data?.session) this.startInactivityWatcher();
 
     // Listen for auth changes
     this.supabaseService.getAuth().onAuthStateChange((event, session) => {
       this.loggedIn$.next(!!session);
       this.currentUser$.next(session?.user || null);
+      if (session) {
+        this.startInactivityWatcher();
+      } else {
+        this.stopInactivityWatcher();
+      }
     });
+  }
+
+  private startInactivityWatcher(): void {
+    this.stopInactivityWatcher();
+    this.ACTIVITY_EVENTS.forEach(e => window.addEventListener(e, this.boundResetTimer, { passive: true }));
+    this.resetInactivityTimer();
+  }
+
+  private stopInactivityWatcher(): void {
+    this.ACTIVITY_EVENTS.forEach(e => window.removeEventListener(e, this.boundResetTimer));
+    if (this.inactivityTimer) { clearTimeout(this.inactivityTimer); this.inactivityTimer = null; }
+  }
+
+  private resetInactivityTimer(): void {
+    if (this.inactivityTimer) clearTimeout(this.inactivityTimer);
+    this.inactivityTimer = setTimeout(() => this.logout(), this.INACTIVITY_TIMEOUT_MS);
   }
 
   get isLoggedIn$(): Observable<boolean> {
@@ -75,6 +102,7 @@ export class AuthService {
   }
 
   async logout(): Promise<void> {
+    this.stopInactivityWatcher();
     const { error } = await this.supabaseService.getAuth().signOut();
     if (error) throw error;
     this.loggedIn$.next(false);
