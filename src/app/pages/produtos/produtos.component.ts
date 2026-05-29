@@ -55,6 +55,7 @@ export class ProdutosComponent implements OnInit {
   userRole: UserRole | null = null;
   usuarioAtual: AppUser | null = null;
   carregandoUsuario = true;
+  gerandoTabelaPrecos = false;
 
   get displayedColumns(): string[] {
     if (this.userRole === 'vendedor') {
@@ -375,6 +376,92 @@ export class ProdutosComponent implements OnInit {
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-zA-Z0-9]/g, '')
       .toLowerCase();
+  }
+
+  async exportarTabelaPrecos(): Promise<void> {
+    if (this.gerandoTabelaPrecos) return;
+    this.gerandoTabelaPrecos = true;
+    try {
+      const { Workbook } = await import('exceljs');
+      const workbook = new Workbook();
+      const ws = workbook.addWorksheet('Tabela de Preços');
+
+      ws.columns = [
+        { key: 'codigo',     width: 14 },
+        { key: 'descricao',  width: 48 },
+        { key: 'fornecedor', width: 28 },
+        { key: 'ouro',       width: 17 },
+        { key: 'prata',      width: 17 },
+        { key: 'bronze',     width: 17 },
+      ];
+
+      // Título
+      const tituloRow = ws.addRow([
+        `Tabela de Preços para Vendedores — ${new Date().toLocaleDateString('pt-BR')}`,
+        '', '', '', '', ''
+      ]);
+      ws.mergeCells(`A${tituloRow.number}:F${tituloRow.number}`);
+      tituloRow.height = 32;
+      const tituloCell = tituloRow.getCell(1);
+      tituloCell.font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
+      tituloCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4A1A7B' } };
+      tituloCell.alignment = { horizontal: 'center', vertical: 'middle' };
+
+      // Cabeçalho
+      const headerRow = ws.addRow(['Código', 'Descrição', 'Fornecedor', 'Preço Ouro', 'Preço Prata', 'Preço Bronze']);
+      headerRow.height = 22;
+      headerRow.eachCell(cell => {
+        cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6A2FA0' } };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = { bottom: { style: 'medium', color: { argb: 'FF3D1075' } } };
+      });
+
+      // Linhas de dados com zebra
+      this.todosProdutos.forEach((p, i) => {
+        const row = ws.addRow([
+          p.codigo,
+          p.descricao,
+          this.nomeFornecedor(p),
+          this.precoOuro(p),
+          this.precoPrata(p),
+          this.precoBronze(p)
+        ]);
+        row.height = 18;
+        const bg = i % 2 === 0 ? 'FFFFFFFF' : 'FFF4EEFF';
+        row.eachCell((cell, colNumber) => {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+          cell.border = { bottom: { style: 'hair', color: { argb: 'FFCFB8E8' } } };
+          cell.alignment = { vertical: 'middle' };
+          if (colNumber >= 4) {
+            cell.numFmt = '#,##0.00';
+            cell.alignment = { horizontal: 'right', vertical: 'middle' };
+          }
+        });
+      });
+
+      // Congelar título + cabeçalho
+      ws.views = [{ state: 'frozen', xSplit: 0, ySplit: 2 }];
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer as ArrayBuffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `tabela-precos-vendedores-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      this.snackBar.open('Tabela de preços exportada com sucesso!', 'OK', { duration: 4000 });
+    } catch {
+      this.snackBar.open('Erro ao gerar a tabela de preços.', 'OK', { duration: 4000 });
+    } finally {
+      this.gerandoTabelaPrecos = false;
+    }
   }
 
   navegarConsulta(): void { this.router.navigate(['/consulta']); }

@@ -47,6 +47,10 @@
               <mat-icon>upload_file</mat-icon>
               {{ importando ? 'Importando...' : 'Importar XLSX' }}
             </button>
+            <button mat-stroked-button color="accent" type="button" (click)="exportarTabelaPrecos()" [disabled]="gerandoTabelaPrecos" matTooltip="Gerar planilha com preços Ouro, Prata e Bronze para todos os produtos">
+              <mat-icon>table_chart</mat-icon>
+              {{ gerandoTabelaPrecos ? 'Gerando...' : 'Tabela de Preços' }}
+            </button>
             <button mat-raised-button color="primary" (click)="novo()"><mat-icon>add</mat-icon> Novo produto</button>
           </div>
         }
