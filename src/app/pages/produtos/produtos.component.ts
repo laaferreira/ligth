@@ -382,71 +382,128 @@ export class ProdutosComponent implements OnInit {
     if (this.gerandoTabelaPrecos) return;
     this.gerandoTabelaPrecos = true;
     try {
-      const { Workbook } = await import('exceljs');
-      const workbook = new Workbook();
-      const ws = workbook.addWorksheet('Tabela de Preços');
+      const JSZip = (await import('jszip')).default;
+      const x = (s: unknown) => String(s ?? '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const dataHoje = new Date().toLocaleDateString('pt-BR');
+      const COLS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
-      ws.columns = [
-        { key: 'codigo',     width: 14 },
-        { key: 'descricao',  width: 48 },
-        { key: 'fornecedor', width: 28 },
-        { key: 'ouro',       width: 17 },
-        { key: 'prata',      width: 17 },
-        { key: 'bronze',     width: 17 },
-      ];
+      // cellXfs indices: 0=default 1=titulo 2=header 3=data-impar 4=data-par 5=preco-impar 6=preco-par
+      const makeRow = (r: number, ht: number, cells: Array<{ s: number; v: string | number; n?: true }>) =>
+        `<row r="${r}" ht="${ht}" customHeight="1">${cells.map((c, i) =>
+          c.n
+            ? `<c r="${COLS[i]}${r}" s="${c.s}"><v>${c.v}</v></c>`
+            : `<c r="${COLS[i]}${r}" s="${c.s}" t="inlineStr"><is><t xml:space="preserve">${x(c.v)}</t></is></c>`
+        ).join('')}</row>`;
 
-      // Título
-      const tituloRow = ws.addRow([
-        `Tabela de Preços para Vendedores — ${new Date().toLocaleDateString('pt-BR')}`,
-        '', '', '', '', ''
-      ]);
-      ws.mergeCells(`A${tituloRow.number}:F${tituloRow.number}`);
-      tituloRow.height = 32;
-      const tituloCell = tituloRow.getCell(1);
-      tituloCell.font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
-      tituloCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4A1A7B' } };
-      tituloCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      const rows: string[] = [];
 
-      // Cabeçalho
-      const headerRow = ws.addRow(['Código', 'Descrição', 'Fornecedor', 'Preço Ouro', 'Preço Prata', 'Preço Bronze']);
-      headerRow.height = 22;
-      headerRow.eachCell(cell => {
-        cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6A2FA0' } };
-        cell.alignment = { horizontal: 'center', vertical: 'middle' };
-        cell.border = { bottom: { style: 'medium', color: { argb: 'FF3D1075' } } };
-      });
+      rows.push(makeRow(1, 32, [
+        { s: 1, v: `Tabela de Pre\u00e7os para Vendedores \u2014 ${dataHoje}` },
+        { s: 1, v: '' }, { s: 1, v: '' }, { s: 1, v: '' }, { s: 1, v: '' }, { s: 1, v: '' }
+      ]));
 
-      // Linhas de dados com zebra
+      rows.push(makeRow(2, 22, [
+        { s: 2, v: 'C\u00f3digo' }, { s: 2, v: 'Descri\u00e7\u00e3o' }, { s: 2, v: 'Fornecedor' },
+        { s: 2, v: 'Pre\u00e7o Ouro' }, { s: 2, v: 'Pre\u00e7o Prata' }, { s: 2, v: 'Pre\u00e7o Bronze' }
+      ]));
+
       this.todosProdutos.forEach((p, i) => {
-        const row = ws.addRow([
-          p.codigo,
-          p.descricao,
-          this.nomeFornecedor(p),
-          this.precoOuro(p),
-          this.precoPrata(p),
-          this.precoBronze(p)
-        ]);
-        row.height = 18;
-        const bg = i % 2 === 0 ? 'FFFFFFFF' : 'FFF4EEFF';
-        row.eachCell((cell, colNumber) => {
-          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
-          cell.border = { bottom: { style: 'hair', color: { argb: 'FFCFB8E8' } } };
-          cell.alignment = { vertical: 'middle' };
-          if (colNumber >= 4) {
-            cell.numFmt = '#,##0.00';
-            cell.alignment = { horizontal: 'right', vertical: 'middle' };
-          }
-        });
+        const odd = i % 2 === 0;
+        rows.push(makeRow(i + 3, 18, [
+          { s: odd ? 3 : 4, v: p.codigo },
+          { s: odd ? 3 : 4, v: p.descricao },
+          { s: odd ? 3 : 4, v: this.nomeFornecedor(p) },
+          { s: odd ? 5 : 6, v: this.precoOuro(p), n: true },
+          { s: odd ? 5 : 6, v: this.precoPrata(p), n: true },
+          { s: odd ? 5 : 6, v: this.precoBronze(p), n: true }
+        ]));
       });
 
-      // Congelar título + cabeçalho
-      ws.views = [{ state: 'frozen', xSplit: 0, ySplit: 2 }];
+      const zip = new JSZip();
 
-      const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer as ArrayBuffer], {
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      zip.file('[Content_Types].xml',
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+        `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">` +
+        `<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>` +
+        `<Default Extension="xml" ContentType="application/xml"/>` +
+        `<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>` +
+        `<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>` +
+        `<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>` +
+        `</Types>`);
+
+      zip.file('_rels/.rels',
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+        `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+        `<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>` +
+        `</Relationships>`);
+
+      zip.file('xl/workbook.xml',
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+        `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">` +
+        `<sheets><sheet name="Tabela de Pre\u00e7os" sheetId="1" r:id="rId1"/></sheets>` +
+        `</workbook>`);
+
+      zip.file('xl/_rels/workbook.xml.rels',
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+        `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+        `<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>` +
+        `<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>` +
+        `</Relationships>`);
+
+      zip.file('xl/styles.xml',
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+        `<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">` +
+        `<numFmts count="1"><numFmt numFmtId="164" formatCode="#,##0.00"/></numFmts>` +
+        `<fonts count="3">` +
+        `<font><sz val="11"/><name val="Calibri"/></font>` +
+        `<font><b/><sz val="13"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>` +
+        `<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>` +
+        `</fonts>` +
+        `<fills count="6">` +
+        `<fill><patternFill patternType="none"/></fill>` +
+        `<fill><patternFill patternType="gray125"/></fill>` +
+        `<fill><patternFill patternType="solid"><fgColor rgb="FF4A1A7B"/></patternFill></fill>` +
+        `<fill><patternFill patternType="solid"><fgColor rgb="FF6A2FA0"/></patternFill></fill>` +
+        `<fill><patternFill patternType="solid"><fgColor rgb="FFFFFFFF"/></patternFill></fill>` +
+        `<fill><patternFill patternType="solid"><fgColor rgb="FFF4EEFF"/></patternFill></fill>` +
+        `</fills>` +
+        `<borders count="2">` +
+        `<border><left/><right/><top/><bottom/><diagonal/></border>` +
+        `<border><left/><right/><top/><bottom><color rgb="FFCFB8E8"/></bottom><diagonal/></border>` +
+        `</borders>` +
+        `<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>` +
+        `<cellXfs count="7">` +
+        `<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>` +
+        `<xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>` +
+        `<xf numFmtId="0" fontId="2" fillId="3" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>` +
+        `<xf numFmtId="0" fontId="0" fillId="4" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>` +
+        `<xf numFmtId="0" fontId="0" fillId="5" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>` +
+        `<xf numFmtId="164" fontId="0" fillId="4" borderId="1" xfId="0" applyNumberFormat="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>` +
+        `<xf numFmtId="164" fontId="0" fillId="5" borderId="1" xfId="0" applyNumberFormat="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>` +
+        `</cellXfs>` +
+        `<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>` +
+        `</styleSheet>`);
+
+      zip.file('xl/worksheets/sheet1.xml',
+        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+        `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">` +
+        `<sheetViews><sheetView workbookViewId="0"><pane xSplit="0" ySplit="2" topLeftCell="A3" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>` +
+        `<cols>` +
+        `<col min="1" max="1" width="14" customWidth="1"/>` +
+        `<col min="2" max="2" width="48" customWidth="1"/>` +
+        `<col min="3" max="3" width="28" customWidth="1"/>` +
+        `<col min="4" max="6" width="16" customWidth="1"/>` +
+        `</cols>` +
+        `<sheetData>${rows.join('')}</sheetData>` +
+        `<mergeCells count="1"><mergeCell ref="A1:F1"/></mergeCells>` +
+        `</worksheet>`);
+
+      const blob = await zip.generateAsync({
+        type: 'blob',
+        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
       });
+
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -456,9 +513,10 @@ export class ProdutosComponent implements OnInit {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      this.snackBar.open('Tabela de preços exportada com sucesso!', 'OK', { duration: 4000 });
-    } catch {
-      this.snackBar.open('Erro ao gerar a tabela de preços.', 'OK', { duration: 4000 });
+      this.snackBar.open('Tabela de pre\u00e7os exportada com sucesso!', 'OK', { duration: 4000 });
+    } catch (err) {
+      console.error('Erro ao gerar tabela de pre\u00e7os:', err);
+      this.snackBar.open('Erro ao gerar a tabela de pre\u00e7os.', 'OK', { duration: 4000 });
     } finally {
       this.gerandoTabelaPrecos = false;
     }
