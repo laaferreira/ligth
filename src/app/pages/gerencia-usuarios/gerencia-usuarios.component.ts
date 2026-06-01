@@ -20,6 +20,7 @@ import { UserManagementService } from '../../core/services/user-management.servi
 import { AuthService } from '../../core/services/auth.service';
 import { AppUser, UserRole, CreateUserRequest, UpdateUserRequest } from '../../core/models/user.model';
 import { CriarEditarUsuarioDialogComponent } from './criar-editar-usuario-dialog.component';
+import { TrocarSenhaDialogComponent } from './trocar-senha-dialog.component';
 
 @Component({
   selector: 'app-gerencia-usuarios',
@@ -182,6 +183,9 @@ import { CriarEditarUsuarioDialogComponent } from './criar-editar-usuario-dialog
                   <button mat-icon-button (click)="editarUsuario(user)" matTooltip="Editar">
                     <mat-icon>edit</mat-icon>
                   </button>
+                  <button mat-icon-button (click)="abrirTrocarSenha(user)" matTooltip="Trocar senha" color="accent">
+                    <mat-icon>lock_reset</mat-icon>
+                  </button>
                   <button 
                     mat-icon-button 
                     (click)="mudarStatus(user)"
@@ -215,6 +219,10 @@ import { CriarEditarUsuarioDialogComponent } from './criar-editar-usuario-dialog
                           <mat-icon>edit</mat-icon>
                           <span>Editar</span>
                         </button>
+                        <button mat-menu-item (click)="abrirTrocarSenha(user)">
+                          <mat-icon>lock_reset</mat-icon>
+                          <span>Trocar senha</span>
+                        </button>
                         <button mat-menu-item (click)="mudarStatus(user)">
                           <mat-icon>{{ user.is_active ? 'block' : 'check_circle' }}</mat-icon>
                           <span>{{ user.is_active ? 'Desativar' : 'Ativar' }}</span>
@@ -244,6 +252,10 @@ import { CriarEditarUsuarioDialogComponent } from './criar-editar-usuario-dialog
                     <button mat-stroked-button color="primary" (click)="editarUsuario(user)">
                       <mat-icon>edit</mat-icon>
                       Editar
+                    </button>
+                    <button mat-stroked-button color="accent" (click)="abrirTrocarSenha(user)">
+                      <mat-icon>lock_reset</mat-icon>
+                      Trocar senha
                     </button>
                   </div>
                 </mat-card>
@@ -743,5 +755,25 @@ export class GerenciaUsuariosComponent implements OnInit {
 
   formatarComissao(comissao: number): string {
     return `${Number(comissao ?? 0).toFixed(2)}%`;
+  }
+
+  abrirTrocarSenha(usuario: AppUser): void {
+    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+
+    const dialogRef = this.dialog.open(TrocarSenhaDialogComponent, {
+      width: isMobile ? '100vw' : '420px',
+      maxWidth: isMobile ? '100vw' : '95vw',
+      maxHeight: isMobile ? '100dvh' : '92vh',
+      autoFocus: false,
+      data: { usuario, usuarioAtual: this.usuarioAtual }
+    });
+
+    dialogRef.afterClosed().subscribe(resultado => {
+      if (resultado === true) {
+        this.snackBar.open(`Senha de ${usuario.nome} alterada com sucesso!`, 'OK', { duration: 4000 });
+      } else if (resultado?.error) {
+        this.snackBar.open(resultado.error, 'OK', { duration: 5000 });
+      }
+    });
   }
 }

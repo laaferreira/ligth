@@ -268,6 +268,32 @@ export class UserManagementService {
   }
 
   /**
+   * Trocar a senha de um usuário (requer Admin ou Gerente)
+   * Gerente não pode alterar senha de Administrador
+   */
+  trocarSenha(userId: string, novaSenha: string, usuarioAtual: AppUser): Observable<void> {
+    return from(this.executarTrocaSenha(userId, novaSenha, usuarioAtual));
+  }
+
+  private async executarTrocaSenha(userId: string, novaSenha: string, usuarioAtual: AppUser): Promise<void> {
+    if (!['administrador', 'gerente'].includes(usuarioAtual.role)) {
+      throw new Error('Sem permissão para trocar senhas.');
+    }
+    try {
+      await this.supabaseService.invokeFunction<{ userId: string; password: string }, { success: boolean }>(
+        'admin-update-password',
+        { userId, password: novaSenha }
+      );
+    } catch (error: any) {
+      const message = error?.message || '';
+      if (message.toLowerCase().includes('functionshttperror') || message.toLowerCase().includes('non-2xx')) {
+        throw new Error('Erro na Edge Function. Verifique se ela foi publicada corretamente.');
+      }
+      throw new Error(message || 'Erro ao trocar a senha.');
+    }
+  }
+
+  /**
    * Obter dados do usuário atual incluindo role
    */
   async obterUsuarioAtualComRole(): Promise<AppUser | null> {

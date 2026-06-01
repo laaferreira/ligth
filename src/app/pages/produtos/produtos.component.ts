@@ -383,75 +383,18 @@ export class ProdutosComponent implements OnInit {
     this.gerandoTabelaPrecos = true;
     try {
       const JSZip = (await import('jszip')).default;
-      const x = (s: unknown) => String(s ?? '')
-        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       const dataHoje = new Date().toLocaleDateString('pt-BR');
-      const COLS = ['A', 'B', 'C', 'D', 'E', 'F'];
+      const dataIso = new Date().toISOString().slice(0, 10);
 
-      // cellXfs indices: 0=default 1=titulo 2=header 3=data-impar 4=data-par 5=preco-impar 6=preco-par
-      const makeRow = (r: number, ht: number, cells: Array<{ s: number; v: string | number; n?: true }>) =>
-        `<row r="${r}" ht="${ht}" customHeight="1">${cells.map((c, i) =>
-          c.n
-            ? `<c r="${COLS[i]}${r}" s="${c.s}"><v>${c.v}</v></c>`
-            : `<c r="${COLS[i]}${r}" s="${c.s}" t="inlineStr"><is><t xml:space="preserve">${x(c.v)}</t></is></c>`
-        ).join('')}</row>`;
+      // Agrupar produtos por fornecedor
+      const grupos = new Map<string, Produto[]>();
+      for (const p of this.todosProdutos) {
+        const nome = this.nomeFornecedor(p);
+        if (!grupos.has(nome)) grupos.set(nome, []);
+        grupos.get(nome)!.push(p);
+      }
 
-      const rows: string[] = [];
-
-      rows.push(makeRow(1, 32, [
-        { s: 1, v: `Tabela de Pre\u00e7os para Vendedores \u2014 ${dataHoje}` },
-        { s: 1, v: '' }, { s: 1, v: '' }, { s: 1, v: '' }, { s: 1, v: '' }, { s: 1, v: '' }
-      ]));
-
-      rows.push(makeRow(2, 22, [
-        { s: 2, v: 'C\u00f3digo' }, { s: 2, v: 'Descri\u00e7\u00e3o' }, { s: 2, v: 'Fornecedor' },
-        { s: 2, v: 'Pre\u00e7o Ouro' }, { s: 2, v: 'Pre\u00e7o Prata' }, { s: 2, v: 'Pre\u00e7o Bronze' }
-      ]));
-
-      this.todosProdutos.forEach((p, i) => {
-        const odd = i % 2 === 0;
-        rows.push(makeRow(i + 3, 18, [
-          { s: odd ? 3 : 4, v: p.codigo },
-          { s: odd ? 3 : 4, v: p.descricao },
-          { s: odd ? 3 : 4, v: this.nomeFornecedor(p) },
-          { s: odd ? 5 : 6, v: this.precoOuro(p), n: true },
-          { s: odd ? 5 : 6, v: this.precoPrata(p), n: true },
-          { s: odd ? 5 : 6, v: this.precoBronze(p), n: true }
-        ]));
-      });
-
-      const zip = new JSZip();
-
-      zip.file('[Content_Types].xml',
-        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
-        `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">` +
-        `<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>` +
-        `<Default Extension="xml" ContentType="application/xml"/>` +
-        `<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>` +
-        `<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>` +
-        `<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>` +
-        `</Types>`);
-
-      zip.file('_rels/.rels',
-        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
-        `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
-        `<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>` +
-        `</Relationships>`);
-
-      zip.file('xl/workbook.xml',
-        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
-        `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">` +
-        `<sheets><sheet name="Tabela de Pre\u00e7os" sheetId="1" r:id="rId1"/></sheets>` +
-        `</workbook>`);
-
-      zip.file('xl/_rels/workbook.xml.rels',
-        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
-        `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
-        `<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>` +
-        `<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>` +
-        `</Relationships>`);
-
-      zip.file('xl/styles.xml',
+      const stylesXml =
         `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
         `<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">` +
         `<numFmts count="1"><numFmt numFmtId="164" formatCode="#,##0.00"/></numFmts>` +
@@ -483,37 +426,103 @@ export class ProdutosComponent implements OnInit {
         `<xf numFmtId="164" fontId="0" fillId="5" borderId="1" xfId="0" applyNumberFormat="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>` +
         `</cellXfs>` +
         `<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>` +
-        `</styleSheet>`);
+        `</styleSheet>`;
 
-      zip.file('xl/worksheets/sheet1.xml',
-        `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
-        `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">` +
-        `<sheetViews><sheetView workbookViewId="0"><pane xSplit="0" ySplit="2" topLeftCell="A3" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>` +
-        `<cols>` +
-        `<col min="1" max="1" width="14" customWidth="1"/>` +
-        `<col min="2" max="2" width="48" customWidth="1"/>` +
-        `<col min="3" max="3" width="28" customWidth="1"/>` +
-        `<col min="4" max="6" width="16" customWidth="1"/>` +
-        `</cols>` +
-        `<sheetData>${rows.join('')}</sheetData>` +
-        `<mergeCells count="1"><mergeCell ref="A1:F1"/></mergeCells>` +
-        `</worksheet>`);
+      const x = (s: unknown) => String(s ?? '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const COLS = ['A', 'B', 'C', 'D', 'E', 'F'];
+      const makeRow = (r: number, ht: number, cells: Array<{ s: number; v: string | number; n?: true }>) =>
+        `<row r="${r}" ht="${ht}" customHeight="1">${cells.map((c, i) =>
+          c.n
+            ? `<c r="${COLS[i]}${r}" s="${c.s}"><v>${c.v}</v></c>`
+            : `<c r="${COLS[i]}${r}" s="${c.s}" t="inlineStr"><is><t xml:space="preserve">${x(c.v)}</t></is></c>`
+        ).join('')}</row>`;
 
-      const blob = await zip.generateAsync({
-        type: 'blob',
-        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      });
+      const buildXlsxBytes = async (prods: Produto[], nomeForn: string): Promise<Uint8Array> => {
+        const rows: string[] = [];
+        rows.push(makeRow(1, 32, [
+          { s: 1, v: `${nomeForn} \u2014 Tabela de Pre\u00e7os para Vendedores \u2014 ${dataHoje}` },
+          { s: 1, v: '' }, { s: 1, v: '' }, { s: 1, v: '' }, { s: 1, v: '' }, { s: 1, v: '' }
+        ]));
+        rows.push(makeRow(2, 22, [
+          { s: 2, v: 'C\u00f3digo' }, { s: 2, v: 'Descri\u00e7\u00e3o' }, { s: 2, v: 'Fornecedor' },
+          { s: 2, v: 'Pre\u00e7o Ouro' }, { s: 2, v: 'Pre\u00e7o Prata' }, { s: 2, v: 'Pre\u00e7o Bronze' }
+        ]));
+        prods.forEach((p, i) => {
+          const odd = i % 2 === 0;
+          rows.push(makeRow(i + 3, 18, [
+            { s: odd ? 3 : 4, v: p.codigo },
+            { s: odd ? 3 : 4, v: p.descricao },
+            { s: odd ? 3 : 4, v: this.nomeFornecedor(p) },
+            { s: odd ? 5 : 6, v: this.precoOuro(p), n: true },
+            { s: odd ? 5 : 6, v: this.precoPrata(p), n: true },
+            { s: odd ? 5 : 6, v: this.precoBronze(p), n: true }
+          ]));
+        });
 
+        const xlsxZip = new JSZip();
+        xlsxZip.file('[Content_Types].xml',
+          `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+          `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">` +
+          `<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>` +
+          `<Default Extension="xml" ContentType="application/xml"/>` +
+          `<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>` +
+          `<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>` +
+          `<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>` +
+          `</Types>`);
+        xlsxZip.file('_rels/.rels',
+          `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+          `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+          `<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>` +
+          `</Relationships>`);
+        xlsxZip.file('xl/workbook.xml',
+          `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+          `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">` +
+          `<sheets><sheet name="Tabela de Pre\u00e7os" sheetId="1" r:id="rId1"/></sheets>` +
+          `</workbook>`);
+        xlsxZip.file('xl/_rels/workbook.xml.rels',
+          `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+          `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+          `<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>` +
+          `<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>` +
+          `</Relationships>`);
+        xlsxZip.file('xl/styles.xml', stylesXml);
+        xlsxZip.file('xl/worksheets/sheet1.xml',
+          `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+          `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">` +
+          `<sheetViews><sheetView workbookViewId="0"><pane xSplit="0" ySplit="2" topLeftCell="A3" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>` +
+          `<cols>` +
+          `<col min="1" max="1" width="14" customWidth="1"/>` +
+          `<col min="2" max="2" width="48" customWidth="1"/>` +
+          `<col min="3" max="3" width="28" customWidth="1"/>` +
+          `<col min="4" max="6" width="16" customWidth="1"/>` +
+          `</cols>` +
+          `<sheetData>${rows.join('')}</sheetData>` +
+          `<mergeCells count="1"><mergeCell ref="A1:F1"/></mergeCells>` +
+          `</worksheet>`);
+
+        return xlsxZip.generateAsync({ type: 'uint8array' });
+      };
+
+      // Gerar um xlsx por fornecedor e empacotar no ZIP final
+      const outerZip = new JSZip();
+      for (const [nomeForn, prods] of grupos) {
+        const bytes = await buildXlsxBytes(prods, nomeForn);
+        const safeNome = nomeForn.replace(/[/\\?%*:|"<>]/g, '-');
+        outerZip.file(`${safeNome}.xlsx`, bytes);
+      }
+
+      const blob = await outerZip.generateAsync({ type: 'blob', mimeType: 'application/zip' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `tabela-precos-vendedores-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      link.download = `tabela-precos-vendedores-${dataIso}.zip`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      this.snackBar.open('Tabela de pre\u00e7os exportada com sucesso!', 'OK', { duration: 4000 });
+      this.snackBar.open(`Tabela de pre\u00e7os exportada (${grupos.size} fornecedor${grupos.size !== 1 ? 'es' : ''})!`, 'OK', { duration: 4000 });
     } catch (err) {
       console.error('Erro ao gerar tabela de pre\u00e7os:', err);
       this.snackBar.open('Erro ao gerar a tabela de pre\u00e7os.', 'OK', { duration: 4000 });
