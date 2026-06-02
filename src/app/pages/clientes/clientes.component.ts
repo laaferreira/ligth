@@ -45,6 +45,7 @@ export class ClientesComponent implements OnInit {
   responsavelPadraoId: string | null = null;
   private usuarioAtualId: string | null = null;
   private userRole: string | null = null;
+  filtro = '';
   paginaAtual = 0;
   itensPorPagina = 10;
   readonly opcoesItensPorPagina = [10, 25, 50];
@@ -166,9 +167,25 @@ export class ClientesComponent implements OnInit {
       : `${cliente.nome}-${cliente.cpfCnpj || cliente.dataCadastro || 'sem-id'}`;
   }
 
+  get clientesFiltrados(): Cliente[] {
+    const termo = this.filtro.trim().toLowerCase();
+    if (!termo) return this.clientes;
+    return this.clientes.filter(c =>
+      (c.nome?.toLowerCase().includes(termo)) ||
+      (c.cpfCnpj?.toLowerCase().includes(termo)) ||
+      (c.cidade?.toLowerCase().includes(termo)) ||
+      (c.contato?.toLowerCase().includes(termo)) ||
+      (c.telefone?.toLowerCase().includes(termo))
+    );
+  }
+
   get clientesPaginados(): Cliente[] {
     const inicio = this.paginaAtual * this.itensPorPagina;
-    return this.clientes.slice(inicio, inicio + this.itensPorPagina);
+    return this.clientesFiltrados.slice(inicio, inicio + this.itensPorPagina);
+  }
+
+  aoFiltrar(): void {
+    this.paginaAtual = 0;
   }
 
   aoMudarPagina(event: PageEvent): void {

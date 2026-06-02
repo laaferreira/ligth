@@ -126,7 +126,13 @@ type PedidoDialogData = {
             <input matInput [formControl]="produtoControl" [matAutocomplete]="autoProduto" placeholder="Buscar produto...">
             <mat-autocomplete #autoProduto="matAutocomplete" [displayWith]="displayFn" (optionSelected)="onProdutoSelected($event.option.value)">
               @for (p of produtosFiltrados; track p.id) {
-                <mat-option [value]="p">{{p.label}} @if (!isVendedor) {<small class="option-preco">R$ {{p.precoCusto}}</small>}</mat-option>
+                <mat-option [value]="p">
+                  <span>{{p.label}}</span>
+                  @if (p.fornecedorNome) {
+                    <span style="font-size:11px;color:#7b4bab;margin-left:8px;font-style:italic;opacity:0.85">{{p.fornecedorNome}}</span>
+                  }
+                  @if (!isVendedor) {<small class="option-preco">R$ {{p.precoCusto}}</small>}
+                </mat-option>
               }
             </mat-autocomplete>
           </mat-form-field>

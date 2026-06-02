@@ -3,6 +3,7 @@ export interface ItemPedido {
   produtoId: number;
   produtoDescricao?: string;
   produtoCodigo?: string;
+  fornecedorNome?: string | null;
   quantidade: number;
   valorUnitario: number;
   custoUnitario?: number;

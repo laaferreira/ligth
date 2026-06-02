@@ -1,11 +1,13 @@
 export interface AutocompleteItem {
   id: number;
   label: string;
+  fornecedorNome?: string | null;
 }
 
 export interface ProdutoAutocompleteItem {
   id: number;
   label: string;
+  fornecedorNome?: string | null;
   valor?: number;
   precoCusto: number;
   precoCustoVendedor?: number | null;

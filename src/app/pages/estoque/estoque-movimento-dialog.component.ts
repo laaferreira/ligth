@@ -44,7 +44,12 @@ import { AutocompleteItem, ProdutoAutocompleteItem } from '../../core/models/con
           <label class="field-label">Produto</label>
           <input class="field-input" [formControl]="produtoControl" [matAutocomplete]="autoProd" placeholder="Buscar produto...">
           <mat-autocomplete #autoProd="matAutocomplete" [displayWith]="displayFn" (optionSelected)="onProdutoSelected($event.option.value)">
-            <mat-option *ngFor="let p of produtosFiltrados; trackBy: trackProduto" [value]="p">{{p.label}}</mat-option>
+            <mat-option *ngFor="let p of produtosFiltrados; trackBy: trackProduto" [value]="p">
+              <span>{{p.label}}</span>
+              @if (p.fornecedorNome) {
+                <span style="font-size:11px;color:#7b4bab;margin-left:8px;font-style:italic;opacity:0.85">{{p.fornecedorNome}}</span>
+              }
+            </mat-option>
           </mat-autocomplete>
         </div>
 

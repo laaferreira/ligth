@@ -36,6 +36,7 @@ type ItemPedidoDbRow = {
     nome?: string | null;
     codigo?: string | null;
     sku?: string | null;
+    fornecedorNome?: string | null;
     precoCusto?: number | string | null;
     preco_custo?: number | string | null;
   } | Array<{
@@ -43,6 +44,7 @@ type ItemPedidoDbRow = {
     nome?: string | null;
     codigo?: string | null;
     sku?: string | null;
+    fornecedorNome?: string | null;
     precoCusto?: number | string | null;
     preco_custo?: number | string | null;
   }> | null;
@@ -314,7 +316,7 @@ export class PedidoService {
 
     const itensResponse = await this.supabaseService.getClient()
       .from('itens_pedidos')
-      .select('id, pedido_id, produto_id, quantidade, preco_unitario, custo_unitario, subtotal, produtos(descricao, nome, codigo, sku, precoCusto, preco_custo)')
+      .select('id, pedido_id, produto_id, quantidade, preco_unitario, custo_unitario, subtotal, produtos(descricao, nome, codigo, sku, fornecedorNome, precoCusto, preco_custo)')
       .eq('pedido_id', id)
       .order('id', { ascending: true });
 
@@ -450,6 +452,7 @@ export class PedidoService {
         produtoId: item.produto_id ?? 0,
         produtoDescricao: produto?.descricao || produto?.nome || '',
         produtoCodigo: produto?.codigo || produto?.sku || '',
+        fornecedorNome: produto?.fornecedorNome || null,
         quantidade,
         valorUnitario,
         custoUnitario,
@@ -683,7 +686,7 @@ export class PedidoService {
     while (true) {
       const response = await this.supabaseService.getClient()
         .from('itens_pedidos')
-        .select('id, pedido_id, produto_id, quantidade, preco_unitario, custo_unitario, subtotal, produtos(descricao, nome, codigo, sku, precoCusto, preco_custo)')
+        .select('id, pedido_id, produto_id, quantidade, preco_unitario, custo_unitario, subtotal, produtos(descricao, nome, codigo, sku, fornecedorNome, precoCusto, preco_custo)')
         .in('pedido_id', pedidoIds)
         .order('id', { ascending: true })
         .range(from, from + this.itensPageSize - 1);

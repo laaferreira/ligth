@@ -73,7 +73,12 @@
               <mat-autocomplete #autoProduto="matAutocomplete"
                                 (optionSelected)="onProdutoSelected($event.option.value)">
                 @for (produto of produtosFiltrados; track produto.id) {
-                  <mat-option [value]="produto">{{ produto.label }}</mat-option>
+                  <mat-option [value]="produto">
+                    <span>{{ produto.label }}</span>
+                    @if (produto.fornecedorNome) {
+                      <span style="font-size:11px;color:#7b4bab;margin-left:8px;font-style:italic;opacity:0.85">{{ produto.fornecedorNome }}</span>
+                    }
+                  </mat-option>
                 }
               </mat-autocomplete>
             </mat-form-field>

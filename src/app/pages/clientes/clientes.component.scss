@@ -94,6 +94,11 @@
   margin-bottom: 16px;
 }
 
+.filtro-field {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
 .header-actions {
   display: grid;
   grid-template-columns: minmax(260px, 1.4fr) repeat(2, auto);

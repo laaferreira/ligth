@@ -25,6 +25,17 @@
           <h2>Gerencie a base de clientes</h2>
         </div>
 
+        <mat-form-field appearance="outline" class="filtro-field">
+          <mat-label>Buscar cliente</mat-label>
+          <input matInput [(ngModel)]="filtro" (ngModelChange)="aoFiltrar()" placeholder="Nome, CPF/CNPJ, cidade, contato...">
+          <mat-icon matSuffix>search</mat-icon>
+          @if (filtro) {
+            <button matSuffix mat-icon-button aria-label="Limpar" (click)="filtro=''; aoFiltrar()">
+              <mat-icon>close</mat-icon>
+            </button>
+          }
+        </mat-form-field>
+
         <div class="header-actions">
           @if (podeImportarXls) {
             <mat-form-field appearance="outline" class="responsavel-import-field">
@@ -70,7 +81,7 @@
               <p class="resultado-subtitle">Listagem com paginação, responsável, contato e data de cadastro.</p>
             </div>
             <div class="resultado-chip">
-              <span>{{ clientes.length }}</span>
+              <span>{{ clientesFiltrados.length }}</span>
               <small>registro(s)</small>
             </div>
           </div>
@@ -121,7 +132,7 @@
           </div>
 
           <mat-paginator
-            [length]="clientes.length"
+            [length]="clientesFiltrados.length"
             [pageIndex]="paginaAtual"
             [pageSize]="itensPorPagina"
             [pageSizeOptions]="opcoesItensPorPagina"

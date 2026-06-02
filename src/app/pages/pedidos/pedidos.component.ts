@@ -650,16 +650,27 @@ export class PedidosComponent implements OnInit {
 
       doc.setTextColor(0, 0, 0); doc.setFontSize(14); doc.setFont('helvetica', 'bold');
       doc.text(`${p.itens?.length || 0} itens`, 14, nextY + 3);
-      const rows = (p.itens || []).map(i => [i.quantidade,
+      const rows = (p.itens || []).map(i => [
+        i.quantidade,
         `${i.produtoCodigo} - ${i.produtoDescricao}`,
+        i.fornecedorNome || '-',
         `R$ ${i.valorUnitario.toFixed(2).replace('.', ',')}`,
-        `R$ ${i.valorTotal!.toFixed(2).replace('.', ',')}`]);
-      autoTable(doc, { startY: nextY + 8, head: [['Qtd', 'Descricao', 'Vlr.Unit.', 'Vlr.Total']], body: rows, theme: 'plain',
+        `R$ ${i.valorTotal!.toFixed(2).replace('.', ',')}`
+      ]);
+      autoTable(doc, { startY: nextY + 8, head: [['Qtd', 'Descricao', 'Fornecedor', 'Vlr.Unit.', 'Vlr.Total']], body: rows, theme: 'plain',
         headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', fontSize: 9, lineWidth: { bottom: 0.5 }, lineColor: [0, 0, 0] },
         bodyStyles: { fontSize: 9, textColor: [30, 30, 30] },
-        columnStyles: { 0: { halign: 'center', cellWidth: 15 }, 1: { cellWidth: 'auto' }, 2: { halign: 'right', cellWidth: 30 }, 3: { halign: 'right', cellWidth: 30 } },
-        alternateRowStyles: { fillColor: [248, 248, 248] }, margin: { left: 14, right: 14 } });
-      const fy = (doc as any).lastAutoTable.finalY + 15;
+        columnStyles: { 0: { halign: 'center', cellWidth: 12 }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 34, textColor: [100, 50, 160], fontStyle: 'italic' }, 3: { halign: 'right', cellWidth: 28 }, 4: { halign: 'right', cellWidth: 28 } },
+        alternateRowStyles: { fillColor: [248, 248, 248] }, margin: { left: 14, right: 14, bottom: 55 } });
+
+      const ph = doc.internal.pageSize.getHeight();
+      // Se o total + rodapé não couberem na página atual, abre nova página
+      let fy = (doc as any).lastAutoTable.finalY + 15;
+      if (fy > ph - 78) {
+        doc.addPage();
+        fy = 28;
+      }
+
       doc.setDrawColor(0, 0, 0); doc.line(14, fy - 5, pw - 14, fy - 5);
       doc.setFontSize(18); doc.setFont('helvetica', 'bold');
 
