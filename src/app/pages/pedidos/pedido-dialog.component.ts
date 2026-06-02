@@ -237,9 +237,33 @@ type PedidoDialogData = {
         }
 
         @if (itensNovoPedido.length > 0) {
+          @if (itemEditandoIdx !== null && !modoSomenteFinalizacao) {
+            <div class="edit-item-panel">
+              <div class="edit-item-label"><mat-icon>edit</mat-icon><span>{{ itensNovoPedido[itemEditandoIdx].produtoLabel }}</span></div>
+              <div class="edit-item-fields">
+                <mat-form-field appearance="outline" class="field-sm">
+                  <mat-label>Qtd</mat-label>
+                  <input matInput type="number" inputmode="numeric" [formControl]="editQtdControl" min="1">
+                </mat-form-field>
+                <mat-form-field appearance="outline" class="field-sm">
+                  <mat-label>Vlr Unit.</mat-label>
+                  <input matInput type="number" inputmode="decimal" [formControl]="editVlrControl" step="0.01">
+                </mat-form-field>
+                @if (!isVendedor) {
+                  <mat-form-field appearance="outline" class="field-sm">
+                    <mat-label>Margem %</mat-label>
+                    <input matInput type="number" inputmode="decimal" [formControl]="editMargemControl" step="0.01">
+                  </mat-form-field>
+                }
+                <button mat-mini-fab color="primary" type="button" (click)="confirmarEdicaoItem()" [disabled]="editForm.invalid" matTooltip="Confirmar edição"><mat-icon>check</mat-icon></button>
+                <button mat-mini-fab type="button" (click)="cancelarEdicaoItem()" matTooltip="Cancelar"><mat-icon>close</mat-icon></button>
+              </div>
+            </div>
+          }
           <div class="table-wrapper">
             <table mat-table [dataSource]="itensNovoPedido">
               <ng-container matColumnDef="produto"><th mat-header-cell *matHeaderCellDef>Produto</th><td mat-cell *matCellDef="let r">{{r.produtoLabel}}</td></ng-container>
+              <ng-container matColumnDef="fornecedor"><th mat-header-cell *matHeaderCellDef>Fornecedor</th><td mat-cell *matCellDef="let r"><span style="font-size:11px;color:#7b4bab;font-style:italic;">{{r.fornecedorNome || '-'}}</span></td></ng-container>
               <ng-container matColumnDef="quantidade"><th mat-header-cell *matHeaderCellDef>Qtd</th><td mat-cell *matCellDef="let r">{{r.quantidade}}</td></ng-container>
               <ng-container matColumnDef="valorUnitario"><th mat-header-cell *matHeaderCellDef>Unit.</th><td mat-cell *matCellDef="let r">{{r.valorUnitario | currency:'BRL'}}</td></ng-container>
               @if (!isVendedor) {
@@ -248,7 +272,10 @@ type PedidoDialogData = {
                 <ng-container matColumnDef="margemLucro"><th mat-header-cell *matHeaderCellDef>Margem</th><td mat-cell *matCellDef="let r">{{r.margemLucro === null ? '-' : ((r.margemLucro | number:'1.1-1') + '%')}}</td></ng-container>
                 <ng-container matColumnDef="valorTotal"><th mat-header-cell *matHeaderCellDef>Total</th><td mat-cell *matCellDef="let r">{{r.valorTotal | currency:'BRL'}}</td></ng-container>
               }
-              <ng-container matColumnDef="remover"><th mat-header-cell *matHeaderCellDef></th><td mat-cell *matCellDef="let r; let i = index">@if (!modoSomenteFinalizacao) {<button mat-icon-button color="warn" (click)="removerItem(i)" matTooltip="Remover item do pedido"><mat-icon>delete</mat-icon></button>}</td></ng-container>
+              <ng-container matColumnDef="remover"><th mat-header-cell *matHeaderCellDef></th><td mat-cell *matCellDef="let r; let i = index">@if (!modoSomenteFinalizacao) {
+                <button mat-icon-button color="primary" (click)="iniciarEdicaoItem(i)" [disabled]="itemEditandoIdx !== null" matTooltip="Editar item"><mat-icon>edit</mat-icon></button>
+                <button mat-icon-button color="warn" (click)="removerItem(i)" [disabled]="itemEditandoIdx !== null" matTooltip="Remover item do pedido"><mat-icon>delete</mat-icon></button>
+              }</td></ng-container>
               <tr mat-header-row *matHeaderRowDef="itensColumns"></tr>
               <tr mat-row *matRowDef="let r; columns: itensColumns;"></tr>
             </table>
@@ -322,6 +349,10 @@ type PedidoDialogData = {
     .uc-qtd { font-size: 12px; color: #555; }
     .uc-valor { font-weight: 700; font-size: 15px; color: #1565c0; }
     .uc-valor small { font-size: 11px; font-weight: 400; color: #555; }
+    .edit-item-panel { background: #e8f4e8; border-radius: 10px; padding: 12px 14px; border-left: 3px solid #2e7d32; display: flex; flex-direction: column; gap: 10px; margin-bottom: 4px; }
+    .edit-item-label { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; color: #1b5e20; }
+    .edit-item-label mat-icon { font-size: 18px; width: 18px; height: 18px; color: #2e7d32; }
+    .edit-item-fields { display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; }
     .table-wrapper { overflow-x: auto; border-radius: 10px; border: 1px solid #e0d4ec; }
     .table-wrapper table { width: 100%; }
     .total-row { display: flex; justify-content: flex-end; gap: 20px; flex-wrap: wrap; padding: 12px 16px; font-size: 16px; color: #2e7d32; }
@@ -373,7 +404,14 @@ export class PedidoDialogComponent implements OnInit {
   get vlrControl(): FormControl { return this.itemForm.get('valorUnitario') as FormControl; }
   get margemControl(): FormControl { return this.itemForm.get('margemLucro') as FormControl; }
 
-  itensNovoPedido: { produtoId: number; produtoLabel: string; quantidade: number; valorUnitario: number; custoUnitario: number; custoTotal: number; margemLucro: number | null; lucroTotal: number; valorTotal: number }[] = [];
+  get editQtdControl(): FormControl { return this.editForm.get('quantidade') as FormControl; }
+  get editVlrControl(): FormControl { return this.editForm.get('valorUnitario') as FormControl; }
+  get editMargemControl(): FormControl { return this.editForm.get('margemLucro') as FormControl; }
+
+  itensNovoPedido: { produtoId: number; produtoLabel: string; fornecedorNome?: string | null; quantidade: number; valorUnitario: number; custoUnitario: number; custoTotal: number; margemLucro: number | null; lucroTotal: number; valorTotal: number }[] = [];
+  itemEditandoIdx: number | null = null;
+  editForm!: FormGroup;
+  private atualizandoCamposPrecoEdit = false;
   salvando = false;
   dataFinalizacaoControl = new FormControl('');
   pedidoAtual: Pedido | null = null;
@@ -410,10 +448,10 @@ export class PedidoDialogComponent implements OnInit {
 
   get itensColumns(): string[] {
     if (this.isVendedor) {
-      return ['produto', 'quantidade', 'valorUnitario', 'remover'];
+      return ['produto', 'fornecedor', 'quantidade', 'valorUnitario', 'remover'];
     }
 
-    return ['produto', 'quantidade', 'valorUnitario', 'custoTotal', 'lucroTotal', 'margemLucro', 'valorTotal', 'remover'];
+    return ['produto', 'fornecedor', 'quantidade', 'valorUnitario', 'custoTotal', 'lucroTotal', 'margemLucro', 'valorTotal', 'remover'];
   }
 
   constructor(
@@ -429,6 +467,11 @@ export class PedidoDialogComponent implements OnInit {
     @Inject(MAT_DIALOG_DATA) public data: PedidoDialogData
   ) {
     this.itemForm = this.fb.group({
+      quantidade: [1, [Validators.required, Validators.min(1)]],
+      valorUnitario: [null, [Validators.required, Validators.min(0.01)]],
+      margemLucro: [null]
+    });
+    this.editForm = this.fb.group({
       quantidade: [1, [Validators.required, Validators.min(1)]],
       valorUnitario: [null, [Validators.required, Validators.min(0.01)]],
       margemLucro: [null]
@@ -476,6 +519,26 @@ export class PedidoDialogComponent implements OnInit {
       this.atualizandoCamposPreco = false;
     });
 
+    this.editVlrControl.valueChanges.subscribe(valor => {
+      if (this.atualizandoCamposPrecoEdit || this.itemEditandoIdx === null) return;
+      const custo = this.itensNovoPedido[this.itemEditandoIdx]?.custoUnitario ?? 0;
+      if (!custo) return;
+      const margem = this.roundToTwo((((this.toNumber(valor) ?? 0) - custo) / custo) * 100);
+      this.atualizandoCamposPrecoEdit = true;
+      this.editMargemControl.setValue(margem, { emitEvent: false });
+      this.atualizandoCamposPrecoEdit = false;
+    });
+
+    this.editMargemControl.valueChanges.subscribe(valor => {
+      if (this.atualizandoCamposPrecoEdit || this.itemEditandoIdx === null) return;
+      const custo = this.itensNovoPedido[this.itemEditandoIdx]?.custoUnitario ?? 0;
+      if (!custo) return;
+      const vlr = this.roundToTwo(custo * (1 + (this.toNumber(valor) ?? 0) / 100));
+      this.atualizandoCamposPrecoEdit = true;
+      this.editVlrControl.setValue(vlr, { emitEvent: false });
+      this.atualizandoCamposPrecoEdit = false;
+    });
+
     this.clienteControl.valueChanges.pipe(
       debounceTime(300),
       filter(v => typeof v === 'string' && v.length >= 2),
@@ -511,6 +574,7 @@ export class PedidoDialogComponent implements OnInit {
         this.itensNovoPedido = (pedido.itens || []).map(i => ({
           produtoId: i.produtoId,
           produtoLabel: `${i.produtoCodigo} - ${i.produtoDescricao}`,
+          fornecedorNome: i.fornecedorNome ?? null,
           quantidade: i.quantidade,
           valorUnitario: i.valorUnitario,
           custoUnitario: i.custoUnitario || 0,
@@ -654,6 +718,7 @@ export class PedidoDialogComponent implements OnInit {
     this.itensNovoPedido = [...this.itensNovoPedido, {
       produtoId: this.produtoSelecionado.id,
       produtoLabel: this.produtoSelecionado.label,
+      fornecedorNome: this.produtoSelecionado.fornecedorNome ?? null,
       quantidade: qty,
       valorUnitario: unit,
       custoUnitario,
@@ -674,6 +739,40 @@ export class PedidoDialogComponent implements OnInit {
 
   removerItem(i: number): void {
     this.itensNovoPedido = this.itensNovoPedido.filter((_, idx) => idx !== i);
+  }
+
+  iniciarEdicaoItem(idx: number): void {
+    this.itemEditandoIdx = idx;
+    const item = this.itensNovoPedido[idx];
+    this.atualizandoCamposPrecoEdit = true;
+    this.editForm.setValue({
+      quantidade: item.quantidade,
+      valorUnitario: item.valorUnitario,
+      margemLucro: item.margemLucro
+    }, { emitEvent: false });
+    this.atualizandoCamposPrecoEdit = false;
+  }
+
+  cancelarEdicaoItem(): void {
+    this.itemEditandoIdx = null;
+    this.editForm.reset({ quantidade: 1, valorUnitario: null, margemLucro: null }, { emitEvent: false });
+  }
+
+  confirmarEdicaoItem(): void {
+    if (this.editForm.invalid || this.itemEditandoIdx === null) return;
+    const idx = this.itemEditandoIdx;
+    const item = this.itensNovoPedido[idx];
+    const qtd = this.toNumber(this.editQtdControl.value) ?? 1;
+    const vlr = this.toNumber(this.editVlrControl.value) ?? 0;
+    const custo = item.custoUnitario;
+    const valorTotal = this.roundToTwo(qtd * vlr);
+    const custoTotal = this.roundToTwo(qtd * custo);
+    const margemLucro = custo > 0 ? this.roundToTwo(((vlr - custo) / custo) * 100) : null;
+    const lucroTotal = this.roundToTwo(valorTotal - custoTotal);
+    this.itensNovoPedido = this.itensNovoPedido.map((it, i) =>
+      i === idx ? { ...it, quantidade: qtd, valorUnitario: vlr, valorTotal, custoTotal, lucroTotal, margemLucro } : it
+    );
+    this.cancelarEdicaoItem();
   }
 
   get totalBruto(): number {
