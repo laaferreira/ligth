@@ -650,7 +650,20 @@ export class PedidosComponent implements OnInit {
 
       doc.setTextColor(0, 0, 0); doc.setFontSize(14); doc.setFont('helvetica', 'bold');
       doc.text(`${p.itens?.length || 0} itens`, 14, nextY + 3);
-      const rows = (p.itens || []).map(i => [
+
+      // Destaque de estoque insuficiente (apenas gerente/admin em pedidos ativos)
+      const deveDestaque = (this.userRole === 'gerente' || this.userRole === 'administrador') &&
+        p.status !== 'FINALIZADO' && p.status !== 'CANCELADO';
+      const indicesAlerta = new Set<number>();
+      if (deveDestaque) {
+        (p.itens || []).forEach((item, idx) => {
+          if (item.quantidadeEstoque != null && item.quantidade > item.quantidadeEstoque) {
+            indicesAlerta.add(idx);
+          }
+        });
+      }
+
+      const rows = (p.itens || []).map((i, idx) => [
         i.quantidade,
         `${i.produtoCodigo} - ${i.produtoDescricao}`,
         i.fornecedorNome || '-',
@@ -661,7 +674,22 @@ export class PedidosComponent implements OnInit {
         headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', fontSize: 9, lineWidth: { bottom: 0.5 }, lineColor: [0, 0, 0] },
         bodyStyles: { fontSize: 9, textColor: [30, 30, 30] },
         columnStyles: { 0: { halign: 'center', cellWidth: 12 }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 34, textColor: [100, 50, 160], fontStyle: 'italic' }, 3: { halign: 'right', cellWidth: 28 }, 4: { halign: 'right', cellWidth: 28 } },
-        alternateRowStyles: { fillColor: [248, 248, 248] }, margin: { left: 14, right: 14, bottom: 55 } });
+        alternateRowStyles: { fillColor: [248, 248, 248] },
+        didParseCell: (data: any) => {
+          if (data.section === 'body' && indicesAlerta.has(data.row.index)) {
+            data.cell.styles.fillColor = [255, 235, 220];
+            data.cell.styles.textColor = [160, 40, 0];
+            data.cell.styles.fontStyle = 'bold';
+          }
+        },
+        margin: { left: 14, right: 14, bottom: 55 } });
+
+      if (indicesAlerta.size > 0) {
+        const legendY = (doc as any).lastAutoTable.finalY + 5;
+        doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.setTextColor(160, 40, 0);
+        doc.text('(*) Estoque insuficiente para a quantidade solicitada.', 14, legendY);
+        (doc as any).lastAutoTable.finalY = legendY + 4;
+      }
 
       const ph = doc.internal.pageSize.getHeight();
       // Se o total + rodapé não couberem na página atual, abre nova página

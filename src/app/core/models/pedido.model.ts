@@ -4,6 +4,7 @@ export interface ItemPedido {
   produtoDescricao?: string;
   produtoCodigo?: string;
   fornecedorNome?: string | null;
+  quantidadeEstoque?: number | null;
   quantidade: number;
   valorUnitario: number;
   custoUnitario?: number;
