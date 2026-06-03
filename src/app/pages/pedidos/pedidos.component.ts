@@ -20,6 +20,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { PedidoService } from '../../core/services/pedido.service';
+import { EstoqueService } from '../../core/services/estoque.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Pedido, ImportarPedidoLinha, ImportarPedidoErro, ImportarPedidoResumoErro } from '../../core/models/pedido.model';
 import { ErrorPresenterService } from '../../core/errors/error-presenter.service';
@@ -133,6 +134,7 @@ export class PedidosComponent implements OnInit {
     private pedidoService: PedidoService,
     private authService: AuthService,
     private userManagementService: UserManagementService,
+    private estoqueService: EstoqueService,
     private dialog: MatDialog,
     private router: Router,
     private snackBar: MatSnackBar,
@@ -512,18 +514,25 @@ export class PedidosComponent implements OnInit {
     });
   }
 
-  confirmar(p: Pedido): void {
-    this.pedidoService.confirmar(p.id!).subscribe({
-      next: () => { this.snackBar.open('Pedido confirmado! Estoque atualizado.', 'OK', { duration: 3000 }); this.carregar(); },
-      error: (e) => this.errorPresenter.handle(e, {
+  async confirmar(p: Pedido): Promise<void> {
+    try {
+      const pedidoCompleto = await firstValueFrom(this.pedidoService.buscarPorId(p.id!));
+      await firstValueFrom(this.pedidoService.confirmar(p.id!));
+      for (const item of pedidoCompleto.itens || []) {
+        await firstValueFrom(this.estoqueService.saida(item.produtoId, item.quantidade, `Pedido ${pedidoCompleto.numero} - Confirmação`));
+      }
+      this.snackBar.open('Pedido confirmado! Estoque atualizado.', 'OK', { duration: 3000 });
+      this.carregar();
+    } catch (e) {
+      this.errorPresenter.handle(e, {
         context: 'Pedidos.Confirmar',
         source: 'supabase',
         code: 'ORDER_CONFIRM_FAILED',
         title: 'Falha ao confirmar pedido',
         fallbackMessage: 'Erro ao confirmar pedido.',
         duration: 5000
-      })
-    });
+      });
+    }
   }
 
   finalizar(p: Pedido): void {
@@ -540,19 +549,33 @@ export class PedidosComponent implements OnInit {
     });
   }
 
-  cancelarPedido(p: Pedido): void {
+  async cancelarPedido(p: Pedido): Promise<void> {
     if (!confirm(`Cancelar pedido ${p.numero}?`)) return;
-    this.pedidoService.cancelar(p.id!).subscribe({
-      next: () => { this.snackBar.open('Pedido cancelado!', 'OK', { duration: 3000 }); this.carregar(); },
-      error: (e) => this.errorPresenter.handle(e, {
+    try {
+      const deveRestaurarEstoque = p.status === 'CONFIRMADO' || p.status === 'FINALIZADO';
+      let pedidoCompleto: Pedido | null = null;
+      if (deveRestaurarEstoque) {
+        pedidoCompleto = await firstValueFrom(this.pedidoService.buscarPorId(p.id!));
+      }
+      await firstValueFrom(this.pedidoService.cancelar(p.id!));
+      if (deveRestaurarEstoque && pedidoCompleto?.itens) {
+        for (const item of pedidoCompleto.itens) {
+          await firstValueFrom(this.estoqueService.entrada(item.produtoId, item.quantidade, null, `Pedido ${pedidoCompleto.numero} - Cancelamento`));
+        }
+      }
+      const msg = deveRestaurarEstoque ? 'Pedido cancelado! Estoque restaurado.' : 'Pedido cancelado!';
+      this.snackBar.open(msg, 'OK', { duration: 3000 });
+      this.carregar();
+    } catch (e) {
+      this.errorPresenter.handle(e, {
         context: 'Pedidos.Cancelar',
         source: 'supabase',
         code: 'ORDER_CANCEL_FAILED',
         title: 'Falha ao cancelar pedido',
         fallbackMessage: 'Erro ao cancelar pedido.',
         duration: 5000
-      })
-    });
+      });
+    }
   }
 
   statusLabel(s?: string): string {

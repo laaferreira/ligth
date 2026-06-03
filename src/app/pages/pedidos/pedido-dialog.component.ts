@@ -1,7 +1,7 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { debounceTime, filter, switchMap } from 'rxjs';
+import { debounceTime, filter, firstValueFrom, switchMap } from 'rxjs';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -19,7 +19,7 @@ import { EstoqueService } from '../../core/services/estoque.service';
 import { FormaPagamentoService } from '../../core/services/forma-pagamento.service';
 import { FormasDePagamentoService } from '../../core/services/formas-de-pagamento.service';
 import { AutocompleteItem, ProdutoAutocompleteItem } from '../../core/models/consulta.model';
-import { AtualizarPedido, CriarPedido, Pedido } from '../../core/models/pedido.model';
+import { AtualizarPedido, CriarPedido, ItemPedido, Pedido } from '../../core/models/pedido.model';
 import { FormaPagamento } from '../../core/models/forma-pagamento.model';
 import { ErrorPresenterService } from '../../core/errors/error-presenter.service';
 import { UserRole } from '../../core/models/user.model';
@@ -563,7 +563,7 @@ export class PedidoDialogComponent implements OnInit {
       this.pedidoService.buscarPorId(this.data.pedidoId).subscribe(pedido => {
         this.pedidoAtual = pedido;
         this.podeEditarDataFinalizacao = this.usuarioPodeEditarDataFinalizacao();
-        this.modoSomenteFinalizacao = pedido.status === 'FINALIZADO' && this.podeEditarDataFinalizacao;
+        this.modoSomenteFinalizacao = false;
         this.clienteSelecionado = { id: pedido.clienteId, label: pedido.clienteNome || '' };
         this.clienteControl.setValue(this.clienteSelecionado as never, { emitEvent: false });
         this.dataFinalizacaoControl.setValue(this.formatarDataInput(pedido.dataFinalizacao), { emitEvent: false });
@@ -584,10 +584,7 @@ export class PedidoDialogComponent implements OnInit {
           valorTotal: i.valorTotal || i.quantidade * i.valorUnitario
         }));
 
-        if (this.modoSomenteFinalizacao) {
-          this.itemForm.disable({ emitEvent: false });
-          this.produtoControl.disable({ emitEvent: false });
-        }
+
       });
     }
   }
@@ -807,12 +804,13 @@ export class PedidoDialogComponent implements OnInit {
     if (!this.clienteSelecionado || this.itensNovoPedido.length === 0) return;
 
     this.salvando = true;
-    const dto: CriarPedido = {
+    const dto: AtualizarPedido = {
       clienteId: this.clienteSelecionado.id,
       formaPagamentoId: this.formaPagamentoControl.value ?? null,
       prazoPagamentoId: this.prazoPagamentoControl.value ?? null,
       notaFiscal: this.notaFiscalControl.value ?? false,
       percentualDesconto: this.descontoHabilitado ? (this.descontoControl.value ?? null) : null,
+      ...(this.podeEditarDataFinalizacao ? { dataFinalizacao: this.dataFinalizacaoControl.value || null } : {}),
       itens: this.itensNovoPedido.map(i => ({
         produtoId: i.produtoId,
         quantidade: i.quantidade,
@@ -822,11 +820,23 @@ export class PedidoDialogComponent implements OnInit {
     };
     const requisicao = this.data.modo === 'editar' && this.data.pedidoId
       ? this.pedidoService.atualizar(this.data.pedidoId, dto)
-      : this.pedidoService.criar(dto);
+      : this.pedidoService.criar(dto as CriarPedido);
 
     requisicao.subscribe({
-      next: () => {
+      next: async () => {
         this.salvando = false;
+        if (this.data.modo === 'editar' && this.pedidoAtual) {
+          const status = this.pedidoAtual.status;
+          if (status === 'CONFIRMADO' || status === 'FINALIZADO') {
+            try {
+              await this.ajustarEstoqueEdicao(this.pedidoAtual.itens || [], this.itensNovoPedido, this.pedidoAtual.numero);
+            } catch {
+              this.snackBar.open('Pedido salvo, mas houve erro ao ajustar o estoque.', 'OK', { duration: 5000 });
+              this.dialogRef.close(true);
+              return;
+            }
+          }
+        }
         this.snackBar.open(this.data.modo === 'editar' ? 'Pedido atualizado!' : 'Pedido criado!', 'OK', { duration: 3000 });
         this.dialogRef.close(true);
       },
@@ -943,6 +953,33 @@ export class PedidoDialogComponent implements OnInit {
 
     const numero = Number(value);
     return Number.isFinite(numero) ? numero : null;
+  }
+
+  private async ajustarEstoqueEdicao(
+    itensAntigos: ItemPedido[],
+    itensNovos: { produtoId: number; quantidade: number }[],
+    numeroPedido?: string
+  ): Promise<void> {
+    const obs = `Pedido ${numeroPedido || ''} - Edição`;
+    const mapaAntigo = new Map<number, number>();
+    for (const item of itensAntigos) {
+      mapaAntigo.set(item.produtoId, (mapaAntigo.get(item.produtoId) ?? 0) + item.quantidade);
+    }
+    const mapaFutura = new Map<number, number>();
+    for (const item of itensNovos) {
+      mapaFutura.set(item.produtoId, (mapaFutura.get(item.produtoId) ?? 0) + item.quantidade);
+    }
+    const todosProdutos = new Set([...mapaAntigo.keys(), ...mapaFutura.keys()]);
+    for (const produtoId of todosProdutos) {
+      const qtdAntiga = mapaAntigo.get(produtoId) ?? 0;
+      const qtdNova = mapaFutura.get(produtoId) ?? 0;
+      const diff = qtdNova - qtdAntiga;
+      if (diff > 0) {
+        await firstValueFrom(this.estoqueService.saida(produtoId, diff, obs));
+      } else if (diff < 0) {
+        await firstValueFrom(this.estoqueService.entrada(produtoId, -diff, null, obs));
+      }
+    }
   }
 
   private roundToTwo(value: number): number {
