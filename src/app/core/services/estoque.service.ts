@@ -64,6 +64,7 @@ export class EstoqueService {
     // Atualizar quantidade em produtos
     if (produtoAntes) {
       const updatePayload: Record<string, any> = { quantidadeEstoque: estoqueAtualCalc, quantidade: estoqueAtualCalc };
+      if (precoCompra != null) { updatePayload['precoCusto'] = precoCompra; updatePayload['preco_custo'] = precoCompra; }
       if (precoVenda != null) { updatePayload['precoVenda'] = precoVenda; updatePayload['preco_venda'] = precoVenda; }
       if (precoVendaVendedor != null) { updatePayload['preco_venda_vendedor'] = precoVendaVendedor; }
       if (precoCustoVendedor != null) { updatePayload['preco_custo_vendedor'] = precoCustoVendedor; }
