@@ -51,6 +51,10 @@
               <mat-icon>table_chart</mat-icon>
               {{ gerandoTabelaPrecos ? 'Gerando...' : 'Tabela de Preços' }}
             </button>
+            <button mat-stroked-button color="primary" type="button" (click)="exportarTabelaPrecosGerente()" [disabled]="gerandoTabelaPrecosGerente" matTooltip="Gerar planilha com preços Elite, Ouro, Prata e Bronze (visão gerente)">
+              <mat-icon>table_view</mat-icon>
+              {{ gerandoTabelaPrecosGerente ? 'Gerando...' : 'Tabela Gerente' }}
+            </button>
             <button mat-raised-button color="primary" (click)="novo()"><mat-icon>add</mat-icon> Novo produto</button>
           </div>
         }

@@ -75,6 +75,16 @@ import { AppUser, UserRole } from '../../core/models/user.model';
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Margem de Venda Elite (%)</mat-label>
+          <input matInput type="number" min="0" max="1000" step="0.01" formControlName="margemVendaElite" required>
+          <mat-hint>Preço Elite mostrado ao vendedor no pedido.</mat-hint>
+          <mat-error *ngIf="form.get('margemVendaElite')?.hasError('required')">Margem Elite é obrigatória</mat-error>
+          <mat-error *ngIf="form.get('margemVendaElite')?.hasError('min') || form.get('margemVendaElite')?.hasError('max')">
+            A margem Elite deve estar entre 0 e 1000.
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
           <mat-label>Margem de Venda Ouro (%)</mat-label>
           <input matInput type="number" min="0" max="1000" step="0.01" formControlName="margemVendaOuro" required>
           <mat-hint>Preço Ouro mostrado ao vendedor no pedido.</mat-hint>
@@ -243,6 +253,7 @@ export class CriarEditarUsuarioDialogComponent {
       margemVendaOuro: [isEditar ? this.data.usuario?.margemVendaOuro : 35, [Validators.required, Validators.min(0), Validators.max(1000)]],
       margemVendaPrata: [isEditar ? this.data.usuario?.margemVendaPrata : 50, [Validators.required, Validators.min(0), Validators.max(1000)]],
       margemVendaBronze: [isEditar ? this.data.usuario?.margemVendaBronze : 100, [Validators.required, Validators.min(0), Validators.max(1000)]],
+      margemVendaElite: [isEditar ? this.data.usuario?.margemVendaElite : 20, [Validators.required, Validators.min(0), Validators.max(1000)]],
       password: [
         '',
         this.data.modo === 'criar' ? [Validators.required, Validators.minLength(6)] : []
@@ -299,7 +310,8 @@ export class CriarEditarUsuarioDialogComponent {
       comissao: formValue.comissao,
       margemVendaOuro: formValue.margemVendaOuro,
       margemVendaPrata: formValue.margemVendaPrata,
-      margemVendaBronze: formValue.margemVendaBronze
+      margemVendaBronze: formValue.margemVendaBronze,
+      margemVendaElite: formValue.margemVendaElite
     };
 
     this.saving = true;

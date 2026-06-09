@@ -257,8 +257,8 @@ export class PedidoService {
   private async listarFinalizadosPorUsuarioPeriodoComItens(userId: string, dataInicio: string, dataFim: string) {
     const pedidosResponse = await this.supabaseService.getClient()
       .from(this.table)
-      .select('id, cliente_id, prazo_pagamento_id, forma_pagamento_id, status, valor_total, percentual_desconto, data, data_finalizacao, observacao, nota_fiscal, user_id, clientes(nome, cpf_cnpj, endereco), prazos_pagamento(descricao), formas_pagamento(descricao)')
-      .eq('user_id', userId)
+      .select('id, cliente_id, prazo_pagamento_id, forma_pagamento_id, status, valor_total, percentual_desconto, data, data_finalizacao, observacao, nota_fiscal, user_id, clientes!inner(nome, cpf_cnpj, endereco, responsavel_id), prazos_pagamento(descricao), formas_pagamento(descricao)')
+      .eq('clientes.responsavel_id', userId)
       .in('status', ['finalizado', 'FINALIZADO'])
       .gte('data_finalizacao', dataInicio)
       .lte('data_finalizacao', dataFim)

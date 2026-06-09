@@ -15,6 +15,7 @@ type CreateUserPayload = {
   margemVendaOuro?: number;
   margemVendaPrata?: number;
   margemVendaBronze?: number;
+  margemVendaElite?: number;
   password?: string;
 };
 
@@ -27,6 +28,7 @@ type AppUser = {
   margemVendaOuro: number;
   margemVendaPrata: number;
   margemVendaBronze: number;
+  margemVendaElite: number;
   created_at: string;
   created_by: string;
   is_active: boolean;
@@ -121,6 +123,7 @@ Deno.serve(async (request) => {
   const margemVendaOuro = Number(payload.margemVendaOuro ?? 35);
   const margemVendaPrata = Number(payload.margemVendaPrata ?? 50);
   const margemVendaBronze = Number(payload.margemVendaBronze ?? 100);
+  const margemVendaElite = Number(payload.margemVendaElite ?? 20);
   const password = payload.password ?? '';
 
   if (!emailRegex.test(email)) {
@@ -149,6 +152,10 @@ Deno.serve(async (request) => {
 
   if (!Number.isFinite(margemVendaBronze) || margemVendaBronze < 0 || margemVendaBronze > 1000) {
     return jsonResponse({ error: 'A margem de venda Bronze deve estar entre 0 e 1000.' }, 400);
+  }
+
+  if (!Number.isFinite(margemVendaElite) || margemVendaElite < 0 || margemVendaElite > 1000) {
+    return jsonResponse({ error: 'A margem de venda Elite deve estar entre 0 e 1000.' }, 400);
   }
 
   if (password.length < 6) {
@@ -196,6 +203,7 @@ Deno.serve(async (request) => {
     margem_venda_ouro: margemVendaOuro,
     margem_venda_prata: margemVendaPrata,
     margem_venda_bronze: margemVendaBronze,
+    margem_venda_elite: margemVendaElite,
     created_by: requestingUserId,
     is_active: true
   };

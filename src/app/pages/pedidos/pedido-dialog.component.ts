@@ -31,6 +31,7 @@ type PedidoDialogData = {
   margemVendaOuro?: number | null;
   margemVendaPrata?: number | null;
   margemVendaBronze?: number | null;
+  margemVendaElite?: number | null;
   responsavelId?: string | null;
 };
 
@@ -665,6 +666,10 @@ export class PedidoDialogComponent implements OnInit {
 
   get precoBronze(): number {
     return this.calcularPrecoPorMarkup(this.data.margemVendaBronze ?? 100);
+  }
+
+  get precoElite(): number {
+    return this.calcularPrecoPorMarkup(this.data.margemVendaElite ?? 20);
   }
 
   get estoqueAtualInfo(): number {

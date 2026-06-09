@@ -24,7 +24,7 @@ export class UserManagementService {
     return this.normalizarPercentual(comissao, 'comissão', 100);
   }
 
-  private normalizarMargemVenda(margem: number, faixa: 'ouro' | 'prata' | 'bronze'): number {
+  private normalizarMargemVenda(margem: number, faixa: 'ouro' | 'prata' | 'bronze' | 'elite'): number {
     return this.normalizarPercentual(margem, `margem de venda ${faixa}`, 1000);
   }
 
@@ -52,6 +52,7 @@ export class UserManagementService {
       margemVendaOuro: Number(row.margemVendaOuro ?? row.margem_venda_ouro ?? 35),
       margemVendaPrata: Number(row.margemVendaPrata ?? row.margem_venda_prata ?? 50),
       margemVendaBronze: Number(row.margemVendaBronze ?? row.margem_venda_bronze ?? 100),
+      margemVendaElite: Number(row.margemVendaElite ?? row.margem_venda_elite ?? 20),
       created_at: row.created_at,
       created_by: row.created_by,
       is_active: !!row.is_active
@@ -66,6 +67,7 @@ export class UserManagementService {
       ...(payload.margemVendaOuro !== undefined ? { margem_venda_ouro: payload.margemVendaOuro } : {}),
       ...(payload.margemVendaPrata !== undefined ? { margem_venda_prata: payload.margemVendaPrata } : {}),
       ...(payload.margemVendaBronze !== undefined ? { margem_venda_bronze: payload.margemVendaBronze } : {}),
+      ...(payload.margemVendaElite !== undefined ? { margem_venda_elite: payload.margemVendaElite } : {}),
       ...(payload.is_active !== undefined ? { is_active: payload.is_active } : {})
     };
   }
@@ -102,6 +104,7 @@ export class UserManagementService {
     const margemVendaOuroNormalizada = this.normalizarMargemVenda(dados.margemVendaOuro, 'ouro');
     const margemVendaPrataNormalizada = this.normalizarMargemVenda(dados.margemVendaPrata, 'prata');
     const margemVendaBronzeNormalizada = this.normalizarMargemVenda(dados.margemVendaBronze, 'bronze');
+    const margemVendaEliteNormalizada = this.normalizarMargemVenda(dados.margemVendaElite, 'elite');
 
     try {
       const response = await this.supabaseService.invokeFunction<CreateUserRequest, CreateUserFunctionResponse>(
@@ -114,6 +117,7 @@ export class UserManagementService {
           margemVendaOuro: margemVendaOuroNormalizada,
           margemVendaPrata: margemVendaPrataNormalizada,
           margemVendaBronze: margemVendaBronzeNormalizada,
+          margemVendaElite: margemVendaEliteNormalizada,
           password: dados.password
         }
       );

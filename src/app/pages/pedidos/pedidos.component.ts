@@ -791,6 +791,7 @@ export class PedidosComponent implements OnInit {
         margemVendaOuro: this.usuarioAtual?.margemVendaOuro,
         margemVendaPrata: this.usuarioAtual?.margemVendaPrata,
         margemVendaBronze: this.usuarioAtual?.margemVendaBronze,
+        margemVendaElite: this.usuarioAtual?.margemVendaElite,
         responsavelId: this.userRole === 'vendedor' ? (this.usuarioAtual?.id || null) : null
       }
     }).afterClosed().subscribe(recarregar => {

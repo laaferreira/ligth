@@ -9,6 +9,7 @@ export interface AppUser {
   margemVendaOuro: number;
   margemVendaPrata: number;
   margemVendaBronze: number;
+  margemVendaElite: number;
   created_at: string;
   created_by: string; // ID do usuário que criou
   is_active: boolean;
@@ -22,6 +23,7 @@ export interface CreateUserRequest {
   margemVendaOuro: number;
   margemVendaPrata: number;
   margemVendaBronze: number;
+  margemVendaElite: number;
   password: string;
 }
 
@@ -36,5 +38,6 @@ export interface UpdateUserRequest {
   margemVendaOuro?: number;
   margemVendaPrata?: number;
   margemVendaBronze?: number;
+  margemVendaElite?: number;
   is_active?: boolean;
 }
