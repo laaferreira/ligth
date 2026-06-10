@@ -18,6 +18,7 @@ type PedidoDbRow = {
   data_finalizacao?: string | null;
   observacao?: string | null;
   nota_fiscal?: boolean | null;
+  margem_nota_fiscal?: number | null;
   percentual_desconto?: number | null;
   user_id?: string | null;
   clientes?: { nome?: string | null; cpf_cnpj?: string | null; endereco?: string | null } | Array<{ nome?: string | null; cpf_cnpj?: string | null; endereco?: string | null }> | null;
@@ -207,7 +208,7 @@ export class PedidoService {
     const { userId, role } = await this.getCurrentUserContext();
     let query = this.supabaseService.getClient()
       .from(this.table)
-      .select('id, cliente_id, prazo_pagamento_id, forma_pagamento_id, status, valor_total, percentual_desconto, data, data_finalizacao, observacao, nota_fiscal, user_id, clientes(nome, cpf_cnpj, endereco), prazos_pagamento(descricao), formas_pagamento(descricao)')
+      .select('id, cliente_id, prazo_pagamento_id, forma_pagamento_id, status, valor_total, percentual_desconto, margem_nota_fiscal, data, data_finalizacao, observacao, nota_fiscal, user_id, clientes(nome, cpf_cnpj, endereco), prazos_pagamento(descricao), formas_pagamento(descricao)')
       .order('id', { ascending: false });
 
     if (role === 'vendedor') {
@@ -257,7 +258,7 @@ export class PedidoService {
   private async listarFinalizadosPorUsuarioPeriodoComItens(userId: string, dataInicio: string, dataFim: string) {
     const pedidosResponse = await this.supabaseService.getClient()
       .from(this.table)
-      .select('id, cliente_id, prazo_pagamento_id, forma_pagamento_id, status, valor_total, percentual_desconto, data, data_finalizacao, observacao, nota_fiscal, user_id, clientes!inner(nome, cpf_cnpj, endereco, responsavel_id), prazos_pagamento(descricao), formas_pagamento(descricao)')
+      .select('id, cliente_id, prazo_pagamento_id, forma_pagamento_id, status, valor_total, percentual_desconto, margem_nota_fiscal, data, data_finalizacao, observacao, nota_fiscal, user_id, clientes!inner(nome, cpf_cnpj, endereco, responsavel_id), prazos_pagamento(descricao), formas_pagamento(descricao)')
       .eq('clientes.responsavel_id', userId)
       .in('status', ['finalizado', 'FINALIZADO'])
       .gte('data_finalizacao', dataInicio)
@@ -304,7 +305,7 @@ export class PedidoService {
     const { userId, role, margemVendaOuro } = await this.getCurrentUserContext();
     let pedidoQuery = this.supabaseService.getClient()
       .from(this.table)
-      .select('id, cliente_id, prazo_pagamento_id, forma_pagamento_id, status, valor_total, percentual_desconto, data, data_finalizacao, observacao, nota_fiscal, user_id, clientes(nome, cpf_cnpj, endereco), prazos_pagamento(descricao), formas_pagamento(descricao)')
+      .select('id, cliente_id, prazo_pagamento_id, forma_pagamento_id, status, valor_total, percentual_desconto, margem_nota_fiscal, data, data_finalizacao, observacao, nota_fiscal, user_id, clientes(nome, cpf_cnpj, endereco), prazos_pagamento(descricao), formas_pagamento(descricao)')
       .eq('id', id);
 
     if (role === 'vendedor') {
@@ -339,7 +340,7 @@ export class PedidoService {
     const { userId, role } = await this.getCurrentUserContext();
     let query = this.supabaseService.getClient()
       .from(this.table)
-      .select('id, cliente_id, prazo_pagamento_id, forma_pagamento_id, status, valor_total, percentual_desconto, data, data_finalizacao, observacao, nota_fiscal, user_id, clientes(nome, cpf_cnpj, endereco), prazos_pagamento(descricao), formas_pagamento(descricao)');
+      .select('id, cliente_id, prazo_pagamento_id, forma_pagamento_id, status, valor_total, percentual_desconto, margem_nota_fiscal, data, data_finalizacao, observacao, nota_fiscal, user_id, clientes(nome, cpf_cnpj, endereco), prazos_pagamento(descricao), formas_pagamento(descricao)');
 
     Object.entries(filtros).forEach(([campo, valor]) => {
       query = query.eq(this.toDbField(campo), valor);
@@ -489,6 +490,7 @@ export class PedidoService {
       lucroTotal: valorTotal - custoTotal,
       status: this.normalizeStatus(row.status),
       notaFiscal: row.nota_fiscal ?? false,
+      margemNotaFiscal: row.margem_nota_fiscal != null ? Number(row.margem_nota_fiscal) : null,
       percentualDesconto,
       itens: itensPedido
     };
@@ -522,6 +524,10 @@ export class PedidoService {
 
     if (pedido.notaFiscal !== undefined) {
       db['nota_fiscal'] = pedido.notaFiscal;
+    }
+
+    if (pedido.margemNotaFiscal !== undefined) {
+      db['margem_nota_fiscal'] = pedido.margemNotaFiscal ?? null;
     }
 
     if (pedido.percentualDesconto !== undefined) {

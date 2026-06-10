@@ -291,4 +291,133 @@ export class ClientesComponent implements OnInit {
       }
     });
   }
+
+  imprimirEtiqueta(cliente: Cliente): void {
+    const gerar = async () => {
+      const jsPDF = (await import('jspdf')).default;
+      const doc = new jsPDF('l', 'mm', 'a4');
+
+      const pw = doc.internal.pageSize.getWidth();   // 297
+      const ph = doc.internal.pageSize.getHeight();  // 210
+
+      // Frame da etiqueta
+      const lx = 12, ly = 8, lw = pw - 24, lh = ph - 16;
+
+      // ── Cabeçalho ──────────────────────────────────────────────────────────
+      const hh = 50;
+      doc.setFillColor(180, 140, 220);  // lilás claro
+      doc.rect(lx, ly, lw, hh, 'F');
+
+      // Logo da marca (opcional)
+      try {
+        const logoDataUrl = await this.imageToDataUrl('assets/light-brand.png');
+        doc.addImage(logoDataUrl, 'PNG', lx + 8, ly + 7, 36, 36);
+      } catch { /* sem logo */ }
+
+      // Texto "MEGA LUZ COMERCIAL"
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(34);
+      doc.setFont('helvetica', 'bold');
+      doc.text('MEGA LUZ COMERCIAL', pw / 2 + 10, ly + hh / 2 + 6, { align: 'center' });
+
+      // ── Borda azul da etiqueta inteira ──────────────────────────────────────
+      doc.setDrawColor(30, 60, 180);
+      doc.setLineWidth(1.8);
+      doc.rect(lx, ly, lw, lh);
+
+      // Linha azul após cabeçalho
+      doc.line(lx, ly + hh, lx + lw, ly + hh);
+
+      // ── Nome do cliente ────────────────────────────────────────────────────
+      const nomeSectionH = 52;
+      const nomeSectionY = ly + hh;
+      const nomeFonte = 30;
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(nomeFonte);
+      doc.setFont('helvetica', 'bold');
+      const nomeTexto = (cliente.nome || '').toUpperCase();
+      doc.text(nomeTexto, pw / 2, nomeSectionY + nomeSectionH / 2 + nomeFonte * 0.18, {
+        align: 'center',
+        maxWidth: lw - 20
+      });
+
+      // Linha azul após nome
+      doc.setDrawColor(30, 60, 180);
+      doc.line(lx, nomeSectionY + nomeSectionH, lx + lw, nomeSectionY + nomeSectionH);
+
+      // ── Endereço ────────────────────────────────────────────────────────────
+      const enderecoSectionH = 34;
+      const enderecoSectionY = nomeSectionY + nomeSectionH;
+      const logradouro = [cliente.logradouro || '', cliente.numero || '']
+        .map(s => s.trim()).filter(Boolean).join(', ');
+      const enderecoTexto = (logradouro || cliente.endereco || '').toUpperCase();
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'normal');
+      doc.text(enderecoTexto, pw / 2, enderecoSectionY + enderecoSectionH / 2 + 4, {
+        align: 'center',
+        maxWidth: lw - 20
+      });
+
+      // Linha azul após endereço
+      doc.setDrawColor(30, 60, 180);
+      doc.line(lx, enderecoSectionY + enderecoSectionH, lx + lw, enderecoSectionY + enderecoSectionH);
+
+      // ── Rodapé com 4 células ────────────────────────────────────────────────
+      const rodapeY = enderecoSectionY + enderecoSectionH;
+      const rodapeH = lh - (hh + nomeSectionH + enderecoSectionH);
+      const cellW = lw / 4;
+
+      const celulas = [
+        { label: 'CIDADE',  valor: (cliente.cidade || '').toUpperCase() },
+        { label: 'CEP',     valor: cliente.cep || '' },
+        { label: 'BAIRRO',  valor: (cliente.bairro || '').toUpperCase() },
+        { label: 'VOLUME',  valor: '' }
+      ];
+
+      celulas.forEach((cel, idx) => {
+        const cx = lx + idx * cellW;
+
+        // Divisória vertical (exceto na primeira)
+        if (idx > 0) {
+          doc.setDrawColor(30, 60, 180);
+          doc.setLineWidth(1.8);
+          doc.line(cx, rodapeY, cx, rodapeY + rodapeH);
+        }
+
+        // Label
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(20);
+        doc.setFont('helvetica', 'bold');
+        doc.text(cel.label, cx + cellW / 2, rodapeY + rodapeH * 0.38, { align: 'center' });
+
+        // Valor
+        doc.setFontSize(15);
+        doc.setFont('helvetica', 'bold');
+        doc.text(cel.valor, cx + cellW / 2, rodapeY + rodapeH * 0.65, {
+          align: 'center',
+          maxWidth: cellW - 8
+        });
+      });
+
+      const nomeSafe = (cliente.nome || 'cliente').replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
+      doc.save(`etiqueta-${nomeSafe}.pdf`);
+    };
+
+    gerar().catch(err => {
+      console.error('Erro ao gerar etiqueta:', err);
+      this.snackBar.open('Erro ao gerar etiqueta.', 'OK', { duration: 3000 });
+    });
+  }
+
+  private async imageToDataUrl(path: string): Promise<string> {
+    const response = await fetch(path);
+    if (!response.ok) throw new Error('Logo não encontrado.');
+    const blob = await response.blob();
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = () => reject(new Error('Falha ao processar logo.'));
+      reader.readAsDataURL(blob);
+    });
+  }
 }

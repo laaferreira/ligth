@@ -111,6 +111,15 @@ type PedidoDialogData = {
           </mat-slide-toggle>
         </div>
 
+        @if (notaFiscalControl.value) {
+          <mat-form-field appearance="outline">
+            <mat-label>Margem Nota Fiscal (%)</mat-label>
+            <input matInput type="number" inputmode="decimal" [formControl]="margemNotaFiscalControl" min="0" max="100" step="0.01" placeholder="0.00">
+            <mat-icon matPrefix>receipt_long</mat-icon>
+            <mat-hint>Acréscimo sobre o total para emissão de NF</mat-hint>
+          </mat-form-field>
+        }
+
         @if (descontoHabilitado) {
           <mat-form-field appearance="outline">
             <mat-label>Desconto (%)</mat-label>
@@ -288,6 +297,10 @@ type PedidoDialogData = {
                 <strong class="margem-negativa">Desconto ({{descontoControl.value}}%): - {{descontoValor | currency:'BRL'}}</strong>
               }
               <strong>Total: {{totalPedido | currency:'BRL'}}</strong>
+              @if (notaFiscalControl.value && margemNotaFiscalControl.value && margemNotaFiscalControl.value > 0) {
+                <strong style="color:#1565C0">Margem NF ({{margemNotaFiscalControl.value}}%): + {{(totalComNF - totalPedido) | currency:'BRL'}}</strong>
+                <strong style="color:#1565C0">Total c/ NF: {{totalComNF | currency:'BRL'}}</strong>
+              }
               <strong>Custo total: {{custoTotalPedido | currency:'BRL'}}</strong>
               <strong [class.margem-positiva]="lucroTotalPedido >= 0" [class.margem-negativa]="lucroTotalPedido < 0">Lucro total: {{lucroTotalPedido | currency:'BRL'}}</strong>
             </div>
@@ -296,6 +309,9 @@ type PedidoDialogData = {
             <div class="total-row">
               <strong class="margem-negativa">Desconto ({{descontoControl.value}}%): - {{descontoValor | currency:'BRL'}}</strong>
               <strong>Total: {{totalPedido | currency:'BRL'}}</strong>
+              @if (notaFiscalControl.value && margemNotaFiscalControl.value && margemNotaFiscalControl.value > 0) {
+                <strong style="color:#1565C0">Total c/ NF: {{totalComNF | currency:'BRL'}}</strong>
+              }
             </div>
           }
         }
@@ -390,6 +406,7 @@ export class PedidoDialogComponent implements OnInit {
   prazosPagamento: FormaPagamento[] = [];
 
   notaFiscalControl = new FormControl<boolean>(false);
+  margemNotaFiscalControl = new FormControl<number | null>(null);
   descontoControl = new FormControl<number | null>(null);
 
   produtoControl = new FormControl('');
@@ -571,6 +588,7 @@ export class PedidoDialogComponent implements OnInit {
         this.formaPagamentoControl.setValue(pedido.formaPagamentoId ?? null, { emitEvent: false });
         this.prazoPagamentoControl.setValue(pedido.prazoPagamentoId ?? null, { emitEvent: false });
         this.notaFiscalControl.setValue(pedido.notaFiscal ?? false, { emitEvent: false });
+        this.margemNotaFiscalControl.setValue(pedido.margemNotaFiscal ?? null, { emitEvent: false });
         this.descontoControl.setValue(pedido.percentualDesconto ?? null, { emitEvent: false });
         this.itensNovoPedido = (pedido.itens || []).map(i => ({
           produtoId: i.produtoId,
@@ -800,6 +818,12 @@ export class PedidoDialogComponent implements OnInit {
     return this.roundToTwo(this.totalPedido - this.custoTotalPedido);
   }
 
+  get totalComNF(): number {
+    const margem = this.notaFiscalControl.value ? (this.margemNotaFiscalControl.value ?? 0) : 0;
+    if (!margem || margem <= 0) return this.totalPedido;
+    return Math.round(this.totalPedido * (1 + margem / 100) * 100) / 100;
+  }
+
   salvarPedido(): void {
     if (this.modoSomenteFinalizacao) {
       this.salvarDataFinalizacao();
@@ -814,6 +838,7 @@ export class PedidoDialogComponent implements OnInit {
       formaPagamentoId: this.formaPagamentoControl.value ?? null,
       prazoPagamentoId: this.prazoPagamentoControl.value ?? null,
       notaFiscal: this.notaFiscalControl.value ?? false,
+      margemNotaFiscal: this.notaFiscalControl.value ? (this.margemNotaFiscalControl.value ?? null) : null,
       percentualDesconto: this.descontoHabilitado ? (this.descontoControl.value ?? null) : null,
       ...(this.podeEditarDataFinalizacao ? { dataFinalizacao: this.dataFinalizacaoControl.value || null } : {}),
       itens: this.itensNovoPedido.map(i => ({

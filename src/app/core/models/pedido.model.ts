@@ -26,6 +26,7 @@ export interface Pedido {
   formaPagamentoId?: number | null;
   formaPagamentoDescricao?: string | null;
   notaFiscal?: boolean;
+  margemNotaFiscal?: number | null;
   itens?: ItemPedido[];
   valorTotal?: number;
   custoTotal?: number;
@@ -39,6 +40,7 @@ export interface CriarPedido {
   prazoPagamentoId?: number | null;
   formaPagamentoId?: number | null;
   notaFiscal?: boolean;
+  margemNotaFiscal?: number | null;
   percentualDesconto?: number | null;
   itens: { produtoId: number; quantidade: number; valorUnitario: number; custoUnitario?: number }[];
 }
@@ -48,6 +50,7 @@ export interface AtualizarPedido extends Partial<CriarPedido> {
   prazoPagamentoId?: number | null;
   formaPagamentoId?: number | null;
   notaFiscal?: boolean;
+  margemNotaFiscal?: number | null;
   percentualDesconto?: number | null;
 }
 

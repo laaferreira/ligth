@@ -668,7 +668,7 @@ export class PedidosComponent implements OnInit {
         doc.text(`Prazo / Parcelas: ${p.prazoPagamentoDescricao}`, 14, nextY);
         nextY += 6;
       }
-      doc.text(`Nota Fiscal: ${p.notaFiscal ? 'Sim' : 'Não'}`, 14, nextY);
+      doc.text(`Nota Fiscal: ${p.notaFiscal ? 'Sim' : 'Não'}${p.notaFiscal && p.margemNotaFiscal ? ` (+${p.margemNotaFiscal}%)` : ''}`, 14, nextY);
       nextY += 10;
 
       doc.setTextColor(0, 0, 0); doc.setFontSize(14); doc.setFont('helvetica', 'bold');
@@ -733,9 +733,33 @@ export class PedidosComponent implements OnInit {
         doc.setTextColor(21, 101, 192);
         doc.text(`Desconto (${p.percentualDesconto}%): - R$ ${valorDesconto.toFixed(2).replace('.', ',')}`, pw - 14, fy + 9, { align: 'right' });
         doc.setTextColor(0, 0, 0); doc.setFontSize(18); doc.setFont('helvetica', 'bold');
-        doc.text(`Total a Pagar: R$ ${(p.valorTotal || 0).toFixed(2).replace('.', ',')}`, pw - 14, fy + 20, { align: 'right' });
+        const baseTotal = p.valorTotal || 0;
+        if (p.notaFiscal && p.margemNotaFiscal && p.margemNotaFiscal > 0) {
+          const acrescimoNF = Math.round(baseTotal * p.margemNotaFiscal / 100 * 100) / 100;
+          const totalComNF = Math.round((baseTotal + acrescimoNF) * 100) / 100;
+          doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(0, 0, 0);
+          doc.text(`Total s/ NF: R$ ${baseTotal.toFixed(2).replace('.', ',')}`, pw - 14, fy + 18, { align: 'right' });
+          doc.setTextColor(21, 101, 192);
+          doc.text(`Margem NF (${p.margemNotaFiscal}%): + R$ ${acrescimoNF.toFixed(2).replace('.', ',')}`, pw - 14, fy + 25, { align: 'right' });
+          doc.setTextColor(0, 0, 0); doc.setFontSize(18); doc.setFont('helvetica', 'bold');
+          doc.text(`Total c/ NF: R$ ${totalComNF.toFixed(2).replace('.', ',')}`, pw - 14, fy + 36, { align: 'right' });
+        } else {
+          doc.text(`Total a Pagar: R$ ${baseTotal.toFixed(2).replace('.', ',')}`, pw - 14, fy + 20, { align: 'right' });
+        }
       } else {
-        doc.text(`Total a Pagar: R$ ${(p.valorTotal || 0).toFixed(2).replace('.', ',')}`, pw - 14, fy + 10, { align: 'right' });
+        const baseTotal = p.valorTotal || 0;
+        if (p.notaFiscal && p.margemNotaFiscal && p.margemNotaFiscal > 0) {
+          const acrescimoNF = Math.round(baseTotal * p.margemNotaFiscal / 100 * 100) / 100;
+          const totalComNF = Math.round((baseTotal + acrescimoNF) * 100) / 100;
+          doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(60, 60, 60);
+          doc.text(`Total s/ NF: R$ ${baseTotal.toFixed(2).replace('.', ',')}`, pw - 14, fy + 2, { align: 'right' });
+          doc.setTextColor(21, 101, 192);
+          doc.text(`Margem NF (${p.margemNotaFiscal}%): + R$ ${acrescimoNF.toFixed(2).replace('.', ',')}`, pw - 14, fy + 9, { align: 'right' });
+          doc.setTextColor(0, 0, 0); doc.setFontSize(18); doc.setFont('helvetica', 'bold');
+          doc.text(`Total c/ NF: R$ ${totalComNF.toFixed(2).replace('.', ',')}`, pw - 14, fy + 20, { align: 'right' });
+        } else {
+          doc.text(`Total a Pagar: R$ ${baseTotal.toFixed(2).replace('.', ',')}`, pw - 14, fy + 10, { align: 'right' });
+        }
       }
       const fty = doc.internal.pageSize.getHeight() - 30;
       doc.setDrawColor(0, 0, 0); doc.setLineWidth(0.4);
