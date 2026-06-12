@@ -183,17 +183,17 @@
               @if (!isVendedor) {
                 @if (r.status === 'EM_ABERTO') {
                   <button mat-icon-button color="primary" (click)="editar(r)" matTooltip="Editar pedido"><mat-icon>edit</mat-icon></button>
-                  <button mat-icon-button color="primary" (click)="confirmar(r)" matTooltip="Confirmar pedido"><mat-icon>done_outline</mat-icon></button>
+                  <button mat-icon-button color="primary" (click)="confirmar(r)" [disabled]="processingIds.has(r.id)" matTooltip="Confirmar pedido"><mat-icon>done_outline</mat-icon></button>
                 }
                 @if (podeEditarDataFinalizacao(r)) {
                   <button mat-icon-button color="primary" (click)="editar(r)" matTooltip="Editar pedido finalizado"><mat-icon>edit</mat-icon></button>
-                  <button mat-icon-button color="warn" (click)="cancelarPedido(r)" matTooltip="Cancelar pedido finalizado"><mat-icon>cancel</mat-icon></button>
+                  <button mat-icon-button color="warn" (click)="cancelarPedido(r)" [disabled]="processingIds.has(r.id)" matTooltip="Cancelar pedido finalizado"><mat-icon>cancel</mat-icon></button>
                 }
                 @if (r.status === 'CONFIRMADO') {
-                  <button mat-icon-button color="primary" (click)="finalizar(r)" matTooltip="Finalizar pedido"><mat-icon>done_all</mat-icon></button>
+                  <button mat-icon-button color="primary" (click)="finalizar(r)" [disabled]="processingIds.has(r.id)" matTooltip="Finalizar pedido"><mat-icon>done_all</mat-icon></button>
                 }
                 @if (r.status === 'EM_ABERTO' || r.status === 'CONFIRMADO') {
-                  <button mat-icon-button color="warn" (click)="cancelarPedido(r)" matTooltip="Cancelar pedido"><mat-icon>cancel</mat-icon></button>
+                  <button mat-icon-button color="warn" (click)="cancelarPedido(r)" [disabled]="processingIds.has(r.id)" matTooltip="Cancelar pedido"><mat-icon>cancel</mat-icon></button>
                 }
               }
               <button mat-icon-button color="primary" (click)="gerarPDF(r)" matTooltip="Gerar PDF do pedido"><mat-icon>picture_as_pdf</mat-icon></button>
@@ -244,7 +244,7 @@
                         <mat-icon>edit</mat-icon>
                         <span>Editar</span>
                       </button>
-                      <button mat-menu-item (click)="confirmar(r)" matTooltip="Confirmar pedido">
+                      <button mat-menu-item (click)="confirmar(r)" [disabled]="processingIds.has(r.id)" matTooltip="Confirmar pedido">
                         <mat-icon>done_outline</mat-icon>
                         <span>Confirmar</span>
                       </button>
@@ -254,19 +254,19 @@
                         <mat-icon>edit</mat-icon>
                         <span>Editar pedido</span>
                       </button>
-                      <button mat-menu-item (click)="cancelarPedido(r)" matTooltip="Cancelar pedido finalizado">
+                      <button mat-menu-item (click)="cancelarPedido(r)" [disabled]="processingIds.has(r.id)" matTooltip="Cancelar pedido finalizado">
                         <mat-icon>cancel</mat-icon>
                         <span>Cancelar</span>
                       </button>
                     }
                     @if (r.status === 'CONFIRMADO') {
-                      <button mat-menu-item (click)="finalizar(r)" matTooltip="Finalizar pedido">
+                      <button mat-menu-item (click)="finalizar(r)" [disabled]="processingIds.has(r.id)" matTooltip="Finalizar pedido">
                         <mat-icon>done_all</mat-icon>
                         <span>Finalizar</span>
                       </button>
                     }
                     @if (r.status === 'EM_ABERTO' || r.status === 'CONFIRMADO') {
-                      <button mat-menu-item (click)="cancelarPedido(r)" matTooltip="Cancelar pedido">
+                      <button mat-menu-item (click)="cancelarPedido(r)" [disabled]="processingIds.has(r.id)" matTooltip="Cancelar pedido">
                         <mat-icon>cancel</mat-icon>
                         <span>Cancelar</span>
                       </button>
@@ -298,13 +298,13 @@
               @if (!isVendedor) {
                 @if (podeEditarDataFinalizacao(r)) {
                   <button mat-stroked-button color="primary" (click)="editar(r)" matTooltip="Editar pedido finalizado"><mat-icon>edit</mat-icon> Editar</button>
-                  <button mat-stroked-button color="warn" (click)="cancelarPedido(r)" matTooltip="Cancelar pedido finalizado"><mat-icon>cancel</mat-icon> Cancelar</button>
+                  <button mat-stroked-button color="warn" (click)="cancelarPedido(r)" [disabled]="processingIds.has(r.id)" matTooltip="Cancelar pedido finalizado"><mat-icon>cancel</mat-icon> Cancelar</button>
                 }
                 @if (r.status === 'EM_ABERTO') {
-                  <button mat-stroked-button color="primary" (click)="confirmar(r)" matTooltip="Confirmar pedido"><mat-icon>done_outline</mat-icon> Confirmar</button>
+                  <button mat-stroked-button color="primary" (click)="confirmar(r)" [disabled]="processingIds.has(r.id)" matTooltip="Confirmar pedido"><mat-icon>done_outline</mat-icon> Confirmar</button>
                 }
                 @if (r.status === 'CONFIRMADO') {
-                  <button mat-stroked-button color="primary" (click)="finalizar(r)" matTooltip="Finalizar pedido"><mat-icon>done_all</mat-icon> Finalizar</button>
+                  <button mat-stroked-button color="primary" (click)="finalizar(r)" [disabled]="processingIds.has(r.id)" matTooltip="Finalizar pedido"><mat-icon>done_all</mat-icon> Finalizar</button>
                 }
               }
               <button mat-stroked-button color="primary" (click)="gerarPDF(r)" matTooltip="Gerar PDF do pedido"><mat-icon>picture_as_pdf</mat-icon> PDF</button>

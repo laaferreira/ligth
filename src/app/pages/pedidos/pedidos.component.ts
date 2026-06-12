@@ -98,6 +98,7 @@ export class PedidosComponent implements OnInit {
   userRole: UserRole | null = null;
   podeImportarXls = false;
   importando = false;
+  readonly processingIds = new Set<number>();
   resumoImportacao = '';
   detalhesImportacao: ImportarPedidoErro[] = [];
   resumoErrosImportacao: ImportarPedidoResumoErro[] = [];
@@ -515,6 +516,8 @@ export class PedidosComponent implements OnInit {
   }
 
   async confirmar(p: Pedido): Promise<void> {
+    if (this.processingIds.has(p.id!)) return;
+    this.processingIds.add(p.id!);
     try {
       const pedidoCompleto = await firstValueFrom(this.pedidoService.buscarPorId(p.id!));
       await firstValueFrom(this.pedidoService.confirmar(p.id!));
@@ -532,25 +535,31 @@ export class PedidosComponent implements OnInit {
         fallbackMessage: 'Erro ao confirmar pedido.',
         duration: 5000
       });
+    } finally {
+      this.processingIds.delete(p.id!);
     }
   }
 
   finalizar(p: Pedido): void {
+    if (this.processingIds.has(p.id!)) return;
+    this.processingIds.add(p.id!);
     this.pedidoService.finalizar(p.id!).subscribe({
-      next: () => { this.snackBar.open('Pedido faturado!', 'OK', { duration: 3000 }); this.carregar(); },
-      error: (e) => this.errorPresenter.handle(e, {
+      next: () => { this.processingIds.delete(p.id!); this.snackBar.open('Pedido faturado!', 'OK', { duration: 3000 }); this.carregar(); },
+      error: (e) => { this.processingIds.delete(p.id!); this.errorPresenter.handle(e, {
         context: 'Pedidos.Finalizar',
         source: 'supabase',
         code: 'ORDER_FINISH_FAILED',
         title: 'Falha ao finalizar pedido',
         fallbackMessage: 'Erro ao finalizar pedido.',
         duration: 5000
-      })
+      }); }
     });
   }
 
   async cancelarPedido(p: Pedido): Promise<void> {
+    if (this.processingIds.has(p.id!)) return;
     if (!confirm(`Cancelar pedido ${p.numero}?`)) return;
+    this.processingIds.add(p.id!);
     try {
       const deveRestaurarEstoque = p.status === 'CONFIRMADO' || p.status === 'FINALIZADO';
       let pedidoCompleto: Pedido | null = null;
@@ -575,6 +584,8 @@ export class PedidosComponent implements OnInit {
         fallbackMessage: 'Erro ao cancelar pedido.',
         duration: 5000
       });
+    } finally {
+      this.processingIds.delete(p.id!);
     }
   }
 
