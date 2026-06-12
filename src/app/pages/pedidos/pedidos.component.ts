@@ -99,6 +99,10 @@ export class PedidosComponent implements OnInit {
   podeImportarXls = false;
   importando = false;
   readonly processingIds = new Set<number>();
+
+  isProcessing(id?: number): boolean {
+    return id != null && this.processingIds.has(id);
+  }
   resumoImportacao = '';
   detalhesImportacao: ImportarPedidoErro[] = [];
   resumoErrosImportacao: ImportarPedidoResumoErro[] = [];
