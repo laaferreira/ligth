@@ -85,9 +85,9 @@
           <mat-select [value]="filtroStatus" (selectionChange)="filtroStatus=$event.value; aplicarFiltros()">
             <mat-option value="">Todos</mat-option>
             <mat-option value="ORCAMENTO">Orçamento</mat-option>
-            <mat-option value="EM_ABERTO">Em Aberto</mat-option>
-            <mat-option value="CONFIRMADO">Confirmado</mat-option>
-            <mat-option value="FINALIZADO">Finalizado</mat-option>
+            <mat-option value="EM_ABERTO">Em Análise</mat-option>
+            <mat-option value="CONFIRMADO">Separação</mat-option>
+            <mat-option value="FINALIZADO">Faturado</mat-option>
             <mat-option value="CANCELADO">Cancelado</mat-option>
           </mat-select>
         </mat-form-field>

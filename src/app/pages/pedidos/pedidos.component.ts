@@ -487,7 +487,7 @@ export class PedidosComponent implements OnInit {
 
   confirmarOrcamento(p: Pedido): void {
     this.pedidoService.confirmarOrcamento(p.id!).subscribe({
-      next: () => { this.snackBar.open('Orçamento confirmado! Pedido em aberto.', 'OK', { duration: 3000 }); this.carregar(); },
+      next: () => { this.snackBar.open('Orçamento confirmado! Pedido em análise.', 'OK', { duration: 3000 }); this.carregar(); },
       error: (e) => this.errorPresenter.handle(e, {
         context: 'Pedidos.ConfirmarOrcamento',
         source: 'supabase',
@@ -521,7 +521,7 @@ export class PedidosComponent implements OnInit {
       for (const item of pedidoCompleto.itens || []) {
         await firstValueFrom(this.estoqueService.saida(item.produtoId, item.quantidade, `Pedido ${pedidoCompleto.numero} - Confirmação`));
       }
-      this.snackBar.open('Pedido confirmado! Estoque atualizado.', 'OK', { duration: 3000 });
+      this.snackBar.open('Pedido em separação! Estoque atualizado.', 'OK', { duration: 3000 });
       this.carregar();
     } catch (e) {
       this.errorPresenter.handle(e, {
@@ -537,7 +537,7 @@ export class PedidosComponent implements OnInit {
 
   finalizar(p: Pedido): void {
     this.pedidoService.finalizar(p.id!).subscribe({
-      next: () => { this.snackBar.open('Pedido finalizado!', 'OK', { duration: 3000 }); this.carregar(); },
+      next: () => { this.snackBar.open('Pedido faturado!', 'OK', { duration: 3000 }); this.carregar(); },
       error: (e) => this.errorPresenter.handle(e, {
         context: 'Pedidos.Finalizar',
         source: 'supabase',
@@ -579,7 +579,7 @@ export class PedidosComponent implements OnInit {
   }
 
   statusLabel(s?: string): string {
-    const map: Record<string, string> = { ORCAMENTO: 'Orçamento', EM_ABERTO: 'Em Aberto', CONFIRMADO: 'Confirmado', CANCELADO: 'Cancelado', FINALIZADO: 'Finalizado' };
+    const map: Record<string, string> = { ORCAMENTO: 'Orçamento', EM_ABERTO: 'Em Análise', CONFIRMADO: 'Separação', CANCELADO: 'Cancelado', FINALIZADO: 'Faturado' };
     return s ? (map[s] || s) : '-';
   }
 
@@ -693,10 +693,52 @@ export class PedidosComponent implements OnInit {
         `R$ ${i.valorUnitario.toFixed(2).replace('.', ',')}`,
         `R$ ${i.valorTotal!.toFixed(2).replace('.', ',')}`
       ]);
-      autoTable(doc, { startY: nextY + 8, head: [['Qtd', 'Descricao', 'Fornecedor', 'Vlr.Unit.', 'Vlr.Total']], body: rows, theme: 'plain',
+
+      const temNF = p.notaFiscal && p.margemNotaFiscal && p.margemNotaFiscal > 0;
+      const fatorNF = temNF ? (1 + p.margemNotaFiscal! / 100) : 1;
+
+      const rowsNF = temNF
+        ? (p.itens || []).map((i) => {
+            const unitNF = Math.round(i.valorUnitario * fatorNF * 100) / 100;
+            const totalNF = Math.round((i.valorTotal || 0) * fatorNF * 100) / 100;
+            return [
+              i.quantidade,
+              `${i.produtoCodigo} - ${i.produtoDescricao}`,
+              i.fornecedorNome || '-',
+              `R$ ${i.valorUnitario.toFixed(2).replace('.', ',')}`,
+              `R$ ${(i.valorTotal || 0).toFixed(2).replace('.', ',')}`,
+              `R$ ${unitNF.toFixed(2).replace('.', ',')}`,
+              `R$ ${totalNF.toFixed(2).replace('.', ',')}`
+            ];
+          })
+        : rows;
+
+      const headRow = temNF
+        ? [['Qtd', 'Descri\u00e7ao', 'Fornecedor', 'Vlr.Unit.', 'Vlr.Total', `Unit. c/NF`, `Total c/NF`]]
+        : [['Qtd', 'Descri\u00e7ao', 'Fornecedor', 'Vlr.Unit.', 'Vlr.Total']];
+
+      const colStyles = temNF
+        ? {
+            0: { halign: 'center' as const, cellWidth: 12 },
+            1: { cellWidth: 'auto' as const },
+            2: { cellWidth: 26, textColor: [100, 50, 160] as [number,number,number], fontStyle: 'italic' as const },
+            3: { halign: 'right' as const, cellWidth: 22 },
+            4: { halign: 'right' as const, cellWidth: 22 },
+            5: { halign: 'right' as const, cellWidth: 24, textColor: [21, 101, 192] as [number,number,number] },
+            6: { halign: 'right' as const, cellWidth: 24, textColor: [21, 101, 192] as [number,number,number] }
+          }
+        : {
+            0: { halign: 'center' as const, cellWidth: 12 },
+            1: { cellWidth: 'auto' as const },
+            2: { cellWidth: 34, textColor: [100, 50, 160] as [number,number,number], fontStyle: 'italic' as const },
+            3: { halign: 'right' as const, cellWidth: 28 },
+            4: { halign: 'right' as const, cellWidth: 28 }
+          };
+
+      autoTable(doc, { startY: nextY + 8, head: headRow, body: temNF ? rowsNF : rows, theme: 'plain',
         headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', fontSize: 9, lineWidth: { bottom: 0.5 }, lineColor: [0, 0, 0] },
         bodyStyles: { fontSize: 9, textColor: [30, 30, 30] },
-        columnStyles: { 0: { halign: 'center', cellWidth: 12 }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 34, textColor: [100, 50, 160], fontStyle: 'italic' }, 3: { halign: 'right', cellWidth: 28 }, 4: { halign: 'right', cellWidth: 28 } },
+        columnStyles: colStyles as { [key: string]: any },
         alternateRowStyles: { fillColor: [248, 248, 248] },
         didParseCell: (data: any) => {
           if (data.section === 'body' && indicesAlerta.has(data.row.index)) {
@@ -734,29 +776,18 @@ export class PedidosComponent implements OnInit {
         doc.text(`Desconto (${p.percentualDesconto}%): - R$ ${valorDesconto.toFixed(2).replace('.', ',')}`, pw - 14, fy + 9, { align: 'right' });
         doc.setTextColor(0, 0, 0); doc.setFontSize(18); doc.setFont('helvetica', 'bold');
         const baseTotal = p.valorTotal || 0;
-        if (p.notaFiscal && p.margemNotaFiscal && p.margemNotaFiscal > 0) {
-          const acrescimoNF = Math.round(baseTotal * p.margemNotaFiscal / 100 * 100) / 100;
-          const totalComNF = Math.round((baseTotal + acrescimoNF) * 100) / 100;
-          doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(0, 0, 0);
-          doc.text(`Total s/ NF: R$ ${baseTotal.toFixed(2).replace('.', ',')}`, pw - 14, fy + 18, { align: 'right' });
-          doc.setTextColor(21, 101, 192);
-          doc.text(`Margem NF (${p.margemNotaFiscal}%): + R$ ${acrescimoNF.toFixed(2).replace('.', ',')}`, pw - 14, fy + 25, { align: 'right' });
-          doc.setTextColor(0, 0, 0); doc.setFontSize(18); doc.setFont('helvetica', 'bold');
-          doc.text(`Total c/ NF: R$ ${totalComNF.toFixed(2).replace('.', ',')}`, pw - 14, fy + 36, { align: 'right' });
+        if (temNF) {
+          const totalComNF = Math.round(baseTotal * fatorNF * 100) / 100;
+          doc.text(`Total c/ NF: R$ ${totalComNF.toFixed(2).replace('.', ',')}`, pw - 14, fy + 20, { align: 'right' });
         } else {
           doc.text(`Total a Pagar: R$ ${baseTotal.toFixed(2).replace('.', ',')}`, pw - 14, fy + 20, { align: 'right' });
         }
       } else {
         const baseTotal = p.valorTotal || 0;
-        if (p.notaFiscal && p.margemNotaFiscal && p.margemNotaFiscal > 0) {
-          const acrescimoNF = Math.round(baseTotal * p.margemNotaFiscal / 100 * 100) / 100;
-          const totalComNF = Math.round((baseTotal + acrescimoNF) * 100) / 100;
-          doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(60, 60, 60);
-          doc.text(`Total s/ NF: R$ ${baseTotal.toFixed(2).replace('.', ',')}`, pw - 14, fy + 2, { align: 'right' });
-          doc.setTextColor(21, 101, 192);
-          doc.text(`Margem NF (${p.margemNotaFiscal}%): + R$ ${acrescimoNF.toFixed(2).replace('.', ',')}`, pw - 14, fy + 9, { align: 'right' });
-          doc.setTextColor(0, 0, 0); doc.setFontSize(18); doc.setFont('helvetica', 'bold');
-          doc.text(`Total c/ NF: R$ ${totalComNF.toFixed(2).replace('.', ',')}`, pw - 14, fy + 20, { align: 'right' });
+        if (temNF) {
+          const totalComNF = Math.round(baseTotal * fatorNF * 100) / 100;
+          doc.setFontSize(18); doc.setFont('helvetica', 'bold'); doc.setTextColor(0, 0, 0);
+          doc.text(`Total c/ NF: R$ ${totalComNF.toFixed(2).replace('.', ',')}`, pw - 14, fy + 10, { align: 'right' });
         } else {
           doc.text(`Total a Pagar: R$ ${baseTotal.toFixed(2).replace('.', ',')}`, pw - 14, fy + 10, { align: 'right' });
         }
