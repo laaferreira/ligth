@@ -712,7 +712,7 @@ export class PedidosComponent implements OnInit {
       const temNF = p.notaFiscal && p.margemNotaFiscal && p.margemNotaFiscal > 0;
       const fatorNF = temNF ? (1 + p.margemNotaFiscal! / 100) : 1;
 
-      const rowsNF = temNF
+      const tableRows = temNF
         ? (p.itens || []).map((i) => {
             const unitNF = Math.round(i.valorUnitario * fatorNF * 100) / 100;
             const totalNF = Math.round((i.valorTotal || 0) * fatorNF * 100) / 100;
@@ -720,40 +720,26 @@ export class PedidosComponent implements OnInit {
               i.quantidade,
               `${i.produtoCodigo} - ${i.produtoDescricao}`,
               i.fornecedorNome || '-',
-              `R$ ${i.valorUnitario.toFixed(2).replace('.', ',')}`,
-              `R$ ${(i.valorTotal || 0).toFixed(2).replace('.', ',')}`,
               `R$ ${unitNF.toFixed(2).replace('.', ',')}`,
               `R$ ${totalNF.toFixed(2).replace('.', ',')}`
             ];
           })
         : rows;
 
-      const headRow = temNF
-        ? [['Qtd', 'Descri\u00e7ao', 'Fornecedor', 'Vlr.Unit.', 'Vlr.Total', `Unit. c/NF`, `Total c/NF`]]
-        : [['Qtd', 'Descri\u00e7ao', 'Fornecedor', 'Vlr.Unit.', 'Vlr.Total']];
+      const headRow = [['Qtd', 'Descri\u00e7ao', 'Fornecedor', 'Vlr.Unit.', 'Vlr.Total']];
 
-      const colStyles = temNF
-        ? {
-            0: { halign: 'center' as const, cellWidth: 12 },
-            1: { cellWidth: 'auto' as const },
-            2: { cellWidth: 26, textColor: [100, 50, 160] as [number,number,number], fontStyle: 'italic' as const },
-            3: { halign: 'right' as const, cellWidth: 22 },
-            4: { halign: 'right' as const, cellWidth: 22 },
-            5: { halign: 'right' as const, cellWidth: 24, textColor: [21, 101, 192] as [number,number,number] },
-            6: { halign: 'right' as const, cellWidth: 24, textColor: [21, 101, 192] as [number,number,number] }
-          }
-        : {
-            0: { halign: 'center' as const, cellWidth: 12 },
-            1: { cellWidth: 'auto' as const },
-            2: { cellWidth: 34, textColor: [100, 50, 160] as [number,number,number], fontStyle: 'italic' as const },
-            3: { halign: 'right' as const, cellWidth: 28 },
-            4: { halign: 'right' as const, cellWidth: 28 }
-          };
+      const colStyles = {
+        0: { halign: 'center' as const, cellWidth: 12 },
+        1: { cellWidth: 'auto' as const },
+        2: { cellWidth: 34, textColor: [100, 50, 160] as [number,number,number], fontStyle: 'italic' as const },
+        3: { halign: 'right' as const, cellWidth: 28 },
+        4: { halign: 'right' as const, cellWidth: 28 }
+      };
 
-      autoTable(doc, { startY: nextY + 8, head: headRow, body: temNF ? rowsNF : rows, theme: 'plain',
+      autoTable(doc, { startY: nextY + 8, head: headRow, body: tableRows, theme: 'plain',
         headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', fontSize: 9, lineWidth: { bottom: 0.5 }, lineColor: [0, 0, 0] },
         bodyStyles: { fontSize: 9, textColor: [30, 30, 30] },
-        columnStyles: colStyles as { [key: string]: any },
+        columnStyles: colStyles,
         alternateRowStyles: { fillColor: [248, 248, 248] },
         didParseCell: (data: any) => {
           if (data.section === 'body' && indicesAlerta.has(data.row.index)) {

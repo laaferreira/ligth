@@ -305,7 +305,7 @@ export class ClientesComponent implements OnInit {
 
       // ── Cabeçalho ──────────────────────────────────────────────────────────
       const hh = 50;
-      doc.setFillColor(180, 140, 220);  // lilás claro
+      doc.setFillColor(255, 255, 255);  // branco
       doc.rect(lx, ly, lw, hh, 'F');
 
       // Logo da marca (opcional)
@@ -315,7 +315,7 @@ export class ClientesComponent implements OnInit {
       } catch { /* sem logo */ }
 
       // Texto "MEGA LUZ COMERCIAL"
-      doc.setTextColor(255, 255, 255);
+      doc.setTextColor(15, 45, 25);
       doc.setFontSize(34);
       doc.setFont('helvetica', 'bold');
       doc.text('MEGA LUZ COMERCIAL', pw / 2 + 10, ly + hh / 2 + 6, { align: 'center' });
