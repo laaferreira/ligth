@@ -55,6 +55,7 @@ import { AppUser, UserRole } from '../../core/models/user.model';
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Perfil</mat-label>
           <mat-select formControlName="role" required>
+            <mat-option value="auxiliar_cliente">Auxiliar Cliente</mat-option>
             <mat-option value="vendedor">Vendedor</mat-option>
             <mat-option value="gerente" *ngIf="podeSelectarGerente()">Gerente</mat-option>
             <mat-option value="administrador" *ngIf="data.usuarioAtual?.role === 'administrador'">

@@ -8,15 +8,18 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ProdutoService } from '../../core/services/produto.service';
 import { Produto } from '../../core/models/produto.model';
 import { Fornecedor } from '../../core/models/fornecedor.model';
+import { UserRole } from '../../core/models/user.model';
 
 type ProdutoDialogData = {
   modo: 'criar' | 'editar';
   produto?: Produto;
   fornecedores: Fornecedor[];
+  userRole?: UserRole | null;
 };
 
 @Component({
@@ -32,6 +35,7 @@ type ProdutoDialogData = {
     MatButtonModule,
     MatIconModule,
     MatSlideToggleModule,
+    MatCheckboxModule,
     MatSnackBarModule
   ],
   template: `
@@ -110,6 +114,12 @@ type ProdutoDialogData = {
         </div>
 
         <mat-slide-toggle formControlName="ativo" color="primary">Ativo</mat-slide-toggle>
+
+        @if (data.userRole === 'gerente' || data.userRole === 'administrador') {
+          <mat-checkbox formControlName="ocultarParaVendedor" color="warn">
+            Ocultar este produto para Vendedor nos pedidos
+          </mat-checkbox>
+        }
       </form>
     </mat-dialog-content>
 
@@ -240,7 +250,8 @@ export class ProdutoDialogComponent {
       quantidadeEstoque: [data.produto?.quantidadeEstoque ?? 0],
       estoqueMaximo: [data.produto?.estoqueMaximo ?? 0],
       estoqueMinimo: [data.produto?.estoqueMinimo ?? 5],
-      ativo: [data.produto?.ativo ?? true]
+      ativo: [data.produto?.ativo ?? true],
+      ocultarParaVendedor: [data.produto?.ocultarParaVendedor ?? false]
     });
   }
 
@@ -270,7 +281,8 @@ export class ProdutoDialogComponent {
       precoVendaVendedor: valor.precoVendaVendedor != null ? Number(valor.precoVendaVendedor) : null,
       quantidadeEstoque: Number(valor.quantidadeEstoque || 0),
       estoqueMaximo: Number(valor.estoqueMaximo || 0),
-      estoqueMinimo: Number(valor.estoqueMinimo || 0)
+      estoqueMinimo: Number(valor.estoqueMinimo || 0),
+      ocultarParaVendedor: valor.ocultarParaVendedor ?? false
     };
     const requisicao = this.data.modo === 'editar' && this.data.produto?.id
       ? this.produtoService.atualizar(this.data.produto.id, dados)

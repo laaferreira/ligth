@@ -23,6 +23,7 @@ type ProdutoDbRow = {
   estoqueMaximo?: number | null;
   estoqueMinimo?: number | null;
   ativo?: boolean | null;
+  ocultar_para_vendedor?: boolean | null;
   fornecedorId?: number | null;
   fornecedorNome?: string | null;
   user_id?: string | null;
@@ -132,7 +133,8 @@ export class ProdutoService {
       quantidadeEstoque,
       estoqueMaximo: row.estoqueMaximo ?? 0,
       estoqueMinimo: row.estoqueMinimo ?? 0,
-      ativo: row.ativo ?? true
+      ativo: row.ativo ?? true,
+      ocultarParaVendedor: row.ocultar_para_vendedor ?? false
     };
   }
 
@@ -160,6 +162,7 @@ export class ProdutoService {
       estoqueMaximo: produto.estoqueMaximo ?? 0,
       estoqueMinimo: produto.estoqueMinimo ?? 0,
       ativo: produto.ativo ?? true,
+      ocultar_para_vendedor: produto.ocultarParaVendedor ?? false,
       fornecedorId: produto.fornecedorId ?? null,
       fornecedorNome: produto.fornecedorNome || null
     };

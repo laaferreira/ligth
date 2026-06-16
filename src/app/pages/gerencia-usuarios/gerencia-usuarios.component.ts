@@ -748,7 +748,8 @@ export class GerenciaUsuariosComponent implements OnInit {
     const traducoes: Record<UserRole, string> = {
       administrador: 'Administrador',
       gerente: 'Gerente',
-      vendedor: 'Vendedor'
+      vendedor: 'Vendedor',
+      auxiliar_cliente: 'Auxiliar Cliente'
     };
     return traducoes[role] || role;
   }

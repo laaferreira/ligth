@@ -5,7 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
 };
 
-type UserRole = 'administrador' | 'gerente' | 'vendedor';
+type UserRole = 'administrador' | 'gerente' | 'vendedor' | 'auxiliar_cliente';
 
 type CreateUserPayload = {
   email?: string;
@@ -134,7 +134,7 @@ Deno.serve(async (request) => {
     return jsonResponse({ error: 'Nome é obrigatório.' }, 400);
   }
 
-  if (!role || !['administrador', 'gerente', 'vendedor'].includes(role)) {
+  if (!role || !['administrador', 'gerente', 'vendedor', 'auxiliar_cliente'].includes(role)) {
     return jsonResponse({ error: 'Perfil inválido.' }, 400);
   }
 

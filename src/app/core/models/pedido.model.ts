@@ -21,12 +21,14 @@ export interface Pedido {
   clienteNome?: string;
   clienteCpfCnpj?: string;
   clienteEndereco?: string;
+  clienteResponsavelNome?: string | null;
   prazoPagamentoId?: number | null;
   prazoPagamentoDescricao?: string | null;
   formaPagamentoId?: number | null;
   formaPagamentoDescricao?: string | null;
   notaFiscal?: boolean;
   margemNotaFiscal?: number | null;
+  observacao?: string | null;
   itens?: ItemPedido[];
   valorTotal?: number;
   custoTotal?: number;
@@ -42,6 +44,7 @@ export interface CriarPedido {
   notaFiscal?: boolean;
   margemNotaFiscal?: number | null;
   percentualDesconto?: number | null;
+  observacao?: string | null;
   itens: { produtoId: number; quantidade: number; valorUnitario: number; custoUnitario?: number }[];
 }
 
@@ -52,6 +55,7 @@ export interface AtualizarPedido extends Partial<CriarPedido> {
   notaFiscal?: boolean;
   margemNotaFiscal?: number | null;
   percentualDesconto?: number | null;
+  observacao?: string | null;
 }
 
 export interface ImportarPedidoLinha {

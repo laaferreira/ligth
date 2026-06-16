@@ -658,6 +658,11 @@ export class PedidosComponent implements OnInit {
         doc.text(`CNPJ/CPF: ${p.clienteCpfCnpj}`, pw / 2, nextY, { align: 'center' });
         nextY += 7;
       }
+      if (p.clienteResponsavelNome) {
+        doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(60, 60, 60);
+        doc.text(`Representante: ${p.clienteResponsavelNome}`, pw / 2, nextY, { align: 'center' });
+        nextY += 7;
+      }
       doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.setTextColor(100, 100, 100);
       const docLabel = p.status === 'ORCAMENTO' ? `Orçamento: ${p.numero}` : `Pedido: ${p.numero}`;
       doc.text(docLabel, pw / 2, nextY, { align: 'center' });
@@ -684,8 +689,11 @@ export class PedidosComponent implements OnInit {
         nextY += 6;
       }
       doc.text(`Nota Fiscal: ${p.notaFiscal ? 'Sim' : 'Não'}${p.notaFiscal && p.margemNotaFiscal ? ` (+${p.margemNotaFiscal}%)` : ''}`, 14, nextY);
-      nextY += 10;
-
+      nextY += 10;      if (p.observacao) {
+        doc.setFontSize(9); doc.setFont('helvetica', 'italic'); doc.setTextColor(80, 80, 80);
+        doc.text(`Obs.: ${p.observacao}`, 14, nextY, { maxWidth: pw - 28 });
+        nextY += 8;
+      }
       doc.setTextColor(0, 0, 0); doc.setFontSize(14); doc.setFont('helvetica', 'bold');
       doc.text(`${p.itens?.length || 0} itens`, 14, nextY + 3);
 

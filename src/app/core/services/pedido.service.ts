@@ -21,7 +21,7 @@ type PedidoDbRow = {
   margem_nota_fiscal?: number | null;
   percentual_desconto?: number | null;
   user_id?: string | null;
-  clientes?: { nome?: string | null; cpf_cnpj?: string | null; endereco?: string | null } | Array<{ nome?: string | null; cpf_cnpj?: string | null; endereco?: string | null }> | null;
+  clientes?: { nome?: string | null; cpf_cnpj?: string | null; endereco?: string | null; app_users?: { nome?: string | null } | Array<{ nome?: string | null }> | null } | Array<{ nome?: string | null; cpf_cnpj?: string | null; endereco?: string | null; app_users?: { nome?: string | null } | Array<{ nome?: string | null }> | null }> | null;
 };
 
 type ItemPedidoDbRow = {
@@ -305,7 +305,7 @@ export class PedidoService {
     const { userId, role, margemVendaOuro } = await this.getCurrentUserContext();
     let pedidoQuery = this.supabaseService.getClient()
       .from(this.table)
-      .select('id, cliente_id, prazo_pagamento_id, forma_pagamento_id, status, valor_total, percentual_desconto, margem_nota_fiscal, data, data_finalizacao, observacao, nota_fiscal, user_id, clientes(nome, cpf_cnpj, endereco), prazos_pagamento(descricao), formas_pagamento(descricao)')
+      .select('id, cliente_id, prazo_pagamento_id, forma_pagamento_id, status, valor_total, percentual_desconto, margem_nota_fiscal, data, data_finalizacao, observacao, nota_fiscal, user_id, clientes(nome, cpf_cnpj, endereco, app_users!responsavel_id(nome)), prazos_pagamento(descricao), formas_pagamento(descricao)')
       .eq('id', id);
 
     if (role === 'vendedor') {
@@ -481,6 +481,7 @@ export class PedidoService {
       clienteNome: this.getClienteNome(row.clientes),
       clienteCpfCnpj: this.getClienteField(row.clientes, 'cpf_cnpj') || undefined,
       clienteEndereco: this.buildClienteEndereco(row.clientes),
+      clienteResponsavelNome: this.getClienteResponsavelNome(row.clientes),
       formaPagamentoId: row.forma_pagamento_id ?? null,
       formaPagamentoDescricao: this.getJoinDescricao(row.formas_pagamento),
       prazoPagamentoId: row.prazo_pagamento_id ?? null,
@@ -492,6 +493,7 @@ export class PedidoService {
       notaFiscal: row.nota_fiscal ?? false,
       margemNotaFiscal: row.margem_nota_fiscal != null ? Number(row.margem_nota_fiscal) : null,
       percentualDesconto,
+      observacao: row.observacao ?? null,
       itens: itensPedido
     };
   }
@@ -532,6 +534,10 @@ export class PedidoService {
 
     if (pedido.percentualDesconto !== undefined) {
       db['percentual_desconto'] = pedido.percentualDesconto ?? null;
+    }
+
+    if (pedido.observacao !== undefined) {
+      db['observacao'] = pedido.observacao ?? null;
     }
 
     return db;
@@ -610,7 +616,7 @@ export class PedidoService {
 
     if (itensAbaixoPrecoOuro) {
       return {
-        error: new Error(`Vendedores não podem criar pedidos com valor unitário abaixo do Preço Ouro (${margemVendaOuro}% acima do custo médio).`)
+        error: new Error(`Vendedores não podem criar pedidos com valor unitário abaixo do Preço Ouro.`)
       };
     }
 
@@ -652,6 +658,13 @@ export class PedidoService {
   private buildClienteEndereco(cliente: PedidoDbRow['clientes']): string | undefined {
     const c = Array.isArray(cliente) ? cliente[0] : cliente;
     return c?.endereco || undefined;
+  }
+
+  private getClienteResponsavelNome(cliente: PedidoDbRow['clientes']): string | null {
+    const c = Array.isArray(cliente) ? cliente[0] : cliente;
+    const au = c?.app_users;
+    if (!au) return null;
+    return (Array.isArray(au) ? au[0]?.nome : au?.nome) || null;
   }
 
   private getFormaPagamentoDescricao(

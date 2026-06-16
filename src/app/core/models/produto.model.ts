@@ -13,4 +13,5 @@ export interface Produto {
   estoqueMaximo: number;
   estoqueMinimo: number;
   ativo: boolean;
+  ocultarParaVendedor?: boolean;
 }

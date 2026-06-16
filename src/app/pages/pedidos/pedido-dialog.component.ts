@@ -129,6 +129,12 @@ type PedidoDialogData = {
           </mat-form-field>
         }
 
+        <mat-form-field appearance="outline">
+          <mat-label>Observação</mat-label>
+          <textarea matInput [formControl]="observacaoControl" rows="3" placeholder="Informações adicionais sobre o pedido..."></textarea>
+          <mat-icon matPrefix>notes</mat-icon>
+        </mat-form-field>
+
         @if (!modoSomenteFinalizacao) {
         <div class="add-item-row">
           <mat-form-field appearance="outline" class="field-produto">
@@ -408,6 +414,7 @@ export class PedidoDialogComponent implements OnInit {
   notaFiscalControl = new FormControl<boolean>(false);
   margemNotaFiscalControl = new FormControl<number | null>(null);
   descontoControl = new FormControl<number | null>(null);
+  observacaoControl = new FormControl<string>('');
 
   produtoControl = new FormControl('');
   produtosFiltrados: ProdutoAutocompleteItem[] = [];
@@ -574,7 +581,7 @@ export class PedidoDialogComponent implements OnInit {
     this.produtoControl.valueChanges.pipe(
       debounceTime(300),
       filter(v => typeof v === 'string' && v.length >= 2),
-      switchMap(v => this.consultaService.buscarProdutosComPreco(v as string))
+      switchMap(v => this.consultaService.buscarProdutosComPreco(v as string, this.data.userRole === 'vendedor'))
     ).subscribe(p => this.produtosFiltrados = p);
 
     if (this.data.modo === 'editar' && this.data.pedidoId) {
@@ -590,6 +597,7 @@ export class PedidoDialogComponent implements OnInit {
         this.notaFiscalControl.setValue(pedido.notaFiscal ?? false, { emitEvent: false });
         this.margemNotaFiscalControl.setValue(pedido.margemNotaFiscal ?? null, { emitEvent: false });
         this.descontoControl.setValue(pedido.percentualDesconto ?? null, { emitEvent: false });
+        this.observacaoControl.setValue(pedido.observacao ?? '', { emitEvent: false });
         this.itensNovoPedido = (pedido.itens || []).map(i => ({
           produtoId: i.produtoId,
           produtoLabel: `${i.produtoCodigo} - ${i.produtoDescricao}`,
@@ -729,7 +737,7 @@ export class PedidoDialogComponent implements OnInit {
     const custoUnitario = this.precoCusto ?? 0;
 
     if (this.isVendedor && unit < this.precoOuro) {
-      this.snackBar.open('Vendedores não podem informar valor unitário abaixo do Preço Ouro.', 'OK', { duration: 4000 });
+      this.snackBar.open('Vendedores não podem criar pedidos com valor unitário abaixo do Preço Ouro.', 'OK', { duration: 4000 });
       return;
     }
 
@@ -840,6 +848,7 @@ export class PedidoDialogComponent implements OnInit {
       notaFiscal: this.notaFiscalControl.value ?? false,
       margemNotaFiscal: this.notaFiscalControl.value ? (this.margemNotaFiscalControl.value ?? null) : null,
       percentualDesconto: this.descontoHabilitado ? (this.descontoControl.value ?? null) : null,
+      observacao: this.observacaoControl.value?.trim() || null,
       ...(this.podeEditarDataFinalizacao ? { dataFinalizacao: this.dataFinalizacaoControl.value || null } : {}),
       itens: this.itensNovoPedido.map(i => ({
         produtoId: i.produtoId,

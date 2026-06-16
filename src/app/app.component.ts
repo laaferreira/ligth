@@ -192,7 +192,7 @@ import { UserManagementService } from './core/services/user-management.service';
             <mat-icon>manage_accounts</mat-icon>
             <span>Usuários</span>
           </button>
-        } @else if (!isVendedor()) {
+        } @else if (!isVendedor() && !isAuxiliarCliente()) {
           <button mat-button class="mobile-bottom-link" [matMenuTriggerFor]="mobileNavMenu">
             <mat-icon>more_horiz</mat-icon>
             <span>Mais</span>
@@ -334,6 +334,7 @@ export class AppComponent {
   currentRoute = '';
   userRole: string | null = null;
   private readonly vendedorRotasPermitidas = new Set(['/clientes', '/pedidos', '/produtos', '/consulta']);
+  private readonly auxiliarClienteRotasPermitidas = new Set(['/clientes']);
 
   constructor(
     private router: Router,
@@ -374,7 +375,14 @@ export class AppComponent {
     return this.userRole === 'vendedor';
   }
 
+  isAuxiliarCliente(): boolean {
+    return this.userRole === 'auxiliar_cliente';
+  }
+
   podeAcessarRota(path: string): boolean {
+    if (this.isAuxiliarCliente()) {
+      return this.auxiliarClienteRotasPermitidas.has(path);
+    }
     if (!this.isVendedor()) {
       return true;
     }
@@ -383,7 +391,7 @@ export class AppComponent {
   }
 
   rotaInicial(): string {
-    return this.isVendedor() ? '/clientes' : '/dashboard';
+    return (this.isVendedor() || this.isAuxiliarCliente()) ? '/clientes' : '/dashboard';
   }
 
   navegar(path: string): void {

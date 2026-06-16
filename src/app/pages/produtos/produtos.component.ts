@@ -275,7 +275,7 @@ export class ProdutosComponent implements OnInit {
       maxHeight: isMobile ? '100dvh' : '92vh',
       autoFocus: false,
       disableClose: true,
-      data: { modo, produto, fornecedores: this.fornecedores }
+      data: { modo, produto, fornecedores: this.fornecedores, userRole: this.userRole }
     }).afterClosed().subscribe(recarregar => {
       if (recarregar) {
         this.carregar();

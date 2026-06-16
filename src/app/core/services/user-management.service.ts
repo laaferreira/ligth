@@ -88,8 +88,8 @@ export class UserManagementService {
     const emailNormalizado = this.normalizarEmail(dados.email);
 
     // Validar permissão
-    if (usuarioAtual.role === 'vendedor') {
-      throw new Error('Vendedores não podem criar usuários');
+    if (usuarioAtual.role === 'vendedor' || usuarioAtual.role === 'auxiliar_cliente') {
+      throw new Error('Você não tem permissão para criar usuários');
     }
 
     if (usuarioAtual.role === 'gerente' && dados.role === 'administrador') {

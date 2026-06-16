@@ -54,14 +54,17 @@ export class ConsultaService {
     );
   }
 
-  buscarProdutosComPreco(termo: string): Observable<ProdutoAutocompleteItem[]> {
-    return from(
-      this.supabaseService.getClient()
-        .from(this.produtosTable)
-        .select('id, nome, descricao, codigo, sku, "fornecedorNome", preco_venda, precoVenda, preco_custo, precoCusto, preco_custo_vendedor, preco_venda_vendedor, quantidadeEstoque, quantidade')
-        .or(`descricao.ilike."%${termo}%",codigo.ilike."%${termo}%",nome.ilike."%${termo}%",sku.ilike."%${termo}%"`)
-        .limit(10)
-    ).pipe(
+  buscarProdutosComPreco(termo: string, filtrarOcultos = false): Observable<ProdutoAutocompleteItem[]> {
+    let query = this.supabaseService.getClient()
+      .from(this.produtosTable)
+      .select('id, nome, descricao, codigo, sku, "fornecedorNome", preco_venda, precoVenda, preco_custo, precoCusto, preco_custo_vendedor, preco_venda_vendedor, quantidadeEstoque, quantidade, ocultar_para_vendedor')
+      .or(`descricao.ilike."%${termo}%",codigo.ilike."%${termo}%",nome.ilike."%${termo}%",sku.ilike."%${termo}%"`);
+
+    if (filtrarOcultos) {
+      query = query.neq('ocultar_para_vendedor', true);
+    }
+
+    return from(query.limit(10)).pipe(
       map(response => {
         if (response.error) throw response.error;
         return (response.data || []).map(item => ({
