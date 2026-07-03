@@ -63,6 +63,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/comissoes/comissoes.component').then(m => m.ComissoesComponent),
     canActivate: [authGuard, vendedorRestricaoGuard, gerenciaUsuariosGuard]
   },
+  {
+    path: 'vales',
+    loadComponent: () => import('./pages/vales/vales.component').then(m => m.ValesComponent),
+    canActivate: [authGuard, vendedorRestricaoGuard, gerenciaUsuariosGuard]
+  },
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
   { path: '**', redirectTo: 'dashboard' }
 ];

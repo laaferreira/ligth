@@ -1,0 +1,153 @@
+<div class="page-wrapper">
+  <main class="main-content">
+    <section class="vales-hero">
+      <div>
+        <p class="hero-kicker">Financeiro comercial</p>
+        <h1>Lançamento de vales</h1>
+        <p class="hero-text">Registre vales para vendedores, informe observações livres e gere imediatamente o PDF para coleta de ciência e assinatura.</p>
+      </div>
+      <div class="hero-highlights">
+        <div class="hero-highlight">
+          <span class="highlight-label">Acesso</span>
+          <strong>Admin e gerente</strong>
+        </div>
+        <div class="hero-highlight destaque">
+          <span class="highlight-label">Saída</span>
+          <strong>PDF de ciência</strong>
+        </div>
+      </div>
+    </section>
+
+    <mat-card class="filtros-card">
+      <mat-card-content>
+        <div class="section-heading">
+          <p class="section-kicker">Novo lançamento</p>
+          <h2>Informações do vale</h2>
+        </div>
+
+        <form [formGroup]="form" class="filtros-form">
+          <mat-form-field appearance="outline" class="filtro-vendedor">
+            <mat-label>Vendedor</mat-label>
+            <mat-select formControlName="vendedorId">
+              @for (vendedor of vendedores; track vendedor.id) {
+                <mat-option [value]="vendedor.id">{{ vendedor.nome }}</mat-option>
+              }
+            </mat-select>
+            <mat-error *ngIf="form.controls.vendedorId.hasError('required')">Selecione um vendedor</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="filtro-data">
+            <mat-label>Data do vale</mat-label>
+            <input matInput [matDatepicker]="pickerDataVale" formControlName="dataVale" placeholder="dd/mm/yyyy">
+            <mat-datepicker-toggle matIconSuffix [for]="pickerDataVale"></mat-datepicker-toggle>
+            <mat-datepicker #pickerDataVale></mat-datepicker>
+            <mat-error *ngIf="form.controls.dataVale.hasError('required')">Informe a data do vale</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="filtro-valor">
+            <mat-label>Valor do vale</mat-label>
+            <input matInput type="number" inputmode="decimal" min="0.01" step="0.01" formControlName="valor" placeholder="0,00">
+            <mat-error *ngIf="form.controls.valor.hasError('required')">Informe o valor</mat-error>
+            <mat-error *ngIf="form.controls.valor.hasError('min')">O valor deve ser maior que zero</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="filtro-observacao">
+            <mat-label>Observação</mat-label>
+            <textarea matInput formControlName="observacao" rows="2" placeholder="Informações adicionais do vale"></textarea>
+          </mat-form-field>
+
+          <div class="acoes">
+            <button mat-raised-button color="primary" type="button" (click)="salvarEGerarPdf()" [disabled]="salvando">
+              <mat-icon>picture_as_pdf</mat-icon>
+              Salvar e gerar PDF
+            </button>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
+
+    @if (carregando) {
+      <mat-card class="estado estado-loading">
+        <mat-card-content>
+          <mat-spinner diameter="40"></mat-spinner>
+          <span>Carregando vales lançados...</span>
+        </mat-card-content>
+      </mat-card>
+    } @else if (vales.length === 0) {
+      <mat-card class="estado estado-vazio">
+        <mat-card-content>
+          <mat-icon>request_quote</mat-icon>
+          <div>
+            <strong>Nenhum vale lançado</strong>
+            <p>Assim que você lançar o primeiro vale, ele aparecerá aqui para consulta e reimpressão.</p>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    } @else {
+      <mat-card class="resultado-card">
+        <mat-card-content>
+          <div class="resultado-header">
+            <div>
+              <p class="section-kicker">Resultado</p>
+              <h2>Vales mais recentes</h2>
+              <p class="resultado-subtitle">Use o botão de PDF para reemitir o termo de ciência quando necessário.</p>
+            </div>
+            <div class="resultado-chip">
+              <span>{{ vales.length }}</span>
+              <small>vale(s)</small>
+            </div>
+          </div>
+
+          <div class="table-wrapper desktop-table">
+            <table mat-table [dataSource]="vales">
+              <ng-container matColumnDef="dataVale">
+                <th mat-header-cell *matHeaderCellDef>Data</th>
+                <td mat-cell *matCellDef="let vale">{{ vale.dataVale | date:'dd/MM/yyyy' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="vendedor">
+                <th mat-header-cell *matHeaderCellDef>Vendedor</th>
+                <td mat-cell *matCellDef="let vale">{{ vale.vendedorNome }}</td>
+              </ng-container>
+              <ng-container matColumnDef="valor">
+                <th mat-header-cell *matHeaderCellDef>Valor</th>
+                <td mat-cell *matCellDef="let vale">{{ vale.valor | currency:'BRL' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="observacao">
+                <th mat-header-cell *matHeaderCellDef>Observação</th>
+                <td mat-cell *matCellDef="let vale">{{ vale.observacao || '-' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="acoes">
+                <th mat-header-cell *matHeaderCellDef class="acoes-col"></th>
+                <td mat-cell *matCellDef="let vale" class="acoes-col">
+                  <button mat-icon-button color="primary" type="button" (click)="gerarPdfVale(vale)" aria-label="Gerar PDF">
+                    <mat-icon>picture_as_pdf</mat-icon>
+                  </button>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+            </table>
+          </div>
+
+          <div class="mobile-list">
+            @for (vale of vales; track vale.id) {
+              <div class="mobile-item">
+                <div class="mobile-item-header">
+                  <strong>{{ vale.vendedorNome }}</strong>
+                  <span>{{ vale.dataVale | date:'dd/MM/yyyy' }}</span>
+                </div>
+                <div class="mobile-item-row"><span>Valor</span><strong>{{ vale.valor | currency:'BRL' }}</strong></div>
+                <div class="mobile-item-row"><span>Observação</span><strong>{{ vale.observacao || '-' }}</strong></div>
+                <button mat-stroked-button color="primary" type="button" (click)="gerarPdfVale(vale)">
+                  <mat-icon>picture_as_pdf</mat-icon>
+                  PDF
+                </button>
+              </div>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+    }
+  </main>
+</div>

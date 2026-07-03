@@ -9,7 +9,7 @@
   margin: 0 auto;
 }
 
-.comissoes-hero {
+.vales-hero {
   display: flex;
   justify-content: space-between;
   gap: 20px;
@@ -31,14 +31,14 @@
   font-weight: 700;
 }
 
-.comissoes-hero h1,
+.vales-hero h1,
 .section-heading h2,
 .resultado-header h2 {
   margin: 0;
   color: #3d1a6e;
 }
 
-.comissoes-hero h1 {
+.vales-hero h1 {
   font-size: 28px;
   line-height: 1.1;
   margin-bottom: 8px;
@@ -96,28 +96,19 @@
 
 .filtros-form {
   display: grid;
-  grid-template-columns: minmax(240px, 2fr) repeat(2, minmax(170px, 1fr)) auto;
+  grid-template-columns: minmax(240px, 2fr) minmax(170px, 1fr) minmax(170px, 1fr);
   gap: 16px;
   align-items: start;
 }
 
-.filtro-vendedor {
-  min-width: 240px;
-}
-
-.filtro-data {
-  min-width: 170px;
+.filtro-vendedor,
+.filtro-observacao {
+  grid-column: span 2;
 }
 
 .acoes {
   display: flex;
-  gap: 12px;
   align-items: center;
-  flex-wrap: wrap;
-}
-
-.acoes button {
-  min-height: 44px;
 }
 
 .estado-loading mat-card-content,
@@ -171,26 +162,6 @@
   color: #6b5b7b;
 }
 
-.table-card {
-  margin-top: 24px;
-}
-
-.table-header {
-  margin-bottom: 12px;
-}
-
-.table-header h3 {
-  margin: 0;
-  color: #3d1a6e;
-  font-size: 18px;
-}
-
-.table-header p {
-  margin: 6px 0 0;
-  color: #6b5b7b;
-  font-size: 13px;
-}
-
 .table-wrapper {
   overflow-x: auto;
   border-radius: 10px;
@@ -210,6 +181,11 @@ th {
 
 td {
   font-size: 14px;
+}
+
+.acoes-col {
+  width: 64px;
+  text-align: right;
 }
 
 .mobile-list {
@@ -239,75 +215,24 @@ td {
   padding: 4px 0;
 }
 
-.resumo-grid {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(170px, 1fr));
-  gap: 16px;
-}
-
-.resumo-grid.topo {
-  margin-top: 0;
-}
-
-.resumo-item {
-  border-radius: 16px;
-  padding: 18px;
-  background: #f8f5fc;
-  border: 1px solid #eadff5;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.resumo-item strong {
-  font-size: 22px;
-  line-height: 1.2;
-  color: #3d1a6e;
-}
-
-.resumo-label {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #6b5b7b;
-}
-
-.destaque {
-  background: #fff5df;
-  border-color: #f2d48a;
-}
-
-.destaque-lucro {
-  background: #edf8ef;
-  border-color: #b8d8bd;
-}
-
-.destaque-desconto {
-  background: #fff1f1;
-  border-color: #f3c1c1;
-}
-
-.destaque-liquida {
-  background: #eaf4ff;
-  border-color: #c8dbf5;
+.mobile-item button {
+  width: 100%;
+  margin-top: 10px;
 }
 
 @media (max-width: 1100px) {
   .filtros-form {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
   }
 
-  .acoes {
-    grid-column: 1 / -1;
-  }
-
-  .resumo-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .filtro-vendedor,
+  .filtro-observacao {
+    grid-column: span 1;
   }
 }
 
 @media (max-width: 900px) {
-  .comissoes-hero,
+  .vales-hero,
   .resultado-header {
     flex-direction: column;
   }
@@ -324,22 +249,13 @@ td {
     padding: 16px 12px 24px;
   }
 
-  .comissoes-hero {
+  .vales-hero {
     padding: 18px 16px;
     border-radius: 18px;
   }
 
-  .comissoes-hero h1 {
+  .vales-hero h1 {
     font-size: 24px;
-  }
-
-  .filtros-form,
-  .resumo-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .acoes button {
-    width: 100%;
   }
 
   .desktop-table {
@@ -349,5 +265,9 @@ td {
   .mobile-list {
     display: block;
     margin-top: 12px;
+  }
+
+  .acoes button {
+    width: 100%;
   }
 }

@@ -13,13 +13,16 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { forkJoin } from 'rxjs';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 import { Pedido } from '../../core/models/pedido.model';
 import { AppUser } from '../../core/models/user.model';
+import { ValeVendedor } from '../../core/models/vale-vendedor.model';
 import { PedidoService } from '../../core/services/pedido.service';
 import { UserManagementService } from '../../core/services/user-management.service';
+import { ValeVendedorService } from '../../core/services/vale-vendedor.service';
 import { ErrorPresenterService } from '../../core/errors/error-presenter.service';
 
 const COMISSOES_DATE_FORMATS = {
@@ -104,6 +107,7 @@ export class ComissoesComponent implements OnInit {
 
   usuarios: AppUser[] = [];
   pedidos: Pedido[] = [];
+  vales: ValeVendedor[] = [];
   usuarioSelecionado: AppUser | null = null;
   carregando = false;
   consultaRealizada = false;
@@ -112,6 +116,7 @@ export class ComissoesComponent implements OnInit {
     private fb: FormBuilder,
     private pedidoService: PedidoService,
     private userManagementService: UserManagementService,
+    private valeVendedorService: ValeVendedorService,
     private errorPresenter: ErrorPresenterService,
     private snackBar: MatSnackBar
   ) {}
@@ -121,7 +126,7 @@ export class ComissoesComponent implements OnInit {
   }
 
   carregarUsuarios(): void {
-    this.userManagementService.listarUsuarios({ is_active: true }).subscribe({
+    this.userManagementService.listarUsuarios({ role: 'vendedor', is_active: true }).subscribe({
       next: usuarios => {
         this.usuarios = usuarios;
       },
@@ -161,9 +166,13 @@ export class ComissoesComponent implements OnInit {
     this.carregando = true;
     this.consultaRealizada = false;
 
-    this.pedidoService.listarFinalizadosPorUsuarioPeriodo(usuarioId, dataInicioFormatada, dataFimFormatada).subscribe({
-      next: pedidos => {
+    forkJoin({
+      pedidos: this.pedidoService.listarFinalizadosPorUsuarioPeriodo(usuarioId, dataInicioFormatada, dataFimFormatada),
+      vales: this.valeVendedorService.listarPorVendedorPeriodo(usuarioId, dataInicioFormatada, dataFimFormatada)
+    }).subscribe({
+      next: ({ pedidos, vales }) => {
         this.pedidos = pedidos;
+        this.vales = vales;
         this.carregando = false;
         this.consultaRealizada = true;
       },
@@ -185,6 +194,7 @@ export class ComissoesComponent implements OnInit {
   limpar(): void {
     this.form.reset();
     this.pedidos = [];
+    this.vales = [];
     this.usuarioSelecionado = null;
     this.consultaRealizada = false;
   }
@@ -209,12 +219,20 @@ export class ComissoesComponent implements OnInit {
     return this.arredondar(this.totalPedidos * (this.percentualComissao / 100));
   }
 
+  get valorTotalVales(): number {
+    return this.arredondar(this.vales.reduce((total, vale) => total + Number(vale.valor || 0), 0));
+  }
+
+  get valorComissaoLiquida(): number {
+    return this.arredondar(this.valorTotalComissao - this.valorTotalVales);
+  }
+
   get lucroAposComissao(): number {
     return this.arredondar(this.lucroTotal - this.valorTotalComissao);
   }
 
   get podeImprimir(): boolean {
-    return !this.carregando && !!this.usuarioSelecionado && this.pedidos.length > 0;
+    return !this.carregando && !!this.usuarioSelecionado && (this.pedidos.length > 0 || this.vales.length > 0);
   }
 
   imprimirPDF(): void {
@@ -264,9 +282,10 @@ export class ComissoesComponent implements OnInit {
     doc.text(`Vendedor: ${this.usuarioSelecionado.nome}`, 14, headerEndY + 16);
     doc.text(`Período: ${this.formatarData(dataInicio)} a ${this.formatarData(dataFim)}`, 14, headerEndY + 22);
     doc.text(`Comissão: ${this.percentualComissao.toFixed(2)}%`, 14, headerEndY + 28);
+    doc.text(`Total de vales no período: ${this.formatarMoeda(this.valorTotalVales)}`, 14, headerEndY + 34);
 
     autoTable(doc, {
-      startY: headerEndY + 36,
+      startY: headerEndY + 40,
       head: [['Pedido', 'Finalização', 'Cliente', 'Valor total']],
       body: this.pedidos.map(pedido => [
         pedido.numero || '-',
@@ -279,11 +298,32 @@ export class ComissoesComponent implements OnInit {
       margin: { left: 14, right: 14 }
     });
 
-    const finalY = (doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY || (headerEndY + 36);
+    let finalY = (doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY || (headerEndY + 40);
+
+    if (this.vales.length > 0) {
+      autoTable(doc, {
+        startY: finalY + 10,
+        head: [['Vale', 'Data', 'Observação', 'Valor']],
+        body: this.vales.map(vale => [
+          `#${vale.id}`,
+          this.formatarData(vale.dataVale),
+          vale.observacao || '-',
+          this.formatarMoeda(Number(vale.valor || 0))
+        ]),
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [201, 168, 76] },
+        margin: { left: 14, right: 14 }
+      });
+
+      finalY = (doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY || finalY;
+    }
+
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
     doc.text(`Valor total dos pedidos: ${this.formatarMoeda(this.totalPedidos)}`, 14, finalY + 12);
-    doc.text(`Comissão total (${this.percentualComissao.toFixed(2)}%): ${this.formatarMoeda(this.valorTotalComissao)}`, 14, finalY + 19);
+    doc.text(`Comissão bruta (${this.percentualComissao.toFixed(2)}%): ${this.formatarMoeda(this.valorTotalComissao)}`, 14, finalY + 19);
+    doc.text(`Desconto de vales: ${this.formatarMoeda(this.valorTotalVales)}`, 14, finalY + 26);
+    doc.text(`Comissão líquida a pagar: ${this.formatarMoeda(this.valorComissaoLiquida)}`, 14, finalY + 33);
 
     doc.save(`comissoes-${this.usuarioSelecionado.nome.replace(/\s+/g, '-').toLowerCase()}.pdf`);
   }

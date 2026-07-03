@@ -37,6 +37,9 @@ Chart.register(...registerables);
 export class DashboardComponent implements OnInit {
   data: Dashboard | null = null;
   userRole: string | null = null;
+  readonly clientesSemCompraCols = ['nome', 'responsavel', 'dataUltimaCompra', 'diasSemComprar'];
+  readonly itensPorPaginaClientesSemCompra = 10;
+  paginaClientesSemCompra = 0;
 
   // Charts
   faturamentoChart: ChartConfiguration<'bar'> | null = null;
@@ -176,6 +179,7 @@ export class DashboardComponent implements OnInit {
   loadDashboard(mes?: number, ano?: number): void {
     this.dashboardService.getDashboard(mes, ano).subscribe(d => {
       this.data = d;
+      this.paginaClientesSemCompra = 0;
       this.faturamentoChart = null;
       this.produtosChart = null;
       this.clientesChart = null;
@@ -201,6 +205,40 @@ export class DashboardComponent implements OnInit {
     this.filtroAtivo = false;
     this.filtroLabel = '';
     this.loadDashboard();
+  }
+
+  get clientesSemCompraPaginados(): Array<{ nome: string; responsavelNome: string | null; dataUltimaCompra: string | null; diasSemComprar: number | null }> {
+    const origem = this.data?.clientesSemCompraHaMaisTempo || [];
+    const inicio = this.paginaClientesSemCompra * this.itensPorPaginaClientesSemCompra;
+    return origem.slice(inicio, inicio + this.itensPorPaginaClientesSemCompra);
+  }
+
+  get totalPaginasClientesSemCompra(): number {
+    const totalItens = this.data?.clientesSemCompraHaMaisTempo.length || 0;
+    return Math.max(1, Math.ceil(totalItens / this.itensPorPaginaClientesSemCompra));
+  }
+
+  get intervaloClientesSemCompra(): string {
+    const totalItens = this.data?.clientesSemCompraHaMaisTempo.length || 0;
+    if (!totalItens) {
+      return '0-0 de 0';
+    }
+
+    const inicio = this.paginaClientesSemCompra * this.itensPorPaginaClientesSemCompra + 1;
+    const fim = Math.min(totalItens, (this.paginaClientesSemCompra + 1) * this.itensPorPaginaClientesSemCompra);
+    return `${inicio}-${fim} de ${totalItens}`;
+  }
+
+  paginaAnteriorClientesSemCompra(): void {
+    if (this.paginaClientesSemCompra > 0) {
+      this.paginaClientesSemCompra -= 1;
+    }
+  }
+
+  proximaPaginaClientesSemCompra(): void {
+    if (this.paginaClientesSemCompra < this.totalPaginasClientesSemCompra - 1) {
+      this.paginaClientesSemCompra += 1;
+    }
   }
 
   navegarConsulta(): void { this.router.navigate(['/consulta']); }

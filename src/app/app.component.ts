@@ -77,6 +77,9 @@ import { UserManagementService } from './core/services/user-management.service';
               <button mat-button (click)="navegar('/comissoes')" [disabled]="estaAtiva('/comissoes')">
                 <mat-icon>percent</mat-icon> Comissões
               </button>
+              <button mat-button (click)="navegar('/vales')" [disabled]="estaAtiva('/vales')">
+                <mat-icon>request_quote</mat-icon> Vales
+              </button>
               <button mat-button (click)="navegar('/formas-pagamento')" [disabled]="estaAtiva('/formas-pagamento')">
                 <mat-icon>payment</mat-icon> Prazos Pagto
               </button>
@@ -141,6 +144,10 @@ import { UserManagementService } from './core/services/user-management.service';
               <button mat-menu-item (click)="navegar('/comissoes')">
                 <mat-icon>percent</mat-icon>
                 <span>Comissões</span>
+              </button>
+              <button mat-menu-item (click)="navegar('/vales')">
+                <mat-icon>request_quote</mat-icon>
+                <span>Vales</span>
               </button>
               <button mat-menu-item (click)="navegar('/formas-pagamento')">
                 <mat-icon>payment</mat-icon>

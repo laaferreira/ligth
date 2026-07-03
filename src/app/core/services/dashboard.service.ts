@@ -19,6 +19,13 @@ export interface Dashboard {
   estoqueCritico: { codigo: string; descricao: string; estoque: number; minimo: number }[];
   pedidosPorStatus: { status: string; quantidade: number }[];
   faturamentoPorUsuario: { label: string; valor: number }[];
+  clientesSemCompraHaMaisTempo: {
+    clienteId: number;
+    nome: string;
+    responsavelNome: string | null;
+    dataUltimaCompra: string | null;
+    diasSemComprar: number | null;
+  }[];
 }
 
 type PedidoDashboardRow = {
@@ -59,6 +66,8 @@ type ProdutoDashboardRow = {
 type ClienteDashboardRow = {
   id?: number | null;
   nome?: string | null;
+  responsavel_id?: string | null;
+  app_users?: { nome?: string | null } | Array<{ nome?: string | null }> | null;
 };
 
 type AppUserDashboardRow = {
@@ -91,7 +100,7 @@ export class DashboardService {
 
     const [clientes, produtos, pedidos, itensPedidos, appUsers] = await Promise.all([
       this.fetchAllPages<ClienteDashboardRow>((from, to) =>
-        client.from('clientes').select('id, nome').range(from, to)
+        client.from('clientes').select('id, nome, responsavel_id, app_users!responsavel_id(nome)').range(from, to)
       ),
       this.fetchAllPages<ProdutoDashboardRow>((from, to) =>
         client.from('produtos').select('*').range(from, to)
@@ -293,6 +302,67 @@ export class DashboardService {
 
     const produtosEstoqueBaixo = estoqueCritico.length;
 
+    const ultimoPedidoFinalizadoPorCliente = new Map<number, Date>();
+    pedidos.forEach(pedido => {
+      const status = this.normalizeStatus(pedido.status);
+      if (status !== 'FINALIZADO') {
+        return;
+      }
+
+      const clienteId = pedido.cliente_id;
+      if (clienteId == null) {
+        return;
+      }
+
+      const rawDate = pedido.data_finalizacao ?? pedido.data;
+      if (!rawDate) {
+        return;
+      }
+
+      const dataPedido = new Date(rawDate);
+      if (isNaN(dataPedido.getTime())) {
+        return;
+      }
+
+      const atual = ultimoPedidoFinalizadoPorCliente.get(clienteId);
+      if (!atual || dataPedido > atual) {
+        ultimoPedidoFinalizadoPorCliente.set(clienteId, dataPedido);
+      }
+    });
+
+    const hoje = new Date();
+    const clientesSemCompraHaMaisTempo = clientes
+      .filter(cliente => cliente.id != null)
+      .map(cliente => {
+        const clienteId = cliente.id as number;
+        const ultimaCompra = ultimoPedidoFinalizadoPorCliente.get(clienteId) || null;
+        const diasSemComprar = ultimaCompra
+          ? Math.floor((hoje.getTime() - ultimaCompra.getTime()) / (1000 * 60 * 60 * 24))
+          : null;
+        const responsavelNome = this.getClienteResponsavelNome(cliente);
+
+        return {
+          clienteId,
+          nome: cliente.nome || `Cliente ${clienteId}`,
+          responsavelNome,
+          dataUltimaCompra: ultimaCompra ? this.toIsoDate(ultimaCompra) : null,
+          diasSemComprar
+        };
+      })
+      .sort((a, b) => {
+        if (a.diasSemComprar == null && b.diasSemComprar == null) {
+          return a.nome.localeCompare(b.nome, 'pt-BR');
+        }
+        if (a.diasSemComprar == null) {
+          return 1;
+        }
+        if (b.diasSemComprar == null) {
+          return -1;
+        }
+
+        return b.diasSemComprar - a.diasSemComprar || a.nome.localeCompare(b.nome, 'pt-BR');
+      });
+
     return {
       totalClientes,
       totalProdutos,
@@ -308,7 +378,8 @@ export class DashboardService {
       faturamentoPorMes,
       estoqueCritico,
       pedidosPorStatus,
-      faturamentoPorUsuario
+      faturamentoPorUsuario,
+      clientesSemCompraHaMaisTempo
     };
   }
 
@@ -409,5 +480,21 @@ export class DashboardService {
     }
 
     return resultado;
+  }
+
+  private getClienteResponsavelNome(cliente: ClienteDashboardRow): string | null {
+    const appUsers = cliente.app_users;
+    if (!appUsers) {
+      return null;
+    }
+
+    return (Array.isArray(appUsers) ? appUsers[0]?.nome : appUsers?.nome) || null;
+  }
+
+  private toIsoDate(date: Date): string {
+    const ano = date.getFullYear();
+    const mes = String(date.getMonth() + 1).padStart(2, '0');
+    const dia = String(date.getDate()).padStart(2, '0');
+    return `${ano}-${mes}-${dia}`;
   }
 }
