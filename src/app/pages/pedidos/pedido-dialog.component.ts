@@ -23,6 +23,7 @@ import { AtualizarPedido, CriarPedido, ItemPedido, Pedido } from '../../core/mod
 import { FormaPagamento } from '../../core/models/forma-pagamento.model';
 import { ErrorPresenterService } from '../../core/errors/error-presenter.service';
 import { UserRole } from '../../core/models/user.model';
+import { UserManagementService } from '../../core/services/user-management.service';
 
 type PedidoDialogData = {
   modo: 'criar' | 'editar';
@@ -147,7 +148,7 @@ type PedidoDialogData = {
                   @if (p.fornecedorNome) {
                     <span style="font-size:11px;color:#7b4bab;margin-left:8px;font-style:italic;opacity:0.85">{{p.fornecedorNome}}</span>
                   }
-                  @if (!isVendedor) {<small class="option-preco">R$ {{p.precoCusto}}</small>}
+                  @if (podeVerCustos) {<small class="option-preco">R$ {{p.precoCusto}}</small>}
                 </mat-option>
               }
             </mat-autocomplete>
@@ -160,7 +161,7 @@ type PedidoDialogData = {
             <mat-label>Vlr Unit.</mat-label>
             <input matInput type="number" inputmode="decimal" [formControl]="vlrControl" step="0.01">
           </mat-form-field>
-          @if (!isVendedor) {
+          @if (podeVerCustos) {
             <mat-form-field appearance="outline" class="field-sm">
               <mat-label>Margem %</mat-label>
               <input matInput type="number" inputmode="decimal" [formControl]="margemControl" step="0.01">
@@ -203,14 +204,14 @@ type PedidoDialogData = {
                   <strong>{{precoBronze | currency:'BRL'}}</strong>
                 </button>
               </div>
-            } @else {
+            } @else if (podeVerCustos) {
               <div class="info-row">
                 <div class="info-item"><span class="info-label">Valor Total:</span><span class="info-value">{{valorTotalItem | currency:'BRL'}}</span></div>
                 <div class="info-item"><span class="info-label">Valor Total Custo:</span><span class="info-value">{{valorTotalCustoItem | currency:'BRL'}}</span></div>
                 <div class="info-item"><span class="info-label">Valor Total Lucro:</span><span class="info-value" [class.margem-positiva]="valorTotalLucroItem >= 0" [class.margem-negativa]="valorTotalLucroItem < 0">{{valorTotalLucroItem | currency:'BRL'}}</span></div>
               </div>
             }
-            @if (!isVendedor && precoCusto !== null) {
+            @if (podeVerCustos && precoCusto !== null) {
               <div class="info-row">
                 <div class="info-item"><span class="info-label">Custo Medio:</span><span class="info-value">{{precoCusto | currency:'BRL'}}</span></div>
                 @if (produtoSelecionado && produtoSelecionado.valor) {
@@ -265,7 +266,7 @@ type PedidoDialogData = {
                   <mat-label>Vlr Unit.</mat-label>
                   <input matInput type="number" inputmode="decimal" [formControl]="editVlrControl" step="0.01">
                 </mat-form-field>
-                @if (!isVendedor) {
+                @if (podeVerCustos) {
                   <mat-form-field appearance="outline" class="field-sm">
                     <mat-label>Margem %</mat-label>
                     <input matInput type="number" inputmode="decimal" [formControl]="editMargemControl" step="0.01">
@@ -282,7 +283,7 @@ type PedidoDialogData = {
               <ng-container matColumnDef="fornecedor"><th mat-header-cell *matHeaderCellDef>Fornecedor</th><td mat-cell *matCellDef="let r"><span style="font-size:11px;color:#7b4bab;font-style:italic;">{{r.fornecedorNome || '-'}}</span></td></ng-container>
               <ng-container matColumnDef="quantidade"><th mat-header-cell *matHeaderCellDef>Qtd</th><td mat-cell *matCellDef="let r">{{r.quantidade}}</td></ng-container>
               <ng-container matColumnDef="valorUnitario"><th mat-header-cell *matHeaderCellDef>Unit.</th><td mat-cell *matCellDef="let r">{{r.valorUnitario | currency:'BRL'}}</td></ng-container>
-              @if (!isVendedor) {
+              @if (podeVerCustos) {
                 <ng-container matColumnDef="custoTotal"><th mat-header-cell *matHeaderCellDef>Custo</th><td mat-cell *matCellDef="let r">{{r.custoTotal | currency:'BRL'}}</td></ng-container>
                 <ng-container matColumnDef="lucroTotal"><th mat-header-cell *matHeaderCellDef>Lucro</th><td mat-cell *matCellDef="let r"><span [class.margem-positiva]="r.lucroTotal >= 0" [class.margem-negativa]="r.lucroTotal < 0">{{r.lucroTotal | currency:'BRL'}}</span></td></ng-container>
                 <ng-container matColumnDef="margemLucro"><th mat-header-cell *matHeaderCellDef>Margem</th><td mat-cell *matCellDef="let r">{{r.margemLucro === null ? '-' : ((r.margemLucro | number:'1.1-1') + '%')}}</td></ng-container>
@@ -296,7 +297,7 @@ type PedidoDialogData = {
               <tr mat-row *matRowDef="let r; columns: itensColumns;"></tr>
             </table>
           </div>
-          @if (!isVendedor) {
+          @if (podeVerCustos) {
             <div class="total-row">
               @if (descontoHabilitado && descontoValor > 0) {
                 <strong>Subtotal: {{totalBruto | currency:'BRL'}}</strong>
@@ -401,6 +402,7 @@ type PedidoDialogData = {
   `]
 })
 export class PedidoDialogComponent implements OnInit {
+  perfilUsuarioCarregado = false;
   clienteControl = new FormControl('');
   clientesFiltrados: AutocompleteItem[] = [];
   clienteSelecionado: AutocompleteItem | null = null;
@@ -460,6 +462,10 @@ export class PedidoDialogComponent implements OnInit {
     return this.data.userRole === 'vendedor';
   }
 
+  get podeVerCustos(): boolean {
+    return this.perfilUsuarioCarregado && !this.isVendedor;
+  }
+
   get descontoHabilitado(): boolean {
     const fpId = this.formaPagamentoControl.value;
     const prazoId = this.prazoPagamentoControl.value;
@@ -476,6 +482,10 @@ export class PedidoDialogComponent implements OnInit {
       return ['produto', 'fornecedor', 'quantidade', 'valorUnitario', 'remover'];
     }
 
+    if (!this.podeVerCustos) {
+      return ['produto', 'fornecedor', 'quantidade', 'valorUnitario', 'remover'];
+    }
+
     return ['produto', 'fornecedor', 'quantidade', 'valorUnitario', 'custoTotal', 'lucroTotal', 'margemLucro', 'valorTotal', 'remover'];
   }
 
@@ -485,6 +495,7 @@ export class PedidoDialogComponent implements OnInit {
     private estoqueService: EstoqueService,
     private formaPagamentoService: FormaPagamentoService,
     private formasDePagamentoService: FormasDePagamentoService,
+    private userManagementService: UserManagementService,
     private fb: FormBuilder,
     private snackBar: MatSnackBar,
     private errorPresenter: ErrorPresenterService,
@@ -501,9 +512,14 @@ export class PedidoDialogComponent implements OnInit {
       valorUnitario: [null, [Validators.required, Validators.min(0.01)]],
       margemLucro: [null]
     });
+
+    this.perfilUsuarioCarregado = this.data.userRole !== null && this.data.userRole !== undefined;
+    this.definirEstadoControlesContextoUsuario(this.perfilUsuarioCarregado);
   }
 
   ngOnInit(): void {
+    void this.garantirContextoUsuario();
+
     this.formaPagamentoService.listar(true).subscribe({
       next: fps => this.prazosPagamento = fps,
       error: () => {}
@@ -580,8 +596,8 @@ export class PedidoDialogComponent implements OnInit {
 
     this.produtoControl.valueChanges.pipe(
       debounceTime(300),
-      filter(v => typeof v === 'string' && v.length >= 2),
-      switchMap(v => this.consultaService.buscarProdutosComPreco(v as string, this.data.userRole === 'vendedor'))
+      filter(v => this.perfilUsuarioCarregado && typeof v === 'string' && v.length >= 2),
+      switchMap(v => this.consultaService.buscarProdutosComPreco(v as string, this.isVendedor))
     ).subscribe(p => this.produtosFiltrados = p);
 
     if (this.data.modo === 'editar' && this.data.pedidoId) {
@@ -618,6 +634,34 @@ export class PedidoDialogComponent implements OnInit {
 
   private usuarioPodeEditarDataFinalizacao(): boolean {
     return this.data.userRole === 'administrador' || this.data.userRole === 'gerente';
+  }
+
+  private async garantirContextoUsuario(): Promise<void> {
+    if (this.perfilUsuarioCarregado) {
+      return;
+    }
+
+    try {
+      const usuarioAtual = await this.userManagementService.obterUsuarioAtualComRole();
+      if (usuarioAtual) {
+        this.data.userRole = usuarioAtual.role;
+        this.data.margemVendaElite ??= usuarioAtual.margemVendaElite;
+        this.data.margemVendaOuro ??= usuarioAtual.margemVendaOuro;
+        this.data.margemVendaPrata ??= usuarioAtual.margemVendaPrata;
+        this.data.margemVendaBronze ??= usuarioAtual.margemVendaBronze;
+        this.data.responsavelId ??= usuarioAtual.role === 'vendedor' ? usuarioAtual.id : null;
+      }
+    } finally {
+      this.perfilUsuarioCarregado = this.data.userRole !== null && this.data.userRole !== undefined;
+      this.definirEstadoControlesContextoUsuario(this.perfilUsuarioCarregado);
+    }
+  }
+
+  private definirEstadoControlesContextoUsuario(habilitado: boolean): void {
+    const method = habilitado ? 'enable' : 'disable';
+    this.clienteControl[method]({ emitEvent: false });
+    this.produtoControl[method]({ emitEvent: false });
+    this.itemForm[method]({ emitEvent: false });
   }
 
   displayFn(item: AutocompleteItem): string { return item?.label || ''; }

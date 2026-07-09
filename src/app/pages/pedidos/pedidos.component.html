@@ -26,7 +26,7 @@
         </div>
 
         <div class="top-actions">
-          <button mat-raised-button color="primary" (click)="novo()" matTooltip="Criar um novo pedido"><mat-icon>add</mat-icon> Novo pedido</button>
+          <button mat-raised-button color="primary" (click)="novo()" [disabled]="carregandoUsuario" matTooltip="Criar um novo pedido"><mat-icon>add</mat-icon> Novo pedido</button>
           @if (podeImportarXls) {
             <input #fileInput type="file" accept=".xlsx,.xls" hidden (change)="importarArquivo($event)">
             <button mat-stroked-button type="button" (click)="fileInput.click()" [disabled]="importando">

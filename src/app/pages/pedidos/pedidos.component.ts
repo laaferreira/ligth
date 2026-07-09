@@ -95,6 +95,7 @@ export class PedidosComponent implements OnInit {
   todosPedidos: Pedido[] = [];
   pedidos: Pedido[] = [];
   usuarioAtual: AppUser | null = null;
+  carregandoUsuario = true;
   userRole: UserRole | null = null;
   podeImportarXls = false;
   importando = false;
@@ -160,6 +161,8 @@ export class PedidosComponent implements OnInit {
           this.usuarios = users.sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'));
         });
       }
+    }).finally(() => {
+      this.carregandoUsuario = false;
       this.carregar();
     });
   }
@@ -479,6 +482,11 @@ export class PedidosComponent implements OnInit {
   }
 
   novo(): void {
+    if (this.carregandoUsuario) {
+      this.snackBar.open('Aguarde o carregamento do perfil do usuário para criar um pedido.', 'OK', { duration: 4000 });
+      return;
+    }
+
     this.abrirDialogoPedido('criar');
   }
 
