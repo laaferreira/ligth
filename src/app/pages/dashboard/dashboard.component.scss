@@ -227,6 +227,11 @@
   font-size: 13px;
   color: #7a1f1f;
 }
+.mobile-stock-actions {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+}
 .estoque-baixo { color: #c62828; font-weight: 600; }
 
 @media (max-width: 900px) {

@@ -2,6 +2,7 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -11,6 +12,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatDialog } from '@angular/material/dialog';
 import { NgChartsModule } from 'ng2-charts';
 import { ChartConfiguration } from 'chart.js';
 import { Chart, registerables } from 'chart.js';
@@ -20,6 +22,11 @@ import { UserManagementService } from '../../core/services/user-management.servi
 import { BackupService } from '../../core/services/backup.service';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { ProdutoService } from '../../core/services/produto.service';
+import { FornecedorService } from '../../core/services/fornecedor.service';
+import { Produto } from '../../core/models/produto.model';
+import { Fornecedor } from '../../core/models/fornecedor.model';
+import { ProdutoDialogComponent } from '../produtos/produto-dialog.component';
 
 Chart.register(...registerables);
 
@@ -52,7 +59,8 @@ export class DashboardComponent implements OnInit {
   backupProgresso = '';
   backupPercentual = 0;
 
-  estoqueCols = ['codigo', 'descricao', 'estoque', 'minimo'];
+  private readonly estoqueColsBase = ['codigo', 'descricao', 'estoque', 'minimo'];
+  private fornecedoresProdutos: Fornecedor[] = [];
   filterMes: number | null = null;
   filterAno: number | null = null;
   filtroAtivo = false;
@@ -77,10 +85,21 @@ export class DashboardComponent implements OnInit {
     private authService: AuthService,
     private userManagementService: UserManagementService,
     private backupService: BackupService,
+    private produtoService: ProdutoService,
+    private fornecedorService: FornecedorService,
     private snackBar: MatSnackBar,
+    private dialog: MatDialog,
     private router: Router,
     private cdr: ChangeDetectorRef
   ) {}
+
+  get podeEditarProdutos(): boolean {
+    return this.userRole === 'administrador' || this.userRole === 'gerente';
+  }
+
+  get estoqueCols(): string[] {
+    return this.podeEditarProdutos ? [...this.estoqueColsBase, 'acoes'] : this.estoqueColsBase;
+  }
 
   ngOnInit(): void {
     this.loadDashboard();
@@ -244,6 +263,43 @@ export class DashboardComponent implements OnInit {
   navegarConsulta(): void { this.router.navigate(['/consulta']); }
   navegarClientes(): void { this.router.navigate(['/clientes']); }
   navegarProdutos(): void { this.router.navigate(['/produtos']); }
+
+  async editarProdutoEstoqueCritico(item: { id: number; codigo: string }): Promise<void> {
+    if (!this.podeEditarProdutos) {
+      this.snackBar.open('Somente administrador/gerente pode editar produtos.', 'OK', { duration: 3500 });
+      return;
+    }
+
+    if (!item.id) {
+      this.snackBar.open('Não foi possível identificar o produto selecionado.', 'OK', { duration: 3500 });
+      return;
+    }
+
+    try {
+      if (!this.fornecedoresProdutos.length) {
+        this.fornecedoresProdutos = await firstValueFrom(this.fornecedorService.listar());
+      }
+
+      const produto = await firstValueFrom(this.produtoService.buscarPorId(item.id));
+      const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+
+      this.dialog.open(ProdutoDialogComponent, {
+        width: isMobile ? '100vw' : '720px',
+        height: isMobile ? '100dvh' : undefined,
+        maxWidth: isMobile ? '100vw' : '95vw',
+        maxHeight: isMobile ? '100dvh' : '92vh',
+        autoFocus: false,
+        disableClose: true,
+        data: { modo: 'editar', produto, fornecedores: this.fornecedoresProdutos, userRole: this.userRole }
+      }).afterClosed().subscribe(recarregar => {
+        if (recarregar) {
+          this.loadDashboard(this.filterMes ?? undefined, this.filterAno ?? undefined);
+        }
+      });
+    } catch {
+      this.snackBar.open(`Falha ao carregar produto ${item.codigo} para edição.`, 'OK', { duration: 4000 });
+    }
+  }
 
   async gerarBackup(): Promise<void> {
     if (this.backupEmAndamento) return;

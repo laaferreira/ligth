@@ -171,6 +171,13 @@
               <ng-container matColumnDef="descricao"><th mat-header-cell *matHeaderCellDef>Descricao</th><td mat-cell *matCellDef="let r">{{r.descricao}}</td></ng-container>
               <ng-container matColumnDef="estoque"><th mat-header-cell *matHeaderCellDef>Estoque</th><td mat-cell *matCellDef="let r" class="estoque-baixo">{{r.estoque}}</td></ng-container>
               <ng-container matColumnDef="minimo"><th mat-header-cell *matHeaderCellDef>Minimo</th><td mat-cell *matCellDef="let r">{{r.minimo}}</td></ng-container>
+              @if (podeEditarProdutos) {
+                <ng-container matColumnDef="acoes"><th mat-header-cell *matHeaderCellDef></th><td mat-cell *matCellDef="let r">
+                  <button mat-icon-button color="primary" (click)="editarProdutoEstoqueCritico(r)" matTooltip="Editar produto">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                </td></ng-container>
+              }
               <tr mat-header-row *matHeaderRowDef="estoqueCols"></tr>
               <tr mat-row *matRowDef="let r; columns: estoqueCols;"></tr>
             </table>
@@ -186,6 +193,14 @@
                   <span><strong>{{r.estoque}}</strong> em estoque</span>
                   <span>Mínimo: {{r.minimo}}</span>
                 </div>
+                @if (podeEditarProdutos) {
+                  <div class="mobile-stock-actions">
+                    <button mat-stroked-button color="primary" (click)="editarProdutoEstoqueCritico(r)">
+                      <mat-icon>edit</mat-icon>
+                      Editar
+                    </button>
+                  </div>
+                }
               </div>
             }
           </div>

@@ -16,7 +16,7 @@ export interface Dashboard {
   produtosMaisVendidos: { label: string; valor: number; quantidade: number }[];
   clientesMaisCompraram: { label: string; valor: number; quantidade: number }[];
   faturamentoPorMes: { mes: string; faturamento: number; lucro: number }[];
-  estoqueCritico: { codigo: string; descricao: string; estoque: number; minimo: number }[];
+  estoqueCritico: { id: number; codigo: string; descricao: string; estoque: number; minimo: number }[];
   pedidosPorStatus: { status: string; quantidade: number }[];
   faturamentoPorUsuario: { label: string; valor: number }[];
   clientesSemCompraHaMaisTempo: {
@@ -286,17 +286,19 @@ export class DashboardService {
 
     const estoqueCritico = produtos
       .map(produto => {
+        const id = produto.id ?? 0;
         const estoque = this.parseNumeric(produto.quantidadeEstoque ?? produto.disponivel ?? produto.quantidade);
         const minimo = this.parseNumeric(produto.estoqueMinimo);
 
         return {
+          id,
           codigo: produto.codigo || produto.sku || '-',
           descricao: produto.descricao || produto.nome || 'Produto sem descricao',
           estoque,
           minimo
         };
       })
-      .filter(produto => produto.estoque <= produto.minimo)
+      .filter(produto => produto.id > 0 && produto.estoque <= produto.minimo)
       .sort((a, b) => a.estoque - b.estoque)
       .slice(0, 10);
 
