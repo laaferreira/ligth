@@ -73,10 +73,22 @@ type PedidoDialogData = {
           <mat-icon matPrefix>person</mat-icon>
           <mat-autocomplete #autoCliente="matAutocomplete" [displayWith]="displayFn" (optionSelected)="onClienteSelected($event.option.value)">
             @for (c of clientesFiltrados; track c.id) {
-              <mat-option [value]="c">{{c.label}}</mat-option>
+              <mat-option [value]="c">
+                <span>{{c.label}}</span>
+                @if (c.inadimplente) {
+                  <span style="margin-left:8px;color:#b71c1c;font-size:11px;font-weight:700">Inadimplente</span>
+                }
+              </mat-option>
             }
           </mat-autocomplete>
         </mat-form-field>
+
+        @if (clienteSelecionado?.inadimplente) {
+          <div class="cliente-alerta-inadimplente">
+            <mat-icon>warning</mat-icon>
+            <span>Cliente marcado como inadimplente.</span>
+          </div>
+        }
 
         <mat-form-field appearance="outline">
           <mat-label>Forma de Pagamento</mat-label>
@@ -399,6 +411,18 @@ type PedidoDialogData = {
       align-items: center;
       padding: 8px 4px 16px;
     }
+    .cliente-alerta-inadimplente {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border-left: 4px solid #b71c1c;
+      background: #ffebee;
+      color: #8e0000;
+      font-size: 13px;
+      font-weight: 600;
+    }
   `]
 })
 export class PedidoDialogComponent implements OnInit {
@@ -585,6 +609,12 @@ export class PedidoDialogComponent implements OnInit {
       filter(v => typeof v === 'string' && v.length >= 2),
       switchMap(v => this.consultaService.buscarClientes(v as string, this.data.responsavelId))
     ).subscribe(c => this.clientesFiltrados = c);
+
+    this.clienteControl.valueChanges.pipe(
+      filter(v => typeof v === 'string')
+    ).subscribe(() => {
+      this.clienteSelecionado = null;
+    });
 
     // Desabilitar desconto se forma/prazo mudar para condicão não permitida
     this.formaPagamentoControl.valueChanges.subscribe(() => {

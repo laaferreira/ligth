@@ -1,6 +1,7 @@
 export interface Cliente {
   id?: number;
   nome: string;
+  inadimplente?: boolean;
   cpfCnpj: string;
   telefone: string;
   contato: string;

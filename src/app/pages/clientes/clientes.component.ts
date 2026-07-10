@@ -210,6 +210,7 @@ export class ClientesComponent implements OnInit {
 
     return {
       nome,
+      inadimplente: this.obterBooleano(row, ['inadimplente', 'cliente inadimplente']),
       cpfCnpj: this.obterValor(row, ['cpf/cnpj', 'cpfcnpj']),
       telefone: this.obterValor(row, ['telefone']),
       contato: this.obterValor(row, ['contato']),
@@ -237,6 +238,11 @@ export class ClientesComponent implements OnInit {
       }
     }
     return '';
+  }
+
+  private obterBooleano(row: Record<string, unknown>, aliases: string[]): boolean {
+    const valor = this.obterValor(row, aliases).toLowerCase();
+    return ['1', 'sim', 's', 'true', 'x', 'yes', 'y'].includes(valor);
   }
 
   private montarEndereco(...partes: Array<string | undefined>): string {

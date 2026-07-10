@@ -7,6 +7,7 @@ import { Cliente } from '../models/cliente.model';
 type ClienteDbRow = {
   id?: number;
   nome: string;
+  inadimplente?: boolean | null;
   user_id?: string | null;
   cpf_cnpj?: string | null;
   telefone?: string | null;
@@ -121,6 +122,7 @@ export class ClienteService {
     return {
       id: row.id,
       nome: row.nome,
+      inadimplente: Boolean(row.inadimplente),
       cpfCnpj: row.cpf_cnpj || '',
       telefone: row.telefone || '',
       contato: row.contato || '',
@@ -142,6 +144,7 @@ export class ClienteService {
   private toDb(cliente: Partial<Cliente>): Partial<ClienteDbRow> {
     return {
       nome: cliente.nome,
+      inadimplente: cliente.inadimplente,
       cpf_cnpj: cliente.cpfCnpj,
       telefone: cliente.telefone,
       contato: cliente.contato,

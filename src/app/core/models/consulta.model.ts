@@ -1,6 +1,7 @@
 export interface AutocompleteItem {
   id: number;
   label: string;
+  inadimplente?: boolean;
   fornecedorNome?: string | null;
 }
 

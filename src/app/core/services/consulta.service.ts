@@ -16,7 +16,7 @@ export class ConsultaService {
   buscarClientes(termo: string, responsavelId?: string | null): Observable<AutocompleteItem[]> {
     let query = this.supabaseService.getClient()
       .from(this.clientesTable)
-      .select('id, nome')
+      .select('id, nome, inadimplente')
       .ilike('nome', `%${termo}%`)
       .limit(10);
 
@@ -29,7 +29,8 @@ export class ConsultaService {
         if (response.error) throw response.error;
         return (response.data || []).map(item => ({
           id: item.id,
-          label: item.nome
+          label: item.nome,
+          inadimplente: Boolean(item.inadimplente)
         })) as AutocompleteItem[];
       })
     );

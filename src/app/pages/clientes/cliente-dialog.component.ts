@@ -7,6 +7,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ClienteService } from '../../core/services/cliente.service';
 import { Cliente } from '../../core/models/cliente.model';
@@ -31,6 +32,7 @@ type ClienteDialogData = {
     MatSelectModule,
     MatButtonModule,
     MatIconModule,
+    MatSlideToggleModule,
     MatSnackBarModule
   ],
   template: `
@@ -103,6 +105,9 @@ type ClienteDialogData = {
         </div>
 
         <div class="form-row three-columns">
+          <div class="inadimplente-toggle-wrap">
+            <mat-slide-toggle color="warn" formControlName="inadimplente">Cliente inadimplente</mat-slide-toggle>
+          </div>
           <mat-form-field appearance="outline">
             <mat-label>UF</mat-label>
             <input matInput formControlName="uf" maxlength="2" autocapitalize="characters">
@@ -211,6 +216,13 @@ type ClienteDialogData = {
       width: 100%;
     }
 
+    .inadimplente-toggle-wrap {
+      display: flex;
+      align-items: center;
+      min-height: 56px;
+      padding: 0 4px;
+    }
+
     .dialog-actions {
       display: flex;
       flex-direction: column;
@@ -286,6 +298,10 @@ type ClienteDialogData = {
         grid-template-columns: 1fr;
       }
 
+      .inadimplente-toggle-wrap {
+        min-height: 44px;
+      }
+
       .dialog-actions-primary,
       .dialog-actions-danger {
         flex-direction: column;
@@ -313,6 +329,7 @@ export class ClienteDialogComponent {
   ) {
     this.form = this.fb.group({
       nome: [data.cliente?.nome || '', [Validators.required, Validators.maxLength(200)]],
+      inadimplente: [Boolean(data.cliente?.inadimplente)],
       cpfCnpj: [data.cliente?.cpfCnpj || '', Validators.maxLength(20)],
       telefone: [data.cliente?.telefone || '', Validators.maxLength(20)],
       contato: [data.cliente?.contato || '', Validators.maxLength(200)],
