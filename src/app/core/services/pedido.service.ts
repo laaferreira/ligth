@@ -231,6 +231,8 @@ export class PedidoService {
       .map(row => row.id)
       .filter((id): id is number => typeof id === 'number');
 
+    const nomesUsuariosPorId = await this.listarNomesUsuariosPorIds((pedidosResponse.data || []) as PedidoDbRow[]);
+
     const itensResponse = await this.listarItensPorPedidoIds(pedidoIds);
 
     if (itensResponse.error) {
@@ -250,7 +252,7 @@ export class PedidoService {
     });
 
     return {
-      data: ((pedidosResponse.data || []) as PedidoDbRow[]).map(row => this.fromDb(row, itensPorPedido.get(row.id ?? 0) || [])),
+      data: ((pedidosResponse.data || []) as PedidoDbRow[]).map(row => this.fromDb(row, itensPorPedido.get(row.id ?? 0) || [], nomesUsuariosPorId)),
       error: null
     };
   }
@@ -277,6 +279,8 @@ export class PedidoService {
       .map(row => row.id)
       .filter((id): id is number => typeof id === 'number');
 
+    const nomesUsuariosPorId = await this.listarNomesUsuariosPorIds((pedidosResponse.data || []) as PedidoDbRow[]);
+
     const itensResponse = await this.listarItensPorPedidoIds(pedidoIds);
 
     if (itensResponse.error) {
@@ -296,7 +300,7 @@ export class PedidoService {
     });
 
     return {
-      data: ((pedidosResponse.data || []) as PedidoDbRow[]).map(row => this.fromDb(row, itensPorPedido.get(row.id ?? 0) || [])),
+      data: ((pedidosResponse.data || []) as PedidoDbRow[]).map(row => this.fromDb(row, itensPorPedido.get(row.id ?? 0) || [], nomesUsuariosPorId)),
       error: null
     };
   }
@@ -327,10 +331,13 @@ export class PedidoService {
       return { data: null, error: itensResponse.error };
     }
 
+    const nomesUsuariosPorId = await this.listarNomesUsuariosPorIds([pedidoResponse.data as PedidoDbRow]);
+
     return {
       data: this.fromDb(
         pedidoResponse.data as PedidoDbRow,
-        (itensResponse.data || []) as ItemPedidoDbRow[]
+        (itensResponse.data || []) as ItemPedidoDbRow[],
+        nomesUsuariosPorId
       ),
       error: null
     };
@@ -441,7 +448,7 @@ export class PedidoService {
     };
   }
 
-  private fromDb(row: PedidoDbRow, itens: ItemPedidoDbRow[] = []): Pedido {
+  private fromDb(row: PedidoDbRow, itens: ItemPedidoDbRow[] = [], nomesUsuariosPorId?: Map<string, string>): Pedido {
     const itensPedido = itens.map(item => {
       const produto = this.getProduto(item.produtos);
       const quantidade = this.toNumber(item.quantidade);
@@ -477,6 +484,7 @@ export class PedidoService {
       numero: row.id ? String(row.id) : undefined,
       dataPedido: row.data || undefined,
       dataFinalizacao: row.data_finalizacao || undefined,
+      representanteNome: row.user_id ? (nomesUsuariosPorId?.get(row.user_id) || null) : null,
       clienteId: row.cliente_id ?? 0,
       clienteNome: this.getClienteNome(row.clientes),
       clienteCpfCnpj: this.getClienteField(row.clientes, 'cpf_cnpj') || undefined,
@@ -685,6 +693,38 @@ export class PedidoService {
     }
 
     return fp?.descricao || null;
+  }
+
+  private async listarNomesUsuariosPorIds(rows: PedidoDbRow[]): Promise<Map<string, string>> {
+    const userIds = Array.from(new Set(
+      rows
+        .map(row => row.user_id)
+        .filter((id): id is string => !!id)
+    ));
+
+    if (!userIds.length) {
+      return new Map<string, string>();
+    }
+
+    const response = await this.supabaseService.getClient()
+      .from('app_users')
+      .select('id, nome')
+      .in('id', userIds);
+
+    if (response.error) {
+      return new Map<string, string>();
+    }
+
+    const nomes = new Map<string, string>();
+    ((response.data || []) as Array<{ id?: string | null; nome?: string | null }>).forEach(user => {
+      if (!user.id || !user.nome) {
+        return;
+      }
+
+      nomes.set(user.id, user.nome);
+    });
+
+    return nomes;
   }
 
   private getProduto(

@@ -158,6 +158,7 @@
           <ng-container matColumnDef="numero"><th mat-header-cell *matHeaderCellDef>Numero</th><td mat-cell *matCellDef="let r">{{r.numero}}</td></ng-container>
           <ng-container matColumnDef="dataPedido"><th mat-header-cell *matHeaderCellDef>Data</th><td mat-cell *matCellDef="let r">{{r.dataPedido | date:'dd/MM/yyyy'}}</td></ng-container>
           <ng-container matColumnDef="clienteNome"><th mat-header-cell *matHeaderCellDef>Cliente</th><td mat-cell *matCellDef="let r">{{r.clienteNome}}</td></ng-container>
+          <ng-container matColumnDef="representanteNome"><th mat-header-cell *matHeaderCellDef>Representante</th><td mat-cell *matCellDef="let r">{{primeiroNomeRepresentante(r.representanteNome)}}</td></ng-container>
           <ng-container matColumnDef="valorTotal"><th mat-header-cell *matHeaderCellDef>Total</th>
             <td mat-cell *matCellDef="let r" class="valor-total">
               {{r.valorTotal | currency:'BRL'}}
@@ -281,6 +282,7 @@
             </div>
             <div class="mobile-card-details">
               <div class="detail"><span class="detail-label">Data</span><span>{{r.dataPedido | date:'dd/MM/yyyy'}}</span></div>
+              <div class="detail"><span class="detail-label">Representante</span><span>{{primeiroNomeRepresentante(r.representanteNome)}}</span></div>
               <div class="detail"><span class="detail-label">Total</span>
                 <span class="valor-total">{{r.valorTotal | currency:'BRL'}}
                   @if (r.percentualDesconto) { <span class="desconto-badge">-{{r.percentualDesconto}}%</span> }

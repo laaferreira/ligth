@@ -17,6 +17,7 @@ export interface Pedido {
   numero?: string;
   dataPedido?: string;
   dataFinalizacao?: string;
+  representanteNome?: string | null;
   clienteId: number;
   clienteNome?: string;
   clienteCpfCnpj?: string;

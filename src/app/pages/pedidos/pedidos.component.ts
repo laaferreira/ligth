@@ -122,10 +122,10 @@ export class PedidosComponent implements OnInit {
 
   get displayedColumns(): string[] {
     if (this.userRole === 'vendedor') {
-      return ['numero', 'dataPedido', 'clienteNome', 'valorTotal', 'status', 'acoes'];
+      return ['numero', 'dataPedido', 'clienteNome', 'representanteNome', 'valorTotal', 'status', 'acoes'];
     }
 
-    return ['numero', 'dataPedido', 'clienteNome', 'valorTotal', 'custoTotal', 'lucroTotal', 'status', 'acoes'];
+    return ['numero', 'dataPedido', 'clienteNome', 'representanteNome', 'valorTotal', 'custoTotal', 'lucroTotal', 'status', 'acoes'];
   }
 
   get isVendedor(): boolean {
@@ -609,6 +609,15 @@ export class PedidosComponent implements OnInit {
   statusClass(s?: string): string {
     const map: Record<string, string> = { ORCAMENTO: 'badge-orcamento', EM_ABERTO: 'badge-aberto', CONFIRMADO: 'badge-confirmado', CANCELADO: 'badge-cancelado', FINALIZADO: 'badge-finalizado' };
     return s ? (map[s] || '') : '';
+  }
+
+  primeiroNomeRepresentante(nome?: string | null): string {
+    const valor = (nome || '').trim();
+    if (!valor) {
+      return '-';
+    }
+
+    return valor.split(/\s+/)[0] || '-';
   }
 
   get pedidosPaginados(): Pedido[] {
