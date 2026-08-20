@@ -7,6 +7,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 import { UserManagementService } from '../../core/services/user-management.service';
@@ -24,6 +25,7 @@ import { AppUser, UserRole } from '../../core/models/user.model';
     MatSelectModule,
     MatButtonModule,
     MatIconModule,
+    MatCheckboxModule,
     MatSnackBarModule
   ],
   template: `
@@ -121,6 +123,11 @@ import { AppUser, UserRole } from '../../core/models/user.model';
           <mat-error *ngIf="form.get('password')?.hasError('required')">Senha é obrigatória</mat-error>
           <mat-error *ngIf="form.get('password')?.hasError('minlength')">Mínimo 6 caracteres</mat-error>
         </mat-form-field>
+
+        <div class="permissoes-section">
+          <p class="permissoes-label">Permissões</p>
+          <mat-checkbox formControlName="podeCadastrarCliente">Pode cadastrar clientes</mat-checkbox>
+        </div>
 
         <p class="info-text">
           <strong>Nota:</strong> 
@@ -220,6 +227,24 @@ import { AppUser, UserRole } from '../../core/models/user.model';
         width: 100%;
       }
     }
+
+    .permissoes-section {
+      border: 1px solid #ece3f4;
+      border-radius: 8px;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .permissoes-label {
+      margin: 0 0 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #888;
+    }
   `]
 })
 export class CriarEditarUsuarioDialogComponent {
@@ -255,6 +280,7 @@ export class CriarEditarUsuarioDialogComponent {
       margemVendaPrata: [isEditar ? this.data.usuario?.margemVendaPrata : 50, [Validators.required, Validators.min(0), Validators.max(1000)]],
       margemVendaBronze: [isEditar ? this.data.usuario?.margemVendaBronze : 100, [Validators.required, Validators.min(0), Validators.max(1000)]],
       margemVendaElite: [isEditar ? this.data.usuario?.margemVendaElite : 20, [Validators.required, Validators.min(0), Validators.max(1000)]],
+      podeCadastrarCliente: [isEditar ? (this.data.usuario?.podeCadastrarCliente !== false) : true],
       password: [
         '',
         this.data.modo === 'criar' ? [Validators.required, Validators.minLength(6)] : []
@@ -312,7 +338,8 @@ export class CriarEditarUsuarioDialogComponent {
       margemVendaOuro: formValue.margemVendaOuro,
       margemVendaPrata: formValue.margemVendaPrata,
       margemVendaBronze: formValue.margemVendaBronze,
-      margemVendaElite: formValue.margemVendaElite
+      margemVendaElite: formValue.margemVendaElite,
+      podeCadastrarCliente: formValue.podeCadastrarCliente
     };
 
     this.saving = true;

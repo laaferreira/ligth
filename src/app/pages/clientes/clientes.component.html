@@ -52,7 +52,7 @@
               {{ importando ? 'Importando...' : 'Importar XLSX' }}
             </button>
           }
-          <button mat-raised-button color="primary" (click)="novo()"><mat-icon>add</mat-icon> Novo cliente</button>
+          <button mat-raised-button color="primary" (click)="novo()" [disabled]="!podeCadastrarCliente" [matTooltip]="!podeCadastrarCliente ? 'Sem permissão para cadastrar clientes' : ''"><mat-icon>add</mat-icon> Novo cliente</button>
         </div>
 
         @if (resumoImportacao) {

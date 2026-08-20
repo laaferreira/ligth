@@ -13,6 +13,7 @@ export interface AppUser {
   created_at: string;
   created_by: string; // ID do usuário que criou
   is_active: boolean;
+  podeCadastrarCliente: boolean;
 }
 
 export interface CreateUserRequest {
@@ -40,4 +41,5 @@ export interface UpdateUserRequest {
   margemVendaBronze?: number;
   margemVendaElite?: number;
   is_active?: boolean;
+  podeCadastrarCliente?: boolean;
 }

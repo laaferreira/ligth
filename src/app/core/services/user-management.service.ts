@@ -55,7 +55,8 @@ export class UserManagementService {
       margemVendaElite: Number(row.margemVendaElite ?? row.margem_venda_elite ?? 20),
       created_at: row.created_at,
       created_by: row.created_by,
-      is_active: !!row.is_active
+      is_active: !!row.is_active,
+      podeCadastrarCliente: row.pode_cadastrar_cliente !== false
     };
   }
 
@@ -68,7 +69,8 @@ export class UserManagementService {
       ...(payload.margemVendaPrata !== undefined ? { margem_venda_prata: payload.margemVendaPrata } : {}),
       ...(payload.margemVendaBronze !== undefined ? { margem_venda_bronze: payload.margemVendaBronze } : {}),
       ...(payload.margemVendaElite !== undefined ? { margem_venda_elite: payload.margemVendaElite } : {}),
-      ...(payload.is_active !== undefined ? { is_active: payload.is_active } : {})
+      ...(payload.is_active !== undefined ? { is_active: payload.is_active } : {}),
+      ...(payload.podeCadastrarCliente !== undefined ? { pode_cadastrar_cliente: payload.podeCadastrarCliente } : {})
     };
   }
 

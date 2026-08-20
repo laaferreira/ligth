@@ -16,6 +16,7 @@ import { MatTableModule } from '@angular/material/table';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSelectModule } from '@angular/material/select';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ClienteService } from '../../core/services/cliente.service';
 import { AuthService } from '../../core/services/auth.service';
@@ -30,7 +31,7 @@ import { ClienteDialogComponent } from './cliente-dialog.component';
   imports: [
     CommonModule, FormsModule, ReactiveFormsModule,
     MatToolbarModule, MatCardModule, MatDialogModule, MatFormFieldModule, MatInputModule,
-    MatButtonModule, MatIconModule, MatTableModule, MatMenuModule, MatSnackBarModule, MatSelectModule, MatPaginatorModule
+    MatButtonModule, MatIconModule, MatTableModule, MatMenuModule, MatSnackBarModule, MatSelectModule, MatPaginatorModule, MatTooltipModule
   ],
   templateUrl: './clientes.component.html',
   styleUrl: './clientes.component.scss'
@@ -40,6 +41,7 @@ export class ClientesComponent implements OnInit {
   displayedColumns = ['nome', 'cpfCnpj', 'contato', 'telefone', 'cidade', 'responsavel', 'dataCadastro', 'acoes'];
   importando = false;
   podeImportarXls = false;
+  podeCadastrarCliente = true;
   resumoImportacao = '';
   responsaveis: AppUser[] = [];
   responsavelPadraoId: string | null = null;
@@ -71,6 +73,11 @@ export class ClientesComponent implements OnInit {
   }
 
   novo(): void {
+    if (!this.podeCadastrarCliente) {
+      this.snackBar.open('Você não tem permissão para cadastrar novos clientes.', 'OK', { duration: 4000 });
+      return;
+    }
+
     this.abrirDialogoCliente('criar');
   }
 
@@ -288,6 +295,7 @@ export class ClientesComponent implements OnInit {
           this.podeImportarXls = usuarioAtual?.role === 'administrador';
           this.usuarioAtualId = usuarioAtual?.id || null;
           this.userRole = usuarioAtual?.role || null;
+          this.podeCadastrarCliente = usuarioAtual?.podeCadastrarCliente !== false;
           this.responsavelPadraoId = usuarioAtual?.id || usuarios[0]?.id || null;
           this.carregar();
         });
