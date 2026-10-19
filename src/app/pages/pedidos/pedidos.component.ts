@@ -706,7 +706,10 @@ export class PedidosComponent implements OnInit {
         nextY += 6;
       }
       doc.text(`Nota Fiscal: ${p.notaFiscal ? 'Sim' : 'Não'}${p.notaFiscal && p.margemNotaFiscal ? ` (+${p.margemNotaFiscal}%)` : ''}`, 14, nextY);
-      nextY += 10;      if (p.observacao) {
+      nextY += 6;
+      doc.text(`Desconto à vista: ${p.percentualDesconto && p.percentualDesconto > 0 ? `Sim (-${p.percentualDesconto}%)` : 'Não'}`, 14, nextY);
+      nextY += 10;
+      if (p.observacao) {
         doc.setFontSize(9); doc.setFont('helvetica', 'italic'); doc.setTextColor(80, 80, 80);
         doc.text(`Obs.: ${p.observacao}`, 14, nextY, { maxWidth: pw - 28 });
         nextY += 8;

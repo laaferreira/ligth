@@ -6,3 +6,6 @@ supabase/.temp/
 supabase/.branches/
 supabase/.env
 supabase/.env.*
+.kiro/steering/product.md
+.kiro/steering/structure.md
+.kiro/steering/tech.md
