@@ -492,13 +492,10 @@ export class PedidoDialogComponent implements OnInit {
 
   get descontoHabilitado(): boolean {
     const fpId = this.formaPagamentoControl.value;
-    const prazoId = this.prazoPagamentoControl.value;
-    if (!fpId || !prazoId) return false;
+    if (!fpId) return false;
     const fp = this.formasDePagamento.find(f => f.id === fpId);
-    const prazo = this.prazosPagamento.find(p => p.id === prazoId);
     const fpLabel = fp?.descricao?.trim().toLowerCase() ?? '';
-    const prazoLabel = prazo?.descricao?.trim() ?? '';
-    return fpLabel === 'à vista' && ['7', '7/14/21'].includes(prazoLabel);
+    return fpLabel === 'à vista';
   }
 
   get itensColumns(): string[] {
@@ -616,11 +613,8 @@ export class PedidoDialogComponent implements OnInit {
       this.clienteSelecionado = null;
     });
 
-    // Desabilitar desconto se forma/prazo mudar para condicão não permitida
+    // Desabilitar desconto se a forma de pagamento deixar de ser "à vista"
     this.formaPagamentoControl.valueChanges.subscribe(() => {
-      if (!this.descontoHabilitado) this.descontoControl.setValue(null, { emitEvent: false });
-    });
-    this.prazoPagamentoControl.valueChanges.subscribe(() => {
       if (!this.descontoHabilitado) this.descontoControl.setValue(null, { emitEvent: false });
     });
 

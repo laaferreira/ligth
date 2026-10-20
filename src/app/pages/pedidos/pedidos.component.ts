@@ -729,40 +729,62 @@ export class PedidosComponent implements OnInit {
         });
       }
 
-      const rows = (p.itens || []).map((i, idx) => [
-        i.quantidade,
-        `${i.produtoCodigo} - ${i.produtoDescricao}`,
-        i.fornecedorNome || '-',
-        `R$ ${i.valorUnitario.toFixed(2).replace('.', ',')}`,
-        `R$ ${i.valorTotal!.toFixed(2).replace('.', ',')}`
-      ]);
-
       const temNF = p.notaFiscal && p.margemNotaFiscal && p.margemNotaFiscal > 0;
       const fatorNF = temNF ? (1 + p.margemNotaFiscal! / 100) : 1;
+      const temDesconto = !!(p.percentualDesconto && p.percentualDesconto > 0);
+      const pctDesconto = temDesconto ? p.percentualDesconto! : 0;
+      const fatorDesconto = 1 - pctDesconto / 100;
 
-      const tableRows = temNF
-        ? (p.itens || []).map((i) => {
-            const unitNF = Math.round(i.valorUnitario * fatorNF * 100) / 100;
-            const totalNF = Math.round((i.valorTotal || 0) * fatorNF * 100) / 100;
-            return [
-              i.quantidade,
-              `${i.produtoCodigo} - ${i.produtoDescricao}`,
-              i.fornecedorNome || '-',
-              `R$ ${unitNF.toFixed(2).replace('.', ',')}`,
-              `R$ ${totalNF.toFixed(2).replace('.', ',')}`
-            ];
-          })
-        : rows;
+      let headRow: string[][];
+      let tableRows: (string | number)[][];
+      let colStyles: Record<number, any>;
 
-      const headRow = [['Qtd', 'Descri\u00e7ao', 'Fornecedor', 'Vlr.Unit.', 'Vlr.Total']];
-
-      const colStyles = {
-        0: { halign: 'center' as const, cellWidth: 12 },
-        1: { cellWidth: 'auto' as const },
-        2: { cellWidth: 34, textColor: [100, 50, 160] as [number,number,number], fontStyle: 'italic' as const },
-        3: { halign: 'right' as const, cellWidth: 28 },
-        4: { halign: 'right' as const, cellWidth: 28 }
-      };
+      if (temDesconto) {
+        // Com desconto: exibe o valor unitário e o valor unitário já com o desconto aplicado
+        headRow = [['Qtd', 'Descri\u00e7ao', 'Fornecedor', 'Vlr.Unit.', `Vlr.Unit. c/ Desc.(${pctDesconto}%)`, 'Vlr.Total']];
+        tableRows = (p.itens || []).map((i) => {
+          const unitBase = Math.round(i.valorUnitario * fatorNF * 100) / 100;
+          const unitComDesconto = Math.round(unitBase * fatorDesconto * 100) / 100;
+          const totalBase = Math.round((i.valorTotal || 0) * fatorNF * 100) / 100;
+          const totalComDesconto = Math.round(totalBase * fatorDesconto * 100) / 100;
+          return [
+            i.quantidade,
+            `${i.produtoCodigo} - ${i.produtoDescricao}`,
+            i.fornecedorNome || '-',
+            `R$ ${unitBase.toFixed(2).replace('.', ',')}`,
+            `R$ ${unitComDesconto.toFixed(2).replace('.', ',')}`,
+            `R$ ${totalComDesconto.toFixed(2).replace('.', ',')}`
+          ];
+        });
+        colStyles = {
+          0: { halign: 'center' as const, cellWidth: 12 },
+          1: { cellWidth: 'auto' as const },
+          2: { cellWidth: 28, textColor: [100, 50, 160] as [number,number,number], fontStyle: 'italic' as const },
+          3: { halign: 'right' as const, cellWidth: 24 },
+          4: { halign: 'right' as const, cellWidth: 32, textColor: [21, 101, 192] as [number,number,number] },
+          5: { halign: 'right' as const, cellWidth: 26 }
+        };
+      } else {
+        headRow = [['Qtd', 'Descri\u00e7ao', 'Fornecedor', 'Vlr.Unit.', 'Vlr.Total']];
+        tableRows = (p.itens || []).map((i) => {
+          const unitBase = Math.round(i.valorUnitario * fatorNF * 100) / 100;
+          const totalBase = Math.round((i.valorTotal || 0) * fatorNF * 100) / 100;
+          return [
+            i.quantidade,
+            `${i.produtoCodigo} - ${i.produtoDescricao}`,
+            i.fornecedorNome || '-',
+            `R$ ${unitBase.toFixed(2).replace('.', ',')}`,
+            `R$ ${totalBase.toFixed(2).replace('.', ',')}`
+          ];
+        });
+        colStyles = {
+          0: { halign: 'center' as const, cellWidth: 12 },
+          1: { cellWidth: 'auto' as const },
+          2: { cellWidth: 34, textColor: [100, 50, 160] as [number,number,number], fontStyle: 'italic' as const },
+          3: { halign: 'right' as const, cellWidth: 28 },
+          4: { halign: 'right' as const, cellWidth: 28 }
+        };
+      }
 
       autoTable(doc, { startY: nextY + 8, head: headRow, body: tableRows, theme: 'plain',
         headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: 'bold', fontSize: 9, lineWidth: { bottom: 0.5 }, lineColor: [0, 0, 0] },
@@ -770,6 +792,13 @@ export class PedidosComponent implements OnInit {
         columnStyles: colStyles,
         alternateRowStyles: { fillColor: [248, 248, 248] },
         didParseCell: (data: any) => {
+          // Alinha o cabeçalho de cada coluna conforme o alinhamento definido para a coluna
+          if (data.section === 'head') {
+            const alinhamento = colStyles[data.column.index]?.halign;
+            if (alinhamento) {
+              data.cell.styles.halign = alinhamento;
+            }
+          }
           if (data.section === 'body' && indicesAlerta.has(data.row.index)) {
             data.cell.styles.fillColor = [255, 235, 220];
             data.cell.styles.textColor = [160, 40, 0];
